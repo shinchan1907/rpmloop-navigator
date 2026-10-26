@@ -1,0 +1,9 @@
+* text=auto eol=lf
+
+# Keep manufacturing files byte-for-byte identical to their published hashes.
+printing_files/** -text
+
+*.png binary
+*.blend binary
+*.stl binary
+*.solidcraft binary
