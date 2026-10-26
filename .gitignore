@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example
+*.blend1
+*.blend2
+*.log
+build/
+.pio/
+.venv/
+node_modules/
+DerivedData/
+.idea/
+.vscode/

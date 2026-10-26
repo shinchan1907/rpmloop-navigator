@@ -1,0 +1,60 @@
+{
+  "revision": "P3-bottom-USB-two-flat-fingers-large-top-RPMLOOP",
+  "status": "FIT_TEST_ONLY",
+  "units": "mm",
+  "scale": 1,
+  "parts": {
+    "housing": {
+      "quantity": 1,
+      "file": "01_Rigid_STL/housing_qty1.stl"
+    },
+    "front_bezel": {
+      "quantity": 1,
+      "file": "01_Rigid_STL/front_bezel_qty1.stl"
+    },
+    "rear_lid": {
+      "quantity": 1,
+      "file": "01_Rigid_STL/rear_lid_qty1.stl"
+    },
+    "esp32_cradle": {
+      "quantity": 1,
+      "file": "01_Rigid_STL/esp32_cradle_qty1.stl"
+    },
+    "PCB_tab_left": {
+      "quantity": 2,
+      "file": "01_Rigid_STL/PCB_tab_left_qty2.stl"
+    },
+    "PCB_tab_right": {
+      "quantity": 2,
+      "file": "01_Rigid_STL/PCB_tab_right_qty2.stl"
+    },
+    "insert_test_coupon": {
+      "quantity": 1,
+      "file": "01_Rigid_STL/insert_test_coupon_qty1.stl"
+    },
+    "joint_gasket": {
+      "quantity": 2,
+      "file": "02_Flexible_Prototype_STL/joint_gasket_qty2.stl"
+    },
+    "display_gasket": {
+      "quantity": 1,
+      "file": "02_Flexible_Prototype_STL/display_gasket_qty1.stl"
+    },
+    "USB_cap_gasket": {
+      "quantity": 1,
+      "file": "02_Flexible_Prototype_STL/USB_cap_gasket_qty1.stl"
+    },
+    "M2_sealing_washer": {
+      "quantity": 8,
+      "file": "02_Flexible_Prototype_STL/M2_sealing_washer_qty8.stl"
+    }
+  },
+  "unverified": [
+    "active display/glass/touch stack",
+    "insert OD and pilot",
+    "wired ESP32/USB height",
+    "actual mating mount and hardware",
+    "final weather boot/cap"
+  ],
+  "physical_tests_performed": false
+}

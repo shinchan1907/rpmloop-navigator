@@ -1,0 +1,106 @@
+{
+  "boolean_ms": 130522.565,
+  "budget_exceeded": true,
+  "budget_s": 55.0,
+  "checked": 30,
+  "count": 1,
+  "interferences": [
+    {
+      "a": "HOUSING_P3",
+      "area_mm2": 1070.288818474894,
+      "b": "REAR_compressed_silicone_gasket_REFERENCE",
+      "bbox": {
+        "max": [
+          48.59802746847263,
+          33.59776436718709,
+          -40.84970302759929
+        ],
+        "min": [
+          -48.597681317891976,
+          -33.597973791077465,
+          -40.850000000008265
+        ]
+      },
+      "center": [
+        -11.2537642609683,
+        2.0937591748287594,
+        -40.849889879739905
+      ],
+      "volume_mm3": 0.1071122269809972
+    }
+  ],
+  "ms": 55011.094,
+  "pairs_candidate": 42,
+  "pairs_cleared": 2,
+  "pairs_intersected": 40,
+  "pairs_not_checked": 1,
+  "skipped_pairs": 0,
+  "slowest": [
+    {
+      "a": "HOUSING_P3",
+      "b": "REAR_compressed_silicone_gasket_REFERENCE",
+      "boolean_ms": 42870.712,
+      "ms": 44010.538,
+      "tessellate_ms": 36.039
+    },
+    {
+      "a": "HOUSING_P3",
+      "b": "FRONT_compressed_silicone_gasket_REFERENCE",
+      "boolean_ms": 27374.436,
+      "ms": 28402.031,
+      "tessellate_ms": 0.0
+    },
+    {
+      "a": "HOUSING_P3",
+      "b": "ESP32_18x23p5_PCB_REFERENCE",
+      "boolean_ms": 14254.814,
+      "ms": 15299.512,
+      "tessellate_ms": 0.0
+    },
+    {
+      "a": "FRONT_BEZEL_P3",
+      "b": "FRONT_screw_sealing_washer_2_REFERENCE",
+      "boolean_ms": 1099.603,
+      "ms": 7943.799,
+      "tessellate_ms": 5848.238
+    },
+    {
+      "a": "FRONT_BEZEL_P3",
+      "b": "FRONT_screw_sealing_washer_1_REFERENCE",
+      "boolean_ms": 2994.044,
+      "ms": 7806.246,
+      "tessellate_ms": 3900.649
+    },
+    {
+      "a": "HOUSING_P3",
+      "b": "FRONT_BEZEL_P3",
+      "boolean_ms": 1397.449,
+      "ms": 6886.329,
+      "tessellate_ms": 3443.422
+    },
+    {
+      "a": "HOUSING_P3",
+      "b": "REFERENCE_MATING_FINGER_1_UNVERIFIED",
+      "boolean_ms": 3184.833,
+      "ms": 6012.431,
+      "tessellate_ms": 1731.356
+    },
+    {
+      "a": "HOUSING_P3",
+      "b": "REFERENCE_MATING_FINGER_2_UNVERIFIED",
+      "boolean_ms": 2985.336,
+      "ms": 5912.538,
+      "tessellate_ms": 1854.358
+    }
+  ],
+  "tessellate_ms": 20860.104,
+  "threads": 4,
+  "truncated": false,
+  "unchecked": [
+    {
+      "a": "HOUSING_P3",
+      "b": "ACTIVE_LCD_UNVERIFIED",
+      "reason": "not checked: the time budget of 55 s ran out (budget_s)"
+    }
+  ]
+}

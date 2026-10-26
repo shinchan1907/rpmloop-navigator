@@ -1,0 +1,29 @@
+# P3 digital verification
+
+- Native timeline: no feature errors.
+- 14 blind M2 pilot locations verified, including all 8 front/rear enclosure fasteners. 2.8 mm pilot remains UNVERIFIED for the actual insert.
+- Front/rear M2 clearance and head-recess positions match insert centres.
+- M5 pivot bore present on the two-finger mount.
+- Two fingers only: total width 9.3 mm; flat outer sides +/-4.65 mm; no external nut collar. Nominal three-finger gauge has 0.15 mm side clearances.
+- Exact rigid-part/component interference audit: no overlaps or unchecked pairs among selected rigid assembly parts, reference PCBs and nominal mating gauge.
+- Broad audit advisory: REAR_compressed_silicone_gasket_REFERENCE has 0.107112 mm3 numerical contact with housing, confined to a 0.000297 mm axial skin (under 0.001 mm). This is a compressed seal reference, not a rigid-part collision or seal validation.
+- Broad audit timed out on the artificial active-pixel visualization skin; excluded from physical-part audit. Actual screen/glass fit remains UNVERIFIED.
+- Cable and thumb-knob allowance audit: no overlap with enclosure or each other. Cable is left of mount; knob is on opposite +X side.
+- Cradle wall clearances: 0.5 mm at bottom base edge and 0.75 mm at left fixing ear; 3 mm lateral cable-to-mount-root allowance.
+- Rotated ESP32 end stops clear its 18 x 23.5 mm reference outline.
+- Joint gasket volume allowance: 23.33% nominal height compression; 80.75% rectangular cross-section gland fill. Physical sealing untested.
+- housing: closed STL, 12316 triangles, native/mesh volume error 0.0159%; translated without scaling to bed Z=0.
+- front_bezel: closed STL, 5982 triangles, native/mesh volume error 0.0290%; translated without scaling to bed Z=0.
+- rear_lid: closed STL, 2260 triangles, native/mesh volume error 0.0157%; translated without scaling to bed Z=0.
+- esp32_cradle: closed STL, 1684 triangles, native/mesh volume error 0.0047%; translated without scaling to bed Z=0.
+- PCB_tab_left: closed STL, 1464 triangles, native/mesh volume error 0.0107%; translated without scaling to bed Z=0.
+- PCB_tab_right: closed STL, 1464 triangles, native/mesh volume error 0.0107%; translated without scaling to bed Z=0.
+- insert_test_coupon: closed STL, 4028 triangles, native/mesh volume error 0.0062%; translated without scaling to bed Z=0.
+- joint_gasket: closed STL, 288 triangles, native/mesh volume error 0.0478%; translated without scaling to bed Z=0.
+- display_gasket: closed STL, 208 triangles, native/mesh volume error 0.0124%; translated without scaling to bed Z=0.
+- USB_cap_gasket: closed STL, 664 triangles, native/mesh volume error 0.0409%; translated without scaling to bed Z=0.
+- M2_sealing_washer: closed STL, 1744 triangles, native/mesh volume error 0.0139%; translated without scaling to bed Z=0.
+- Images reviewed for the finished exterior, large top RPMLOOP, bottom USB/two flat fingers, holders, gasket lands and each print part.
+- UNVERIFIED: active LCD/glass/touch stack; insert OD/pilot; wired ESP32 thickness/keepouts; actual USB plug; actual mating accessory and fastener.
+- NOT PERFORMED: physical fit/insert installation, touch tests, sealing/condensation, heat, fatigue or road-vibration tests.
+- ORDER STATUS: FIT-TEST PROTOTYPE ONLY. No final production/IP/road-strength release.

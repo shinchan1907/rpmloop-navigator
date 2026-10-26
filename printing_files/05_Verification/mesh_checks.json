@@ -1,0 +1,189 @@
+{
+  "housing": {
+    "triangles": 12316,
+    "dimensions_mm": [
+      100.0,
+      91.49667739868164,
+      42.00000000000013
+    ],
+    "translation_mm": [
+      -0.0,
+      10.74833869934082,
+      42.0
+    ],
+    "mesh_volume_mm3": 51923.28362358867,
+    "native_volume_mm3": 51931.53243733899,
+    "relative_volume_error": 0.00015884017596187825,
+    "closed_edges": true
+  },
+  "front_bezel": {
+    "triangles": 5982,
+    "dimensions_mm": [
+      100.0,
+      70.0,
+      4.0
+    ],
+    "translation_mm": [
+      -0.0,
+      -0.0,
+      -0.0
+    ],
+    "mesh_volume_mm3": 16350.08212502881,
+    "native_volume_mm3": 16354.825562794913,
+    "relative_volume_error": 0.00029003291706721976,
+    "closed_edges": true
+  },
+  "rear_lid": {
+    "triangles": 2260,
+    "dimensions_mm": [
+      100.0,
+      70.0,
+      3.0
+    ],
+    "translation_mm": [
+      -0.0,
+      -0.0,
+      45.0
+    ],
+    "mesh_volume_mm3": 20670.864534751567,
+    "native_volume_mm3": 20674.111118320605,
+    "relative_volume_error": 0.00015703618648741787,
+    "closed_edges": true
+  },
+  "esp32_cradle": {
+    "triangles": 1684,
+    "dimensions_mm": [
+      38.498538970947266,
+      26.24997329711914,
+      3.799999237060547
+    ],
+    "translation_mm": [
+      26.99928092956543,
+      18.62498664855957,
+      24.0
+    ],
+    "mesh_volume_mm3": 985.3704158056371,
+    "native_volume_mm3": 985.4171545294894,
+    "relative_volume_error": 4.743039395798073e-05,
+    "closed_edges": true
+  },
+  "PCB_tab_left": {
+    "triangles": 1464,
+    "dimensions_mm": [
+      7.0,
+      5.0,
+      2.0
+    ],
+    "translation_mm": [
+      43.5,
+      10.0,
+      6.400000095367432
+    ],
+    "mesh_volume_mm3": 60.960229912595395,
+    "native_volume_mm3": 60.9537162640648,
+    "relative_volume_error": 0.00010686220512584053,
+    "closed_edges": true
+  },
+  "PCB_tab_right": {
+    "triangles": 1464,
+    "dimensions_mm": [
+      7.0,
+      5.0,
+      2.0
+    ],
+    "translation_mm": [
+      -43.5,
+      10.0,
+      6.400000095367432
+    ],
+    "mesh_volume_mm3": 60.960229912595395,
+    "native_volume_mm3": 60.9537162640648,
+    "relative_volume_error": 0.00010686220512584053,
+    "closed_edges": true
+  },
+  "insert_test_coupon": {
+    "triangles": 4028,
+    "dimensions_mm": [
+      38.0,
+      14.0,
+      7.0
+    ],
+    "translation_mm": [
+      -0.0,
+      -0.0,
+      -22.0
+    ],
+    "mesh_volume_mm3": 3583.251240201309,
+    "native_volume_mm3": 3583.030496860656,
+    "relative_volume_error": 6.160799938664349e-05,
+    "closed_edges": true
+  },
+  "joint_gasket": {
+    "triangles": 288,
+    "dimensions_mm": [
+      96.80000305175781,
+      66.80000305175781,
+      1.5
+    ],
+    "translation_mm": [
+      -0.0,
+      -0.0,
+      -10.0
+    ],
+    "mesh_volume_mm3": 615.0506709992987,
+    "native_volume_mm3": 615.3446954119144,
+    "relative_volume_error": 0.0004778206667058239,
+    "closed_edges": true
+  },
+  "display_gasket": {
+    "triangles": 208,
+    "dimensions_mm": [
+      65.4000015258789,
+      47.400001525878906,
+      0.8000001907348633
+    ],
+    "translation_mm": [
+      -0.0,
+      -0.0,
+      -13.0
+    ],
+    "mesh_volume_mm3": 227.84785958326108,
+    "native_volume_mm3": 227.876042859114,
+    "relative_volume_error": 0.00012367809928284166,
+    "closed_edges": true
+  },
+  "USB_cap_gasket": {
+    "triangles": 664,
+    "dimensions_mm": [
+      18.5,
+      12.5,
+      1.0
+    ],
+    "translation_mm": [
+      -0.0,
+      -0.0,
+      -16.0
+    ],
+    "mesh_volume_mm3": 54.11432336260399,
+    "native_volume_mm3": 54.13649038202004,
+    "relative_volume_error": 0.00040946539496055956,
+    "closed_edges": true
+  },
+  "M2_sealing_washer": {
+    "triangles": 1744,
+    "dimensions_mm": [
+      4.799136161804199,
+      4.79987096786499,
+      0.5
+    ],
+    "translation_mm": [
+      -0.0,
+      -0.0,
+      -19.0
+    ],
+    "mesh_volume_mm3": 6.784617439404741,
+    "native_volume_mm3": 6.785557376456225,
+    "relative_volume_error": 0.0001385202422347053,
+    "closed_edges": true
+  }
+}

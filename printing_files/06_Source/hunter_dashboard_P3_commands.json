@@ -1,0 +1,4870 @@
+{
+  "commands": [
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "PCB_L",
+        "expression": "85 mm",
+        "comment": "User supplied PCB envelope only; physical verification pending"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "PCB_W",
+        "expression": "48 mm",
+        "comment": "User supplied PCB envelope only; never used for viewing opening"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_PCB_T",
+        "expression": "1.6 mm",
+        "comment": "DEMO ONLY: measure PCB thickness"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_ACTIVE_W",
+        "expression": "50 mm",
+        "comment": "DEMO ONLY: no aspect ratio or diagonal inference"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_ACTIVE_H",
+        "expression": "32 mm",
+        "comment": "DEMO ONLY: measure active pixel bounds"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_ACTIVE_X",
+        "expression": "0 mm",
+        "comment": "DEMO ONLY: active centre relative to PCB centre"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_ACTIVE_Y",
+        "expression": "0 mm",
+        "comment": "DEMO ONLY: active centre relative to PCB centre"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_GLASS_W",
+        "expression": "60 mm",
+        "comment": "DEMO ONLY: measure complete LCD glass"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_GLASS_H",
+        "expression": "42 mm",
+        "comment": "DEMO ONLY: measure complete LCD glass"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_GLASS_T",
+        "expression": "2 mm",
+        "comment": "DEMO ONLY: measure glass/touch stack"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_GLASS_X",
+        "expression": "0 mm",
+        "comment": "DEMO ONLY: glass centre relative to PCB centre"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_GLASS_Y",
+        "expression": "0 mm",
+        "comment": "DEMO ONLY: glass centre relative to PCB centre"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_TOUCH_W",
+        "expression": "58 mm",
+        "comment": "DEMO ONLY: touch sensitive/interaction keepout width"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_TOUCH_H",
+        "expression": "40 mm",
+        "comment": "DEMO ONLY: touch sensitive/interaction keepout height"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_TOUCH_DX",
+        "expression": "0 mm",
+        "comment": "DEMO ONLY: touch centre offset from active screen"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_TOUCH_DY",
+        "expression": "0 mm",
+        "comment": "DEMO ONLY: touch centre offset from active screen"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "PIXEL_CLEARANCE",
+        "expression": "1 mm",
+        "comment": "Design allowance per side; validate physically"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "TOUCH_CLEARANCE",
+        "expression": "1 mm",
+        "comment": "Design allowance per side outside touch keepout"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "BEZEL_W",
+        "expression": "100 mm",
+        "comment": "Fit-test outer width, independent from PCB"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "BEZEL_H",
+        "expression": "70 mm",
+        "comment": "Fit-test outer height, independent from PCB"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "BEZEL_T",
+        "expression": "4 mm",
+        "comment": "Fit-test bezel thickness"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_WINDOW_W",
+        "expression": "66 mm",
+        "comment": "Independent DEMO protective-window width"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_WINDOW_H",
+        "expression": "48 mm",
+        "comment": "Independent DEMO protective-window height"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_WINDOW_T",
+        "expression": "0.8 mm",
+        "comment": "DEMO ONLY; resistive touch compatibility NOT verified"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "WINDOW_FIT",
+        "expression": "0.3 mm",
+        "comment": "Pocket clearance per side; tune to process"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "RECESS_DEPTH",
+        "expression": "1.6 mm",
+        "comment": "Stationary perimeter pocket depth"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "GASKET_EDGE_INSET",
+        "expression": "0.2 mm",
+        "comment": "Gasket outer edge inset from window"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "GASKET_WIDTH",
+        "expression": "1.5 mm",
+        "comment": "Continuous ring width; validate seal compression"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_GASKET_T",
+        "expression": "0.6 mm",
+        "comment": "DEMO ONLY: compressed gasket height not specified"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_PCB_BACK_Z",
+        "expression": "-8 mm",
+        "comment": "DEMO ONLY: PCB rear Z, bezel rear face Z=0"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_GLASS_BACK_Z",
+        "expression": "-3 mm",
+        "comment": "DEMO ONLY: glass rear Z; measure stack datum"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "REFERENCE_SKIN_T",
+        "expression": "0.1 mm",
+        "comment": "Visualization thickness only, not physical LCD stack"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "EPS",
+        "expression": "0.05 mm",
+        "comment": "Boolean through-cut extension"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "OPEN_W",
+        "expression": "max(UNVERIFIED_ACTIVE_W+2*PIXEL_CLEARANCE,UNVERIFIED_TOUCH_W+2*TOUCH_CLEARANCE+2*abs(UNVERIFIED_TOUCH_DX))",
+        "comment": "Derived from UNVERIFIED display/touch geometry"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "OPEN_H",
+        "expression": "max(UNVERIFIED_ACTIVE_H+2*PIXEL_CLEARANCE,UNVERIFIED_TOUCH_H+2*TOUCH_CLEARANCE+2*abs(UNVERIFIED_TOUCH_DY))",
+        "comment": "Derived from UNVERIFIED display/touch geometry"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "POCKET_W",
+        "expression": "UNVERIFIED_WINDOW_W+2*WINDOW_FIT",
+        "comment": "Derived from UNVERIFIED display/touch geometry"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "POCKET_H",
+        "expression": "UNVERIFIED_WINDOW_H+2*WINDOW_FIT",
+        "comment": "Derived from UNVERIFIED display/touch geometry"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "GASKET_OUT_W",
+        "expression": "UNVERIFIED_WINDOW_W-2*GASKET_EDGE_INSET",
+        "comment": "Derived from UNVERIFIED display/touch geometry"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "GASKET_OUT_H",
+        "expression": "UNVERIFIED_WINDOW_H-2*GASKET_EDGE_INSET",
+        "comment": "Derived from UNVERIFIED display/touch geometry"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "GASKET_IN_W",
+        "expression": "GASKET_OUT_W-2*GASKET_WIDTH",
+        "comment": "Derived from UNVERIFIED display/touch geometry"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "GASKET_IN_H",
+        "expression": "GASKET_OUT_H-2*GASKET_WIDTH",
+        "comment": "Derived from UNVERIFIED display/touch geometry"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "SEAL_Z",
+        "expression": "BEZEL_T-RECESS_DEPTH",
+        "comment": "Derived from UNVERIFIED display/touch geometry"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "HOUSING_DEPTH",
+        "expression": "45 mm",
+        "comment": "Design allowance behind bezel; includes removable rear lid"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "HOUSING_WALL",
+        "expression": "3 mm",
+        "comment": "ASA nominal wall; printer/process validation pending"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "REAR_LID_T",
+        "expression": "3 mm",
+        "comment": "Removable rear cover concept; fastening/seal detail pending"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "RESERVE_BATTERY_W",
+        "expression": "52 mm",
+        "comment": "Space allocation ONLY; includes future battery packaging allowance"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "RESERVE_BATTERY_H",
+        "expression": "36 mm",
+        "comment": "Space allocation ONLY; no battery selected"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "RESERVE_BATTERY_T",
+        "expression": "12 mm",
+        "comment": "Whole future battery assembly including retention/expansion allowance must fit"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "RESERVE_BATTERY_X",
+        "expression": "-16 mm",
+        "comment": "Battery allocation centre relative to PCB datum"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "RESERVE_GPS_W",
+        "expression": "30 mm",
+        "comment": "Whole GPS breakout/antenna allocation; exact board unverified"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "RESERVE_GPS_H",
+        "expression": "30 mm",
+        "comment": "Whole GPS assembly allocation; exact board unverified"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "RESERVE_GPS_T",
+        "expression": "14 mm",
+        "comment": "Includes antenna and connector height; verify chosen assembly"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "RESERVE_GPS_X",
+        "expression": "28 mm",
+        "comment": "GPS allocation centre; antenna orientation/RF validation pending"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "RESERVE_REAR_GAP",
+        "expression": "2 mm",
+        "comment": "Allocation clearance from rear cover, not battery expansion spec"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "RESERVE_ELECTRONICS_W",
+        "expression": "80 mm",
+        "comment": "Shared space for ESP32, SD, power management and wiring; fit unverified"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "RESERVE_ELECTRONICS_H",
+        "expression": "50 mm",
+        "comment": "Shared electronics space allocation"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "RESERVE_ELECTRONICS_T",
+        "expression": "12 mm",
+        "comment": "Shared electronics space allocation"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "RESERVE_ELECTRONICS_BACK_Z",
+        "expression": "-24 mm",
+        "comment": "Electronics allocation back datum"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "INNER_W",
+        "expression": "BEZEL_W-2*HOUSING_WALL",
+        "comment": "Derived internal width"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "INNER_H",
+        "expression": "BEZEL_H-2*HOUSING_WALL",
+        "comment": "Derived internal height"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "USABLE_REAR_DEPTH",
+        "expression": "HOUSING_DEPTH-REAR_LID_T",
+        "comment": "Derived clear depth behind bezel"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "TOTAL_DEVICE_DEPTH",
+        "expression": "HOUSING_DEPTH+BEZEL_T",
+        "comment": "Derived assembled overall depth excluding mount"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "RESERVE_BACK_Z",
+        "expression": "-HOUSING_DEPTH+REAR_LID_T+RESERVE_REAR_GAP",
+        "comment": "Allocation back datum follows housing depth"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "OUTER_CORNER_R",
+        "expression": "6 mm",
+        "comment": "Exterior rounded corners"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "INSERT_LENGTH",
+        "expression": "4 mm",
+        "comment": "User specified M2 x 4 mm insert length"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_INSERT_PILOT_D",
+        "expression": "2.8 mm",
+        "comment": "PLACEHOLDER; select from insert manufacturer and printed coupon"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "INSERT_POCKET_DEPTH",
+        "expression": "4.4 mm",
+        "comment": "Blind pilot depth including installation allowance"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_INSERT_OD",
+        "expression": "3.2 mm",
+        "comment": "Reference sleeve only; actual knurl outside diameter unknown"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "SCREW_CLEAR_D",
+        "expression": "2.4 mm",
+        "comment": "M2 printed clearance target; process verification required"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "SCREW_HEAD_RECESS_D",
+        "expression": "5.2 mm",
+        "comment": "Allowance for M2 head and separate sealing washer"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "SCREW_HEAD_RECESS_DEPTH",
+        "expression": "2 mm",
+        "comment": "1 mm lid floor remains; use suitable M2 head length/type"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "SCREW_X",
+        "expression": "43 mm",
+        "comment": "Enclosure fastener centres; not display mounting holes"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "SCREW_Y",
+        "expression": "29 mm",
+        "comment": "Enclosure fastener centres; avoids display PCB outline"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "JOINT_GROOVE_DEPTH",
+        "expression": "1.15 mm",
+        "comment": "23.3 percent compression target for 1.5 mm gasket"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "JOINT_CORD_D",
+        "expression": "1.5 mm",
+        "comment": "Trial gasket cord diameter; verify supplier and closure load"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "JOINT_GROOVE_W",
+        "expression": "2.1 mm",
+        "comment": "Widened gland for elastomer volume; seal performance untested"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "ESP32_BOARD_W",
+        "expression": "18 mm",
+        "comment": "User-provided board drawing outline"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "ESP32_BOARD_L",
+        "expression": "23.5 mm",
+        "comment": "User-provided board drawing PCB outline; excludes USB projection"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_ESP32_T",
+        "expression": "1 mm",
+        "comment": "Measure actual PCB thickness and underside components"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "ESP32_SLIDE_CLEAR",
+        "expression": "0.3 mm",
+        "comment": "Per-side guide allowance; verify solder/wire clearance"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_PORT_W",
+        "expression": "10.5 mm",
+        "comment": "Direct-board USB aperture placeholder"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_PORT_H",
+        "expression": "4.2 mm",
+        "comment": "Direct-board USB aperture placeholder"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_USB_Z",
+        "expression": "-19.2 mm",
+        "comment": "USB socket centre from unverified stack height"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_FORK_T",
+        "expression": "3 mm",
+        "comment": "Action-camera finger thickness; measure actual mating mount"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_FORK_GAP",
+        "expression": "3.3 mm",
+        "comment": "Action-camera mating clearance; test coupon before road use"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "MOUNT_BORE_D",
+        "expression": "5.3 mm",
+        "comment": "M5 pivot clearance target"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "UNVERIFIED_M5_NUT_AF",
+        "expression": "8.2 mm",
+        "comment": "Captive nut across-flats clearance; verify hardware"
+      }
+    },
+    {
+      "command": "parameters.change",
+      "params": {
+        "name": "BRAND_CUT_DEPTH",
+        "expression": "0.5 mm",
+        "comment": "Recessed Instagram-style glyph and rpmloop lettering"
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -42,
+        "name": "HOUSING_P3_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -50.0,
+            -35.0
+          ],
+          "p1": [
+            50.0,
+            35.0
+          ],
+          "radius": "OUTER_CORNER_R"
+        },
+        "dimensions": {
+          "width": "BEZEL_W",
+          "height": "BEZEL_H"
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": "USABLE_REAR_DEPTH",
+        "operation": "new",
+        "name": "HOUSING_P3",
+        "body_name": "HOUSING_P3"
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -42.05,
+        "name": "Hollow_interior_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -47.0,
+            -32.0
+          ],
+          "p1": [
+            47.0,
+            32.0
+          ],
+          "radius": 3
+        },
+        "dimensions": {
+          "width": "INNER_W",
+          "height": "INNER_H"
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 42.1,
+        "operation": "cut",
+        "name": "Hollow_interior",
+        "body_name": "Hollow_interior",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -2.5,
+        "name": "FRONT_wide_seal_land_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -48.5,
+            -33.5
+          ],
+          "p1": [
+            48.5,
+            33.5
+          ],
+          "radius": 4.5
+        },
+        "dimensions": {
+          "width": 97,
+          "height": 67
+        }
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -45.5,
+            -30.5
+          ],
+          "p1": [
+            45.5,
+            30.5
+          ],
+          "radius": 1.5
+        },
+        "dimensions": {
+          "width": 91,
+          "height": 61
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 2.5,
+        "operation": "new",
+        "name": "FRONT_wide_seal_land",
+        "body_name": "FRONT_wide_seal_land",
+        "profiles": [
+          {
+            "point": [
+              47.0,
+              0
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "command": "solid.combine",
+      "params": {
+        "target": "HOUSING_P3",
+        "tools": [
+          "FRONT_wide_seal_land"
+        ],
+        "operation": "join"
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -42,
+        "name": "REAR_wide_seal_land_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -48.5,
+            -33.5
+          ],
+          "p1": [
+            48.5,
+            33.5
+          ],
+          "radius": 4.5
+        },
+        "dimensions": {
+          "width": 97,
+          "height": 67
+        }
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -45.5,
+            -30.5
+          ],
+          "p1": [
+            45.5,
+            30.5
+          ],
+          "radius": 1.5
+        },
+        "dimensions": {
+          "width": 91,
+          "height": 61
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 2.5,
+        "operation": "new",
+        "name": "REAR_wide_seal_land",
+        "body_name": "REAR_wide_seal_land",
+        "profiles": [
+          {
+            "point": [
+              47.0,
+              0
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "command": "solid.combine",
+      "params": {
+        "target": "HOUSING_P3",
+        "tools": [
+          "REAR_wide_seal_land"
+        ],
+        "operation": "join"
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": 0,
+        "name": "FRONT_BEZEL_P3_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -50.0,
+            -35.0
+          ],
+          "p1": [
+            50.0,
+            35.0
+          ],
+          "radius": "OUTER_CORNER_R"
+        },
+        "dimensions": {
+          "width": "BEZEL_W",
+          "height": "BEZEL_H"
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": "BEZEL_T",
+        "operation": "new",
+        "name": "FRONT_BEZEL_P3",
+        "body_name": "FRONT_BEZEL_P3"
+      }
+    },
+    {
+      "command": "solid.fillet",
+      "params": {
+        "edges": [
+          {
+            "body": "FRONT_BEZEL_P3",
+            "point": [
+              0,
+              35,
+              4
+            ]
+          }
+        ],
+        "radius": 1,
+        "name": "Soft_front_rim_R1"
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -0.05,
+        "name": "Pixel_and_touch_opening_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -30.0,
+            -21.0
+          ],
+          "p1": [
+            30.0,
+            21.0
+          ],
+          "radius": 0.8
+        },
+        "dimensions": {
+          "width": "OPEN_W",
+          "height": "OPEN_H"
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 4.1,
+        "operation": "cut",
+        "name": "Pixel_and_touch_opening",
+        "body_name": "Pixel_and_touch_opening",
+        "targets": [
+          "FRONT_BEZEL_P3"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": 2.4,
+        "name": "Independent_window_rebate_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -33.3,
+            -24.3
+          ],
+          "p1": [
+            33.3,
+            24.3
+          ],
+          "radius": 2
+        },
+        "dimensions": {
+          "width": "POCKET_W",
+          "height": "POCKET_H"
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 1.65,
+        "operation": "cut",
+        "name": "Independent_window_rebate",
+        "body_name": "Independent_window_rebate",
+        "targets": [
+          "FRONT_BEZEL_P3"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -45,
+        "name": "REAR_LID_P3_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -50.0,
+            -35.0
+          ],
+          "p1": [
+            50.0,
+            35.0
+          ],
+          "radius": "OUTER_CORNER_R"
+        },
+        "dimensions": {
+          "width": "BEZEL_W",
+          "height": "BEZEL_H"
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": "REAR_LID_T",
+        "operation": "new",
+        "name": "REAR_LID_P3",
+        "body_name": "REAR_LID_P3"
+      }
+    },
+    {
+      "command": "solid.fillet",
+      "params": {
+        "edges": [
+          {
+            "body": "REAR_LID_P3",
+            "point": [
+              0,
+              35,
+              -45
+            ]
+          }
+        ],
+        "radius": 0.8,
+        "name": "Soft_rear_rim_R08"
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -9,
+        "name": "FRONT_boss_1_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -47.3,
+            -33.3
+          ],
+          "p1": [
+            -38.7,
+            -24.7
+          ],
+          "radius": 2
+        },
+        "dimensions": {
+          "width": 8.6,
+          "height": 8.6
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 9,
+        "operation": "new",
+        "name": "FRONT_boss_1",
+        "body_name": "FRONT_boss_1"
+      }
+    },
+    {
+      "command": "solid.combine",
+      "params": {
+        "target": "HOUSING_P3",
+        "tools": [
+          "FRONT_boss_1"
+        ],
+        "operation": "join"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "UNVERIFIED_INSERT_PILOT_D",
+        "height": "INSERT_POCKET_DEPTH",
+        "base": [
+          "-1*SCREW_X",
+          "-1*SCREW_Y",
+          "-INSERT_POCKET_DEPTH"
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_M2_insert_pilot_1",
+        "body_name": "FRONT_M2_insert_pilot_1",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_CLEAR_D",
+        "height": 4.1,
+        "base": [
+          "-1*SCREW_X",
+          "-1*SCREW_Y",
+          -0.05
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_M2_clearance_1",
+        "body_name": "FRONT_M2_clearance_1",
+        "targets": [
+          "FRONT_BEZEL_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_HEAD_RECESS_D",
+        "height": 2.05,
+        "base": [
+          -43,
+          -29,
+          2
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_head_and_washer_recess_1",
+        "body_name": "FRONT_head_and_washer_recess_1",
+        "targets": [
+          "FRONT_BEZEL_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 4.8,
+        "height": 0.4,
+        "base": [
+          -43,
+          -29,
+          2
+        ],
+        "axis": "Z",
+        "operation": "new",
+        "name": "FRONT_screw_sealing_washer_1_REFERENCE",
+        "body_name": "FRONT_screw_sealing_washer_1_REFERENCE"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.4,
+        "height": 0.5,
+        "base": [
+          -43,
+          -29,
+          1.95
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_screw_sealing_washer_1_REFERENCE_bore",
+        "body_name": "FRONT_screw_sealing_washer_1_REFERENCE_bore",
+        "targets": [
+          "FRONT_screw_sealing_washer_1_REFERENCE"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -9,
+        "name": "FRONT_boss_2_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -47.3,
+            24.7
+          ],
+          "p1": [
+            -38.7,
+            33.3
+          ],
+          "radius": 2
+        },
+        "dimensions": {
+          "width": 8.6,
+          "height": 8.6
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 9,
+        "operation": "new",
+        "name": "FRONT_boss_2",
+        "body_name": "FRONT_boss_2"
+      }
+    },
+    {
+      "command": "solid.combine",
+      "params": {
+        "target": "HOUSING_P3",
+        "tools": [
+          "FRONT_boss_2"
+        ],
+        "operation": "join"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "UNVERIFIED_INSERT_PILOT_D",
+        "height": "INSERT_POCKET_DEPTH",
+        "base": [
+          "-1*SCREW_X",
+          "1*SCREW_Y",
+          "-INSERT_POCKET_DEPTH"
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_M2_insert_pilot_2",
+        "body_name": "FRONT_M2_insert_pilot_2",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_CLEAR_D",
+        "height": 4.1,
+        "base": [
+          "-1*SCREW_X",
+          "1*SCREW_Y",
+          -0.05
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_M2_clearance_2",
+        "body_name": "FRONT_M2_clearance_2",
+        "targets": [
+          "FRONT_BEZEL_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_HEAD_RECESS_D",
+        "height": 2.05,
+        "base": [
+          -43,
+          29,
+          2
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_head_and_washer_recess_2",
+        "body_name": "FRONT_head_and_washer_recess_2",
+        "targets": [
+          "FRONT_BEZEL_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 4.8,
+        "height": 0.4,
+        "base": [
+          -43,
+          29,
+          2
+        ],
+        "axis": "Z",
+        "operation": "new",
+        "name": "FRONT_screw_sealing_washer_2_REFERENCE",
+        "body_name": "FRONT_screw_sealing_washer_2_REFERENCE"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.4,
+        "height": 0.5,
+        "base": [
+          -43,
+          29,
+          1.95
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_screw_sealing_washer_2_REFERENCE_bore",
+        "body_name": "FRONT_screw_sealing_washer_2_REFERENCE_bore",
+        "targets": [
+          "FRONT_screw_sealing_washer_2_REFERENCE"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -9,
+        "name": "FRONT_boss_3_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            38.7,
+            -33.3
+          ],
+          "p1": [
+            47.3,
+            -24.7
+          ],
+          "radius": 2
+        },
+        "dimensions": {
+          "width": 8.6,
+          "height": 8.6
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 9,
+        "operation": "new",
+        "name": "FRONT_boss_3",
+        "body_name": "FRONT_boss_3"
+      }
+    },
+    {
+      "command": "solid.combine",
+      "params": {
+        "target": "HOUSING_P3",
+        "tools": [
+          "FRONT_boss_3"
+        ],
+        "operation": "join"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "UNVERIFIED_INSERT_PILOT_D",
+        "height": "INSERT_POCKET_DEPTH",
+        "base": [
+          "1*SCREW_X",
+          "-1*SCREW_Y",
+          "-INSERT_POCKET_DEPTH"
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_M2_insert_pilot_3",
+        "body_name": "FRONT_M2_insert_pilot_3",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_CLEAR_D",
+        "height": 4.1,
+        "base": [
+          "1*SCREW_X",
+          "-1*SCREW_Y",
+          -0.05
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_M2_clearance_3",
+        "body_name": "FRONT_M2_clearance_3",
+        "targets": [
+          "FRONT_BEZEL_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_HEAD_RECESS_D",
+        "height": 2.05,
+        "base": [
+          43,
+          -29,
+          2
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_head_and_washer_recess_3",
+        "body_name": "FRONT_head_and_washer_recess_3",
+        "targets": [
+          "FRONT_BEZEL_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 4.8,
+        "height": 0.4,
+        "base": [
+          43,
+          -29,
+          2
+        ],
+        "axis": "Z",
+        "operation": "new",
+        "name": "FRONT_screw_sealing_washer_3_REFERENCE",
+        "body_name": "FRONT_screw_sealing_washer_3_REFERENCE"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.4,
+        "height": 0.5,
+        "base": [
+          43,
+          -29,
+          1.95
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_screw_sealing_washer_3_REFERENCE_bore",
+        "body_name": "FRONT_screw_sealing_washer_3_REFERENCE_bore",
+        "targets": [
+          "FRONT_screw_sealing_washer_3_REFERENCE"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -9,
+        "name": "FRONT_boss_4_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            38.7,
+            24.7
+          ],
+          "p1": [
+            47.3,
+            33.3
+          ],
+          "radius": 2
+        },
+        "dimensions": {
+          "width": 8.6,
+          "height": 8.6
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 9,
+        "operation": "new",
+        "name": "FRONT_boss_4",
+        "body_name": "FRONT_boss_4"
+      }
+    },
+    {
+      "command": "solid.combine",
+      "params": {
+        "target": "HOUSING_P3",
+        "tools": [
+          "FRONT_boss_4"
+        ],
+        "operation": "join"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "UNVERIFIED_INSERT_PILOT_D",
+        "height": "INSERT_POCKET_DEPTH",
+        "base": [
+          "1*SCREW_X",
+          "1*SCREW_Y",
+          "-INSERT_POCKET_DEPTH"
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_M2_insert_pilot_4",
+        "body_name": "FRONT_M2_insert_pilot_4",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_CLEAR_D",
+        "height": 4.1,
+        "base": [
+          "1*SCREW_X",
+          "1*SCREW_Y",
+          -0.05
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_M2_clearance_4",
+        "body_name": "FRONT_M2_clearance_4",
+        "targets": [
+          "FRONT_BEZEL_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_HEAD_RECESS_D",
+        "height": 2.05,
+        "base": [
+          43,
+          29,
+          2
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_head_and_washer_recess_4",
+        "body_name": "FRONT_head_and_washer_recess_4",
+        "targets": [
+          "FRONT_BEZEL_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 4.8,
+        "height": 0.4,
+        "base": [
+          43,
+          29,
+          2
+        ],
+        "axis": "Z",
+        "operation": "new",
+        "name": "FRONT_screw_sealing_washer_4_REFERENCE",
+        "body_name": "FRONT_screw_sealing_washer_4_REFERENCE"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.4,
+        "height": 0.5,
+        "base": [
+          43,
+          29,
+          1.95
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "FRONT_screw_sealing_washer_4_REFERENCE_bore",
+        "body_name": "FRONT_screw_sealing_washer_4_REFERENCE_bore",
+        "targets": [
+          "FRONT_screw_sealing_washer_4_REFERENCE"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -42,
+        "name": "REAR_boss_1_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -47.3,
+            -33.3
+          ],
+          "p1": [
+            -38.7,
+            -24.7
+          ],
+          "radius": 2
+        },
+        "dimensions": {
+          "width": 8.6,
+          "height": 8.6
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 9,
+        "operation": "new",
+        "name": "REAR_boss_1",
+        "body_name": "REAR_boss_1"
+      }
+    },
+    {
+      "command": "solid.combine",
+      "params": {
+        "target": "HOUSING_P3",
+        "tools": [
+          "REAR_boss_1"
+        ],
+        "operation": "join"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "UNVERIFIED_INSERT_PILOT_D",
+        "height": "INSERT_POCKET_DEPTH",
+        "base": [
+          "-1*SCREW_X",
+          "-1*SCREW_Y",
+          "-USABLE_REAR_DEPTH"
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_M2_insert_pilot_1",
+        "body_name": "REAR_M2_insert_pilot_1",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_CLEAR_D",
+        "height": 3.1,
+        "base": [
+          "-1*SCREW_X",
+          "-1*SCREW_Y",
+          -45.05
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_M2_clearance_1",
+        "body_name": "REAR_M2_clearance_1",
+        "targets": [
+          "REAR_LID_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_HEAD_RECESS_D",
+        "height": 2.05,
+        "base": [
+          -43,
+          -29,
+          -45.05
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_head_and_washer_recess_1",
+        "body_name": "REAR_head_and_washer_recess_1",
+        "targets": [
+          "REAR_LID_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 4.8,
+        "height": 0.4,
+        "base": [
+          -43,
+          -29,
+          -43.4
+        ],
+        "axis": "Z",
+        "operation": "new",
+        "name": "REAR_screw_sealing_washer_1_REFERENCE",
+        "body_name": "REAR_screw_sealing_washer_1_REFERENCE"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.4,
+        "height": 0.5,
+        "base": [
+          -43,
+          -29,
+          -43.449999999999996
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_screw_sealing_washer_1_REFERENCE_bore",
+        "body_name": "REAR_screw_sealing_washer_1_REFERENCE_bore",
+        "targets": [
+          "REAR_screw_sealing_washer_1_REFERENCE"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -42,
+        "name": "REAR_boss_2_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -47.3,
+            24.7
+          ],
+          "p1": [
+            -38.7,
+            33.3
+          ],
+          "radius": 2
+        },
+        "dimensions": {
+          "width": 8.6,
+          "height": 8.6
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 9,
+        "operation": "new",
+        "name": "REAR_boss_2",
+        "body_name": "REAR_boss_2"
+      }
+    },
+    {
+      "command": "solid.combine",
+      "params": {
+        "target": "HOUSING_P3",
+        "tools": [
+          "REAR_boss_2"
+        ],
+        "operation": "join"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "UNVERIFIED_INSERT_PILOT_D",
+        "height": "INSERT_POCKET_DEPTH",
+        "base": [
+          "-1*SCREW_X",
+          "1*SCREW_Y",
+          "-USABLE_REAR_DEPTH"
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_M2_insert_pilot_2",
+        "body_name": "REAR_M2_insert_pilot_2",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_CLEAR_D",
+        "height": 3.1,
+        "base": [
+          "-1*SCREW_X",
+          "1*SCREW_Y",
+          -45.05
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_M2_clearance_2",
+        "body_name": "REAR_M2_clearance_2",
+        "targets": [
+          "REAR_LID_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_HEAD_RECESS_D",
+        "height": 2.05,
+        "base": [
+          -43,
+          29,
+          -45.05
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_head_and_washer_recess_2",
+        "body_name": "REAR_head_and_washer_recess_2",
+        "targets": [
+          "REAR_LID_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 4.8,
+        "height": 0.4,
+        "base": [
+          -43,
+          29,
+          -43.4
+        ],
+        "axis": "Z",
+        "operation": "new",
+        "name": "REAR_screw_sealing_washer_2_REFERENCE",
+        "body_name": "REAR_screw_sealing_washer_2_REFERENCE"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.4,
+        "height": 0.5,
+        "base": [
+          -43,
+          29,
+          -43.449999999999996
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_screw_sealing_washer_2_REFERENCE_bore",
+        "body_name": "REAR_screw_sealing_washer_2_REFERENCE_bore",
+        "targets": [
+          "REAR_screw_sealing_washer_2_REFERENCE"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -42,
+        "name": "REAR_boss_3_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            38.7,
+            -33.3
+          ],
+          "p1": [
+            47.3,
+            -24.7
+          ],
+          "radius": 2
+        },
+        "dimensions": {
+          "width": 8.6,
+          "height": 8.6
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 9,
+        "operation": "new",
+        "name": "REAR_boss_3",
+        "body_name": "REAR_boss_3"
+      }
+    },
+    {
+      "command": "solid.combine",
+      "params": {
+        "target": "HOUSING_P3",
+        "tools": [
+          "REAR_boss_3"
+        ],
+        "operation": "join"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "UNVERIFIED_INSERT_PILOT_D",
+        "height": "INSERT_POCKET_DEPTH",
+        "base": [
+          "1*SCREW_X",
+          "-1*SCREW_Y",
+          "-USABLE_REAR_DEPTH"
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_M2_insert_pilot_3",
+        "body_name": "REAR_M2_insert_pilot_3",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_CLEAR_D",
+        "height": 3.1,
+        "base": [
+          "1*SCREW_X",
+          "-1*SCREW_Y",
+          -45.05
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_M2_clearance_3",
+        "body_name": "REAR_M2_clearance_3",
+        "targets": [
+          "REAR_LID_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_HEAD_RECESS_D",
+        "height": 2.05,
+        "base": [
+          43,
+          -29,
+          -45.05
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_head_and_washer_recess_3",
+        "body_name": "REAR_head_and_washer_recess_3",
+        "targets": [
+          "REAR_LID_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 4.8,
+        "height": 0.4,
+        "base": [
+          43,
+          -29,
+          -43.4
+        ],
+        "axis": "Z",
+        "operation": "new",
+        "name": "REAR_screw_sealing_washer_3_REFERENCE",
+        "body_name": "REAR_screw_sealing_washer_3_REFERENCE"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.4,
+        "height": 0.5,
+        "base": [
+          43,
+          -29,
+          -43.449999999999996
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_screw_sealing_washer_3_REFERENCE_bore",
+        "body_name": "REAR_screw_sealing_washer_3_REFERENCE_bore",
+        "targets": [
+          "REAR_screw_sealing_washer_3_REFERENCE"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -42,
+        "name": "REAR_boss_4_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            38.7,
+            24.7
+          ],
+          "p1": [
+            47.3,
+            33.3
+          ],
+          "radius": 2
+        },
+        "dimensions": {
+          "width": 8.6,
+          "height": 8.6
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 9,
+        "operation": "new",
+        "name": "REAR_boss_4",
+        "body_name": "REAR_boss_4"
+      }
+    },
+    {
+      "command": "solid.combine",
+      "params": {
+        "target": "HOUSING_P3",
+        "tools": [
+          "REAR_boss_4"
+        ],
+        "operation": "join"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "UNVERIFIED_INSERT_PILOT_D",
+        "height": "INSERT_POCKET_DEPTH",
+        "base": [
+          "1*SCREW_X",
+          "1*SCREW_Y",
+          "-USABLE_REAR_DEPTH"
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_M2_insert_pilot_4",
+        "body_name": "REAR_M2_insert_pilot_4",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_CLEAR_D",
+        "height": 3.1,
+        "base": [
+          "1*SCREW_X",
+          "1*SCREW_Y",
+          -45.05
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_M2_clearance_4",
+        "body_name": "REAR_M2_clearance_4",
+        "targets": [
+          "REAR_LID_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "SCREW_HEAD_RECESS_D",
+        "height": 2.05,
+        "base": [
+          43,
+          29,
+          -45.05
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_head_and_washer_recess_4",
+        "body_name": "REAR_head_and_washer_recess_4",
+        "targets": [
+          "REAR_LID_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 4.8,
+        "height": 0.4,
+        "base": [
+          43,
+          29,
+          -43.4
+        ],
+        "axis": "Z",
+        "operation": "new",
+        "name": "REAR_screw_sealing_washer_4_REFERENCE",
+        "body_name": "REAR_screw_sealing_washer_4_REFERENCE"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.4,
+        "height": 0.5,
+        "base": [
+          43,
+          29,
+          -43.449999999999996
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "REAR_screw_sealing_washer_4_REFERENCE_bore",
+        "body_name": "REAR_screw_sealing_washer_4_REFERENCE_bore",
+        "targets": [
+          "REAR_screw_sealing_washer_4_REFERENCE"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -1.15,
+        "name": "FRONT_silicone_gasket_groove_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -48.8,
+            -33.8
+          ],
+          "p1": [
+            48.8,
+            33.8
+          ],
+          "radius": 4.8
+        },
+        "dimensions": {
+          "width": 97.6,
+          "height": 67.6
+        }
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -46.7,
+            -31.7
+          ],
+          "p1": [
+            46.7,
+            31.7
+          ],
+          "radius": 2.7
+        },
+        "dimensions": {
+          "width": 93.4,
+          "height": 63.4
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": "JOINT_GROOVE_DEPTH",
+        "operation": "cut",
+        "name": "FRONT_silicone_gasket_groove",
+        "body_name": "FRONT_silicone_gasket_groove",
+        "profiles": [
+          {
+            "point": [
+              47.75,
+              0
+            ]
+          }
+        ],
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -1.15,
+        "name": "FRONT_compressed_silicone_gasket_REFERENCE_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -48.597826,
+            -33.597826
+          ],
+          "p1": [
+            48.597826,
+            33.597826
+          ],
+          "radius": 4.597826
+        },
+        "dimensions": {
+          "width": 97.195652,
+          "height": 67.195652
+        }
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -46.902174,
+            -31.902174
+          ],
+          "p1": [
+            46.902174,
+            31.902174
+          ],
+          "radius": 2.902174
+        },
+        "dimensions": {
+          "width": 93.804348,
+          "height": 63.804348
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 1.15,
+        "operation": "new",
+        "name": "FRONT_compressed_silicone_gasket_REFERENCE",
+        "body_name": "FRONT_compressed_silicone_gasket_REFERENCE",
+        "profiles": [
+          {
+            "point": [
+              47.75,
+              0
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -42,
+        "name": "REAR_silicone_gasket_groove_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -48.8,
+            -33.8
+          ],
+          "p1": [
+            48.8,
+            33.8
+          ],
+          "radius": 4.8
+        },
+        "dimensions": {
+          "width": 97.6,
+          "height": 67.6
+        }
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -46.7,
+            -31.7
+          ],
+          "p1": [
+            46.7,
+            31.7
+          ],
+          "radius": 2.7
+        },
+        "dimensions": {
+          "width": 93.4,
+          "height": 63.4
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": "JOINT_GROOVE_DEPTH",
+        "operation": "cut",
+        "name": "REAR_silicone_gasket_groove",
+        "body_name": "REAR_silicone_gasket_groove",
+        "profiles": [
+          {
+            "point": [
+              47.75,
+              0
+            ]
+          }
+        ],
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -42,
+        "name": "REAR_compressed_silicone_gasket_REFERENCE_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -48.597826,
+            -33.597826
+          ],
+          "p1": [
+            48.597826,
+            33.597826
+          ],
+          "radius": 4.597826
+        },
+        "dimensions": {
+          "width": 97.195652,
+          "height": 67.195652
+        }
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -46.902174,
+            -31.902174
+          ],
+          "p1": [
+            46.902174,
+            31.902174
+          ],
+          "radius": 2.902174
+        },
+        "dimensions": {
+          "width": 93.804348,
+          "height": 63.804348
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 1.15,
+        "operation": "new",
+        "name": "REAR_compressed_silicone_gasket_REFERENCE",
+        "body_name": "REAR_compressed_silicone_gasket_REFERENCE",
+        "profiles": [
+          {
+            "point": [
+              47.75,
+              0
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -32,
+        "name": "Mount_reinforced_root_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -15.0,
+            -42.0
+          ],
+          "p1": [
+            15.0,
+            -33.0
+          ],
+          "radius": 2.5
+        },
+        "dimensions": {
+          "width": 30,
+          "height": 9
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 22,
+        "operation": "new",
+        "name": "Mount_reinforced_root",
+        "body_name": "Mount_reinforced_root"
+      }
+    },
+    {
+      "command": "solid.combine",
+      "params": {
+        "target": "HOUSING_P3",
+        "tools": [
+          "Mount_reinforced_root"
+        ],
+        "operation": "join"
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": "UNVERIFIED_FORK_T",
+        "width": 10.5,
+        "height": 14,
+        "center": [
+          "-0.5*(UNVERIFIED_FORK_T+UNVERIFIED_FORK_GAP)",
+          "-44.25",
+          "(-28)+(14)/2"
+        ],
+        "operation": "new",
+        "name": "Action_camera_finger_1",
+        "body_name": "Action_camera_finger_1"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 14,
+        "height": "UNVERIFIED_FORK_T",
+        "base": [
+          "(-0.5*(UNVERIFIED_FORK_T+UNVERIFIED_FORK_GAP))-UNVERIFIED_FORK_T/2",
+          -49.5,
+          -21
+        ],
+        "axis": "X",
+        "operation": "join",
+        "name": "Action_camera_finger_1_round_tip",
+        "body_name": "Action_camera_finger_1_round_tip",
+        "targets": [
+          "Action_camera_finger_1"
+        ]
+      }
+    },
+    {
+      "command": "solid.combine",
+      "params": {
+        "target": "HOUSING_P3",
+        "tools": [
+          "Action_camera_finger_1"
+        ],
+        "operation": "join"
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": "UNVERIFIED_FORK_T",
+        "width": 10.5,
+        "height": 14,
+        "center": [
+          "0.5*(UNVERIFIED_FORK_T+UNVERIFIED_FORK_GAP)",
+          "-44.25",
+          "(-28)+(14)/2"
+        ],
+        "operation": "new",
+        "name": "Action_camera_finger_2",
+        "body_name": "Action_camera_finger_2"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 14,
+        "height": "UNVERIFIED_FORK_T",
+        "base": [
+          "(0.5*(UNVERIFIED_FORK_T+UNVERIFIED_FORK_GAP))-UNVERIFIED_FORK_T/2",
+          -49.5,
+          -21
+        ],
+        "axis": "X",
+        "operation": "join",
+        "name": "Action_camera_finger_2_round_tip",
+        "body_name": "Action_camera_finger_2_round_tip",
+        "targets": [
+          "Action_camera_finger_2"
+        ]
+      }
+    },
+    {
+      "command": "solid.combine",
+      "params": {
+        "target": "HOUSING_P3",
+        "tools": [
+          "Action_camera_finger_2"
+        ],
+        "operation": "join"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "MOUNT_BORE_D",
+        "height": 25,
+        "base": [
+          -12.5,
+          -49.5,
+          -21
+        ],
+        "axis": "X",
+        "operation": "cut",
+        "name": "Pivot_M5_through_bore",
+        "body_name": "Pivot_M5_through_bore",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 3,
+        "width": 10.5,
+        "height": 14,
+        "center": [
+          "-6.3",
+          "-54.75",
+          "(-28)+(14)/2"
+        ],
+        "operation": "new",
+        "name": "REFERENCE_MATING_FINGER_1_UNVERIFIED",
+        "body_name": "REFERENCE_MATING_FINGER_1_UNVERIFIED"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 14,
+        "height": 3,
+        "base": [
+          -7.8,
+          -49.5,
+          -21
+        ],
+        "axis": "X",
+        "operation": "join",
+        "name": "REFERENCE_MATING_FINGER_1_UNVERIFIED_tip",
+        "body_name": "REFERENCE_MATING_FINGER_1_UNVERIFIED_tip",
+        "targets": [
+          "REFERENCE_MATING_FINGER_1_UNVERIFIED"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 5.3,
+        "height": 3.1,
+        "base": [
+          -7.85,
+          -49.5,
+          -21
+        ],
+        "axis": "X",
+        "operation": "cut",
+        "name": "REFERENCE_MATING_FINGER_1_UNVERIFIED_bore",
+        "body_name": "REFERENCE_MATING_FINGER_1_UNVERIFIED_bore",
+        "targets": [
+          "REFERENCE_MATING_FINGER_1_UNVERIFIED"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 3,
+        "width": 10.5,
+        "height": 14,
+        "center": [
+          "0",
+          "-54.75",
+          "(-28)+(14)/2"
+        ],
+        "operation": "new",
+        "name": "REFERENCE_MATING_FINGER_2_UNVERIFIED",
+        "body_name": "REFERENCE_MATING_FINGER_2_UNVERIFIED"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 14,
+        "height": 3,
+        "base": [
+          -1.5,
+          -49.5,
+          -21
+        ],
+        "axis": "X",
+        "operation": "join",
+        "name": "REFERENCE_MATING_FINGER_2_UNVERIFIED_tip",
+        "body_name": "REFERENCE_MATING_FINGER_2_UNVERIFIED_tip",
+        "targets": [
+          "REFERENCE_MATING_FINGER_2_UNVERIFIED"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 5.3,
+        "height": 3.1,
+        "base": [
+          -1.55,
+          -49.5,
+          -21
+        ],
+        "axis": "X",
+        "operation": "cut",
+        "name": "REFERENCE_MATING_FINGER_2_UNVERIFIED_bore",
+        "body_name": "REFERENCE_MATING_FINGER_2_UNVERIFIED_bore",
+        "targets": [
+          "REFERENCE_MATING_FINGER_2_UNVERIFIED"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 3,
+        "width": 10.5,
+        "height": 14,
+        "center": [
+          "6.3",
+          "-54.75",
+          "(-28)+(14)/2"
+        ],
+        "operation": "new",
+        "name": "REFERENCE_MATING_FINGER_3_UNVERIFIED",
+        "body_name": "REFERENCE_MATING_FINGER_3_UNVERIFIED"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 14,
+        "height": 3,
+        "base": [
+          4.8,
+          -49.5,
+          -21
+        ],
+        "axis": "X",
+        "operation": "join",
+        "name": "REFERENCE_MATING_FINGER_3_UNVERIFIED_tip",
+        "body_name": "REFERENCE_MATING_FINGER_3_UNVERIFIED_tip",
+        "targets": [
+          "REFERENCE_MATING_FINGER_3_UNVERIFIED"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 5.3,
+        "height": 3.1,
+        "base": [
+          4.75,
+          -49.5,
+          -21
+        ],
+        "axis": "X",
+        "operation": "cut",
+        "name": "REFERENCE_MATING_FINGER_3_UNVERIFIED_bore",
+        "body_name": "REFERENCE_MATING_FINGER_3_UNVERIFIED_bore",
+        "targets": [
+          "REFERENCE_MATING_FINGER_3_UNVERIFIED"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 24,
+        "height": 6,
+        "base": [
+          16,
+          -49.5,
+          -21
+        ],
+        "axis": "X",
+        "operation": "new",
+        "name": "M5_THUMB_KNOB_CLEARANCE_REFERENCE",
+        "body_name": "M5_THUMB_KNOB_CLEARANCE_REFERENCE"
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 5.5,
+        "width": 31,
+        "height": 5,
+        "center": [
+          "-44.25",
+          "0",
+          "(-13)+(5)/2"
+        ],
+        "operation": "join",
+        "name": "Display_rear_support_ledge_-1",
+        "body_name": "Display_rear_support_ledge_-1",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 5.8,
+        "width": 7,
+        "height": 1.6,
+        "center": [
+          "-45.5",
+          "-10",
+          "(-8)+(1.6)/2"
+        ],
+        "operation": "join",
+        "name": "Display_tab_standoff_-1_-10",
+        "body_name": "Display_tab_standoff_-1_-10",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "UNVERIFIED_INSERT_PILOT_D",
+        "height": 4.4,
+        "base": [
+          -45.5,
+          -10,
+          -10.8
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "Display_tab_insert_-1_-10",
+        "body_name": "Display_tab_insert_-1_-10",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 7,
+        "width": 5,
+        "height": 2,
+        "center": [
+          "-43.5",
+          "-10",
+          "(-6.4)+(2)/2"
+        ],
+        "operation": "new",
+        "name": "PCB_edge_retaining_tab_-1_-10_UNVERIFIED",
+        "body_name": "PCB_edge_retaining_tab_-1_-10_UNVERIFIED"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.4,
+        "height": 2.1,
+        "base": [
+          -45.5,
+          -10,
+          -6.45
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "PCB_edge_retaining_tab_-1_-10_UNVERIFIED_screw",
+        "body_name": "PCB_edge_retaining_tab_-1_-10_UNVERIFIED_screw",
+        "targets": [
+          "PCB_edge_retaining_tab_-1_-10_UNVERIFIED"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 5.8,
+        "width": 7,
+        "height": 1.6,
+        "center": [
+          "-45.5",
+          "10",
+          "(-8)+(1.6)/2"
+        ],
+        "operation": "join",
+        "name": "Display_tab_standoff_-1_10",
+        "body_name": "Display_tab_standoff_-1_10",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "UNVERIFIED_INSERT_PILOT_D",
+        "height": 4.4,
+        "base": [
+          -45.5,
+          10,
+          -10.8
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "Display_tab_insert_-1_10",
+        "body_name": "Display_tab_insert_-1_10",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 7,
+        "width": 5,
+        "height": 2,
+        "center": [
+          "-43.5",
+          "10",
+          "(-6.4)+(2)/2"
+        ],
+        "operation": "new",
+        "name": "PCB_edge_retaining_tab_-1_10_UNVERIFIED",
+        "body_name": "PCB_edge_retaining_tab_-1_10_UNVERIFIED"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.4,
+        "height": 2.1,
+        "base": [
+          -45.5,
+          10,
+          -6.45
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "PCB_edge_retaining_tab_-1_10_UNVERIFIED_screw",
+        "body_name": "PCB_edge_retaining_tab_-1_10_UNVERIFIED_screw",
+        "targets": [
+          "PCB_edge_retaining_tab_-1_10_UNVERIFIED"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 5.5,
+        "width": 31,
+        "height": 5,
+        "center": [
+          "44.25",
+          "0",
+          "(-13)+(5)/2"
+        ],
+        "operation": "join",
+        "name": "Display_rear_support_ledge_1",
+        "body_name": "Display_rear_support_ledge_1",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 5.8,
+        "width": 7,
+        "height": 1.6,
+        "center": [
+          "45.5",
+          "-10",
+          "(-8)+(1.6)/2"
+        ],
+        "operation": "join",
+        "name": "Display_tab_standoff_1_-10",
+        "body_name": "Display_tab_standoff_1_-10",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "UNVERIFIED_INSERT_PILOT_D",
+        "height": 4.4,
+        "base": [
+          45.5,
+          -10,
+          -10.8
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "Display_tab_insert_1_-10",
+        "body_name": "Display_tab_insert_1_-10",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 7,
+        "width": 5,
+        "height": 2,
+        "center": [
+          "43.5",
+          "-10",
+          "(-6.4)+(2)/2"
+        ],
+        "operation": "new",
+        "name": "PCB_edge_retaining_tab_1_-10_UNVERIFIED",
+        "body_name": "PCB_edge_retaining_tab_1_-10_UNVERIFIED"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.4,
+        "height": 2.1,
+        "base": [
+          45.5,
+          -10,
+          -6.45
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "PCB_edge_retaining_tab_1_-10_UNVERIFIED_screw",
+        "body_name": "PCB_edge_retaining_tab_1_-10_UNVERIFIED_screw",
+        "targets": [
+          "PCB_edge_retaining_tab_1_-10_UNVERIFIED"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 5.8,
+        "width": 7,
+        "height": 1.6,
+        "center": [
+          "45.5",
+          "10",
+          "(-8)+(1.6)/2"
+        ],
+        "operation": "join",
+        "name": "Display_tab_standoff_1_10",
+        "body_name": "Display_tab_standoff_1_10",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "UNVERIFIED_INSERT_PILOT_D",
+        "height": 4.4,
+        "base": [
+          45.5,
+          10,
+          -10.8
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "Display_tab_insert_1_10",
+        "body_name": "Display_tab_insert_1_10",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 7,
+        "width": 5,
+        "height": 2,
+        "center": [
+          "43.5",
+          "10",
+          "(-6.4)+(2)/2"
+        ],
+        "operation": "new",
+        "name": "PCB_edge_retaining_tab_1_10_UNVERIFIED",
+        "body_name": "PCB_edge_retaining_tab_1_10_UNVERIFIED"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.4,
+        "height": 2.1,
+        "base": [
+          45.5,
+          10,
+          -6.45
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "PCB_edge_retaining_tab_1_10_UNVERIFIED_screw",
+        "body_name": "PCB_edge_retaining_tab_1_10_UNVERIFIED_screw",
+        "targets": [
+          "PCB_edge_retaining_tab_1_10_UNVERIFIED"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -24,
+        "name": "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -41.5,
+            -31.5
+          ],
+          "p1": [
+            -12.5,
+            -5.5
+          ],
+          "radius": 2
+        },
+        "dimensions": {
+          "width": 29,
+          "height": 26
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 1.6,
+        "operation": "new",
+        "name": "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z",
+        "body_name": "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": -24.05,
+        "name": "ESP32_underside_component_relief_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -34.0,
+            -27.0
+          ],
+          "p1": [
+            -20.0,
+            -11.0
+          ],
+          "radius": 1
+        },
+        "dimensions": {
+          "width": 14,
+          "height": 16
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 1.7,
+        "operation": "cut",
+        "name": "ESP32_underside_component_relief",
+        "body_name": "ESP32_underside_component_relief",
+        "targets": [
+          "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 8,
+        "height": 6,
+        "base": [
+          -43,
+          -28.5,
+          -30
+        ],
+        "axis": "Z",
+        "operation": "join",
+        "name": "Cradle_body_anchor_-43",
+        "body_name": "Cradle_body_anchor_-43",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "UNVERIFIED_INSERT_PILOT_D",
+        "height": 4.4,
+        "base": [
+          -43,
+          -28.5,
+          -28.4
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "Cradle_anchor_M2_insert_-43",
+        "body_name": "Cradle_anchor_M2_insert_-43",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 6.5,
+        "height": 1.6,
+        "base": [
+          -43,
+          -28.5,
+          -24
+        ],
+        "axis": "Z",
+        "operation": "join",
+        "name": "Cradle_fixing_ear_-43",
+        "body_name": "Cradle_fixing_ear_-43",
+        "targets": [
+          "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.4,
+        "height": 1.7,
+        "base": [
+          -43,
+          -28.5,
+          -24.05
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "Cradle_M2_clearance_-43",
+        "body_name": "Cradle_M2_clearance_-43",
+        "targets": [
+          "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 8,
+        "height": 6,
+        "base": [
+          -11,
+          -28.5,
+          -30
+        ],
+        "axis": "Z",
+        "operation": "join",
+        "name": "Cradle_body_anchor_-11",
+        "body_name": "Cradle_body_anchor_-11",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": "UNVERIFIED_INSERT_PILOT_D",
+        "height": 4.4,
+        "base": [
+          -11,
+          -28.5,
+          -28.4
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "Cradle_anchor_M2_insert_-11",
+        "body_name": "Cradle_anchor_M2_insert_-11",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 6.5,
+        "height": 1.6,
+        "base": [
+          -11,
+          -28.5,
+          -24
+        ],
+        "axis": "Z",
+        "operation": "join",
+        "name": "Cradle_fixing_ear_-11",
+        "body_name": "Cradle_fixing_ear_-11",
+        "targets": [
+          "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.4,
+        "height": 1.7,
+        "base": [
+          -11,
+          -28.5,
+          -24.05
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "Cradle_M2_clearance_-11",
+        "body_name": "Cradle_M2_clearance_-11",
+        "targets": [
+          "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 2,
+        "width": 3.5,
+        "height": 2.2,
+        "center": [
+          "-37.3",
+          "-8.5",
+          "(-22.4)+(2.2)/2"
+        ],
+        "operation": "join",
+        "name": "ESP32_guide_lip_-37.3_-8.5",
+        "body_name": "ESP32_guide_lip_-37.3_-8.5",
+        "targets": [
+          "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 2,
+        "width": 3.5,
+        "height": 2.2,
+        "center": [
+          "-37.3",
+          "-29.5",
+          "(-22.4)+(2.2)/2"
+        ],
+        "operation": "join",
+        "name": "ESP32_guide_lip_-37.3_-29.5",
+        "body_name": "ESP32_guide_lip_-37.3_-29.5",
+        "targets": [
+          "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 2,
+        "width": 3.5,
+        "height": 2.2,
+        "center": [
+          "-16.7",
+          "-8.5",
+          "(-22.4)+(2.2)/2"
+        ],
+        "operation": "join",
+        "name": "ESP32_guide_lip_-16.7_-8.5",
+        "body_name": "ESP32_guide_lip_-16.7_-8.5",
+        "targets": [
+          "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 2,
+        "width": 3.5,
+        "height": 2.2,
+        "center": [
+          "-16.7",
+          "-29.5",
+          "(-22.4)+(2.2)/2"
+        ],
+        "operation": "join",
+        "name": "ESP32_guide_lip_-16.7_-29.5",
+        "body_name": "ESP32_guide_lip_-16.7_-29.5",
+        "targets": [
+          "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": "ESP32_BOARD_W+2*ESP32_SLIDE_CLEAR",
+        "width": "ESP32_BOARD_L+2*ESP32_SLIDE_CLEAR",
+        "height": 1.4,
+        "center": [
+          "-27",
+          "-19",
+          "(-21.9)+(1.4)/2"
+        ],
+        "operation": "cut",
+        "name": "ESP32_board_slide_groove",
+        "body_name": "ESP32_board_slide_groove",
+        "targets": [
+          "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 3,
+        "width": 1,
+        "height": 1.1,
+        "center": [
+          "-34",
+          "-6.65",
+          "(-22.4)+(1.1)/2"
+        ],
+        "operation": "join",
+        "name": "ESP32_end_stop_-34_-6.65",
+        "body_name": "ESP32_end_stop_-34_-6.65",
+        "targets": [
+          "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 3,
+        "width": 1,
+        "height": 1.1,
+        "center": [
+          "-20",
+          "-6.65",
+          "(-22.4)+(1.1)/2"
+        ],
+        "operation": "join",
+        "name": "ESP32_end_stop_-20_-6.65",
+        "body_name": "ESP32_end_stop_-20_-6.65",
+        "targets": [
+          "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 3,
+        "width": 0.5,
+        "height": 1.1,
+        "center": [
+          "-34",
+          "-31.15",
+          "(-22.4)+(1.1)/2"
+        ],
+        "operation": "join",
+        "name": "ESP32_end_stop_-34_-31.15",
+        "body_name": "ESP32_end_stop_-34_-31.15",
+        "targets": [
+          "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 3,
+        "width": 0.5,
+        "height": 1.1,
+        "center": [
+          "-20",
+          "-31.15",
+          "(-22.4)+(1.1)/2"
+        ],
+        "operation": "join",
+        "name": "ESP32_end_stop_-20_-31.15",
+        "body_name": "ESP32_end_stop_-20_-31.15",
+        "targets": [
+          "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": "ESP32_BOARD_W",
+        "width": "ESP32_BOARD_L",
+        "height": "UNVERIFIED_ESP32_T",
+        "center": [
+          "-27",
+          "-19",
+          "(-21.8)+(UNVERIFIED_ESP32_T)/2"
+        ],
+        "operation": "new",
+        "name": "ESP32_18x23p5_PCB_REFERENCE",
+        "body_name": "ESP32_18x23p5_PCB_REFERENCE"
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 9,
+        "width": 7,
+        "height": 3.2,
+        "center": [
+          "-27",
+          "-30",
+          "(-20.8)+(3.2)/2"
+        ],
+        "operation": "new",
+        "name": "ESP32_USB_C_SOCKET_UNVERIFIED",
+        "body_name": "ESP32_USB_C_SOCKET_UNVERIFIED"
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XZ",
+        "offset": -36,
+        "name": "USB_C_through_opening_UNVERIFIED_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -32.25,
+            17.099999999999998
+          ],
+          "p1": [
+            -21.75,
+            21.3
+          ],
+          "radius": 1.4
+        },
+        "dimensions": {
+          "width": "UNVERIFIED_PORT_W",
+          "height": "UNVERIFIED_PORT_H"
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 5,
+        "operation": "cut",
+        "name": "USB_C_through_opening_UNVERIFIED",
+        "body_name": "USB_C_through_opening_UNVERIFIED",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XZ",
+        "offset": -35.1,
+        "name": "USB_C_plug_overmould_access_UNVERIFIED_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -34.0,
+            15.2
+          ],
+          "p1": [
+            -20.0,
+            23.2
+          ],
+          "radius": 2
+        },
+        "dimensions": {
+          "width": 14,
+          "height": 8
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 2.7,
+        "operation": "cut",
+        "name": "USB_C_plug_overmould_access_UNVERIFIED",
+        "body_name": "USB_C_plug_overmould_access_UNVERIFIED",
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XZ",
+        "offset": -35.05,
+        "name": "USB_C_cap_gasket_groove_UNVERIFIED_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -36.5,
+            12.7
+          ],
+          "p1": [
+            -17.5,
+            25.7
+          ],
+          "radius": 3
+        },
+        "dimensions": {
+          "width": 19,
+          "height": 13
+        }
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -35.0,
+            14.2
+          ],
+          "p1": [
+            -19.0,
+            24.2
+          ],
+          "radius": 1.5
+        },
+        "dimensions": {
+          "width": 16,
+          "height": 10
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 0.85,
+        "operation": "cut",
+        "name": "USB_C_cap_gasket_groove_UNVERIFIED",
+        "body_name": "USB_C_cap_gasket_groove_UNVERIFIED",
+        "profiles": [
+          {
+            "point": [
+              -18.25,
+              19.2
+            ]
+          }
+        ],
+        "targets": [
+          "HOUSING_P3"
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 18,
+        "width": 30,
+        "height": 12,
+        "center": [
+          "-27",
+          "-50",
+          "(-25.2)+(12)/2"
+        ],
+        "operation": "new",
+        "name": "USB_CABLE_CLEARANCE_REFERENCE_18x30x12",
+        "body_name": "USB_CABLE_CLEARANCE_REFERENCE_18x30x12"
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": 3.5,
+        "name": "Instagram_camera_outline_engraving_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -26.1,
+            -32.0
+          ],
+          "p1": [
+            -20.9,
+            -26.799999999999997
+          ],
+          "radius": 1.35
+        },
+        "dimensions": {
+          "width": 5.2,
+          "height": 5.2
+        }
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -25.55,
+            -31.45
+          ],
+          "p1": [
+            -21.45,
+            -27.349999999999998
+          ],
+          "radius": 0.8
+        },
+        "dimensions": {
+          "width": 4.1,
+          "height": 4.1
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 0.55,
+        "operation": "cut",
+        "name": "Instagram_camera_outline_engraving",
+        "body_name": "Instagram_camera_outline_engraving",
+        "profiles": [
+          {
+            "point": [
+              -21.174999999999997,
+              -29.4
+            ]
+          }
+        ],
+        "targets": [
+          "FRONT_BEZEL_P3"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": 3.5,
+        "name": "Instagram_lens_profile"
+      }
+    },
+    {
+      "command": "sketch.circle.center",
+      "params": {
+        "center": [
+          -23.5,
+          -29.4
+        ],
+        "radius": 1.25
+      }
+    },
+    {
+      "command": "sketch.circle.center",
+      "params": {
+        "center": [
+          -23.5,
+          -29.4
+        ],
+        "radius": 0.7
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 0.55,
+        "profiles": [
+          {
+            "point": [
+              -22.5,
+              -29.4
+            ]
+          }
+        ],
+        "operation": "cut",
+        "targets": [
+          "FRONT_BEZEL_P3"
+        ],
+        "name": "Instagram_lens_engraving"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 0.65,
+        "height": 0.55,
+        "base": [
+          -22.05,
+          -27.95,
+          3.5
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "Instagram_viewfinder_dot",
+        "body_name": "Instagram_viewfinder_dot",
+        "targets": [
+          "FRONT_BEZEL_P3"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": "BEZEL_T-BRAND_CUT_DEPTH",
+        "name": "rpmloop_lettering_profile"
+      }
+    },
+    {
+      "command": "sketch.text",
+      "params": {
+        "text": "rpmloop",
+        "at": [
+          -17,
+          -31
+        ],
+        "height": 4,
+        "font": "C:/Windows/Fonts/arialbd.ttf"
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": "BRAND_CUT_DEPTH+EPS",
+        "operation": "cut",
+        "targets": [
+          "FRONT_BEZEL_P3"
+        ],
+        "name": "rpmloop_recessed_wordmark"
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": {
+          "origin": [
+            0,
+            0,
+            0
+          ],
+          "x_dir": [
+            -1,
+            0,
+            0
+          ],
+          "y_dir": [
+            0,
+            0,
+            1
+          ]
+        },
+        "offset": 34.4,
+        "name": "TOP_RPMLOOP_profile"
+      }
+    },
+    {
+      "command": "sketch.text",
+      "params": {
+        "text": "RPMLOOP",
+        "at": [
+          -35,
+          -26
+        ],
+        "height": 10,
+        "font": "C:/Windows/Fonts/arialbd.ttf"
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 0.65,
+        "operation": "cut",
+        "targets": [
+          "HOUSING_P3"
+        ],
+        "name": "TOP_RPMLOOP_large_engraving"
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": "PCB_L",
+        "width": "PCB_W",
+        "height": "UNVERIFIED_PCB_T",
+        "center": [
+          "0",
+          "0",
+          "(UNVERIFIED_PCB_BACK_Z)+(UNVERIFIED_PCB_T)/2"
+        ],
+        "operation": "new",
+        "name": "DISPLAY_PCB_85x48_T_UNVERIFIED",
+        "body_name": "DISPLAY_PCB_85x48_T_UNVERIFIED"
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": "UNVERIFIED_GLASS_W",
+        "width": "UNVERIFIED_GLASS_H",
+        "height": "UNVERIFIED_GLASS_T",
+        "center": [
+          "0",
+          "0",
+          "(UNVERIFIED_GLASS_BACK_Z)+(UNVERIFIED_GLASS_T)/2"
+        ],
+        "operation": "new",
+        "name": "LCD_GLASS_UNVERIFIED",
+        "body_name": "LCD_GLASS_UNVERIFIED"
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": "UNVERIFIED_ACTIVE_W",
+        "width": "UNVERIFIED_ACTIVE_H",
+        "height": 0.1,
+        "center": [
+          "0",
+          "0",
+          "(-1)+(0.1)/2"
+        ],
+        "operation": "new",
+        "name": "ACTIVE_LCD_UNVERIFIED",
+        "body_name": "ACTIVE_LCD_UNVERIFIED"
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": 3,
+        "name": "DISPLAY_WINDOW_UNVERIFIED_TOUCH_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -33.0,
+            -24.0
+          ],
+          "p1": [
+            33.0,
+            24.0
+          ],
+          "radius": 1.7
+        },
+        "dimensions": {
+          "width": 66,
+          "height": 48
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 0.8,
+        "operation": "new",
+        "name": "DISPLAY_WINDOW_UNVERIFIED_TOUCH",
+        "body_name": "DISPLAY_WINDOW_UNVERIFIED_TOUCH"
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": 2.4,
+        "name": "DISPLAY_GASKET_UNVERIFIED_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -32.8,
+            -23.8
+          ],
+          "p1": [
+            32.8,
+            23.8
+          ],
+          "radius": 1.5
+        },
+        "dimensions": {
+          "width": 65.6,
+          "height": 47.6
+        }
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -31.3,
+            -22.3
+          ],
+          "p1": [
+            31.3,
+            22.3
+          ],
+          "radius": 0.6
+        },
+        "dimensions": {
+          "width": 62.6,
+          "height": 44.6
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 0.6,
+        "operation": "new",
+        "name": "DISPLAY_GASKET_UNVERIFIED",
+        "body_name": "DISPLAY_GASKET_UNVERIFIED",
+        "profiles": [
+          {
+            "point": [
+              32.05,
+              0
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 52,
+        "width": 36,
+        "height": 12,
+        "center": [
+          "-16",
+          "0",
+          "(-40)+(12)/2"
+        ],
+        "operation": "new",
+        "name": "RESERVE_BATTERY_NOT_SELECTED",
+        "body_name": "RESERVE_BATTERY_NOT_SELECTED"
+      }
+    },
+    {
+      "command": "solid.box",
+      "params": {
+        "length": 30,
+        "width": 30,
+        "height": 14,
+        "center": [
+          "28",
+          "0",
+          "(-40)+(14)/2"
+        ],
+        "operation": "new",
+        "name": "RESERVE_M8M_ASSEMBLY_UNVERIFIED",
+        "body_name": "RESERVE_M8M_ASSEMBLY_UNVERIFIED"
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": 10,
+        "name": "MASTER_JOINT_GASKET_UNCOMPRESSED_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -48.4,
+            -33.4
+          ],
+          "p1": [
+            48.4,
+            33.4
+          ],
+          "radius": 4.4
+        },
+        "dimensions": {
+          "width": 96.8,
+          "height": 66.8
+        }
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -47.1,
+            -32.1
+          ],
+          "p1": [
+            47.1,
+            32.1
+          ],
+          "radius": 3.1
+        },
+        "dimensions": {
+          "width": 94.2,
+          "height": 64.2
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 1.5,
+        "operation": "new",
+        "name": "MASTER_JOINT_GASKET_UNCOMPRESSED",
+        "body_name": "MASTER_JOINT_GASKET_UNCOMPRESSED",
+        "profiles": [
+          {
+            "point": [
+              47.75,
+              0
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": 13,
+        "name": "MASTER_DISPLAY_GASKET_UNVERIFIED_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -32.7,
+            -23.7
+          ],
+          "p1": [
+            32.7,
+            23.7
+          ],
+          "radius": 1.4
+        },
+        "dimensions": {
+          "width": 65.4,
+          "height": 47.4
+        }
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -31.4,
+            -22.4
+          ],
+          "p1": [
+            31.4,
+            22.4
+          ],
+          "radius": 0.1
+        },
+        "dimensions": {
+          "width": 62.8,
+          "height": 44.8
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 0.8,
+        "operation": "new",
+        "name": "MASTER_DISPLAY_GASKET_UNVERIFIED",
+        "body_name": "MASTER_DISPLAY_GASKET_UNVERIFIED",
+        "profiles": [
+          {
+            "point": [
+              32.05,
+              0
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": 16,
+        "name": "MASTER_USB_GASKET_UNVERIFIED_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -9.25,
+            -6.25
+          ],
+          "p1": [
+            9.25,
+            6.25
+          ],
+          "radius": 2.75
+        },
+        "dimensions": {
+          "width": 18.5,
+          "height": 12.5
+        }
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -8.25,
+            -5.25
+          ],
+          "p1": [
+            8.25,
+            5.25
+          ],
+          "radius": 1.75
+        },
+        "dimensions": {
+          "width": 16.5,
+          "height": 10.5
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 1,
+        "operation": "new",
+        "name": "MASTER_USB_GASKET_UNVERIFIED",
+        "body_name": "MASTER_USB_GASKET_UNVERIFIED",
+        "profiles": [
+          {
+            "point": [
+              8.75,
+              0
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 4.8,
+        "height": 0.5,
+        "base": [
+          0,
+          0,
+          19
+        ],
+        "axis": "Z",
+        "operation": "new",
+        "name": "MASTER_M2_SEALING_WASHER",
+        "body_name": "MASTER_M2_SEALING_WASHER"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.4,
+        "height": 0.6,
+        "base": [
+          0,
+          0,
+          18.95
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "Master_washer_hole",
+        "body_name": "Master_washer_hole",
+        "targets": [
+          "MASTER_M2_SEALING_WASHER"
+        ]
+      }
+    },
+    {
+      "command": "sketch.create",
+      "params": {
+        "plane": "XY",
+        "offset": 22,
+        "name": "M2_INSERT_PILOT_COUPON_profile"
+      }
+    },
+    {
+      "command": "sketch.draw.dimensioned",
+      "params": {
+        "command": "sketch.rectangle.rounded",
+        "params": {
+          "p0": [
+            -19.0,
+            -7.0
+          ],
+          "p1": [
+            19.0,
+            7.0
+          ],
+          "radius": 2
+        },
+        "dimensions": {
+          "width": 38,
+          "height": 14
+        }
+      }
+    },
+    {
+      "command": "sketch.finish",
+      "params": {}
+    },
+    {
+      "command": "solid.extrude",
+      "params": {
+        "distance": 7,
+        "operation": "new",
+        "name": "M2_INSERT_PILOT_COUPON",
+        "body_name": "M2_INSERT_PILOT_COUPON"
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.6,
+        "height": 4.45,
+        "base": [
+          -12,
+          0,
+          24.6
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "Coupon_pilot_2.6",
+        "body_name": "Coupon_pilot_2.6",
+        "targets": [
+          "M2_INSERT_PILOT_COUPON"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 2.8,
+        "height": 4.45,
+        "base": [
+          -4,
+          0,
+          24.6
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "Coupon_pilot_2.8",
+        "body_name": "Coupon_pilot_2.8",
+        "targets": [
+          "M2_INSERT_PILOT_COUPON"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 3.0,
+        "height": 4.45,
+        "base": [
+          4,
+          0,
+          24.6
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "Coupon_pilot_3.0",
+        "body_name": "Coupon_pilot_3.0",
+        "targets": [
+          "M2_INSERT_PILOT_COUPON"
+        ]
+      }
+    },
+    {
+      "command": "solid.cylinder",
+      "params": {
+        "diameter": 3.2,
+        "height": 4.45,
+        "base": [
+          12,
+          0,
+          24.6
+        ],
+        "axis": "Z",
+        "operation": "cut",
+        "name": "Coupon_pilot_3.2",
+        "body_name": "Coupon_pilot_3.2",
+        "targets": [
+          "M2_INSERT_PILOT_COUPON"
+        ]
+      }
+    },
+    {
+      "command": "appearance.assign",
+      "params": {
+        "bodies": [
+          "HOUSING_P3"
+        ],
+        "color": "#24272b",
+        "opacity": 1
+      }
+    },
+    {
+      "command": "appearance.assign",
+      "params": {
+        "bodies": [
+          "FRONT_BEZEL_P3"
+        ],
+        "color": "#24272b",
+        "opacity": 1
+      }
+    },
+    {
+      "command": "appearance.assign",
+      "params": {
+        "bodies": [
+          "REAR_LID_P3"
+        ],
+        "color": "#24272b",
+        "opacity": 1
+      }
+    },
+    {
+      "command": "appearance.assign",
+      "params": {
+        "bodies": [
+          "ESP32_REMOVABLE_GUIDED_CRADLE_UNVERIFIED_Z"
+        ],
+        "color": "#657381",
+        "opacity": 1
+      }
+    },
+    {
+      "command": "appearance.assign",
+      "params": {
+        "bodies": [
+          "DISPLAY_PCB_85x48_T_UNVERIFIED"
+        ],
+        "color": "#238c68",
+        "opacity": 1
+      }
+    },
+    {
+      "command": "appearance.assign",
+      "params": {
+        "bodies": [
+          "LCD_GLASS_UNVERIFIED"
+        ],
+        "color": "#252b34",
+        "opacity": 1
+      }
+    },
+    {
+      "command": "appearance.assign",
+      "params": {
+        "bodies": [
+          "ACTIVE_LCD_UNVERIFIED"
+        ],
+        "color": "#338fc8",
+        "opacity": 1
+      }
+    },
+    {
+      "command": "appearance.assign",
+      "params": {
+        "bodies": [
+          "DISPLAY_WINDOW_UNVERIFIED_TOUCH"
+        ],
+        "color": "#aed9e5",
+        "opacity": 0.18
+      }
+    },
+    {
+      "command": "appearance.assign",
+      "params": {
+        "bodies": [
+          "DISPLAY_GASKET_UNVERIFIED"
+        ],
+        "color": "#494949",
+        "opacity": 1
+      }
+    },
+    {
+      "command": "appearance.assign",
+      "params": {
+        "bodies": [
+          "RESERVE_BATTERY_NOT_SELECTED"
+        ],
+        "color": "#e59948",
+        "opacity": 0.6
+      }
+    },
+    {
+      "command": "appearance.assign",
+      "params": {
+        "bodies": [
+          "RESERVE_M8M_ASSEMBLY_UNVERIFIED"
+        ],
+        "color": "#3db5ce",
+        "opacity": 0.6
+      }
+    },
+    {
+      "command": "appearance.assign",
+      "params": {
+        "bodies": [
+          "ESP32_18x23p5_PCB_REFERENCE"
+        ],
+        "color": "#287eac",
+        "opacity": 1
+      }
+    },
+    {
+      "command": "appearance.assign",
+      "params": {
+        "bodies": [
+          "ESP32_USB_C_SOCKET_UNVERIFIED"
+        ],
+        "color": "#bfc5cf",
+        "opacity": 1
+      }
+    },
+    {
+      "command": "browser.visibility",
+      "params": {
+        "folder": "sketches",
+        "visible": false
+      }
+    },
+    {
+      "command": "browser.visibility",
+      "params": {
+        "folder": "origin",
+        "visible": false
+      }
+    },
+    {
+      "command": "browser.visibility",
+      "params": {
+        "items": [
+          "USB_CABLE_CLEARANCE_REFERENCE_18x30x12",
+          "MASTER_JOINT_GASKET_UNCOMPRESSED",
+          "MASTER_DISPLAY_GASKET_UNVERIFIED",
+          "MASTER_USB_GASKET_UNVERIFIED",
+          "MASTER_M2_SEALING_WASHER",
+          "M2_INSERT_PILOT_COUPON",
+          "REFERENCE_MATING_FINGER_1_UNVERIFIED",
+          "REFERENCE_MATING_FINGER_2_UNVERIFIED",
+          "REFERENCE_MATING_FINGER_3_UNVERIFIED",
+          "M5_THUMB_KNOB_CLEARANCE_REFERENCE"
+        ],
+        "visible": false
+      }
+    },
+    {
+      "command": "document.metadata.set",
+      "params": {
+        "values": {
+          "project": "Royal Enfield Hunter 350 / rpmloop",
+          "revision": "P3-RELOCATED-USB-TWO-FINGER-FIT-VALIDATION-REQUIRED",
+          "description": "P3: USB-C relocated to bottom -Y at X=-27 beside TWO-finger camera mount. ESP32 cradle rotated and resized to clear enclosure walls. Widened 2.1 x 1.15 mm joint seal glands and uncompressed gasket masters included. 49 mm case depth excluding mount. Fit prototype only; actual active display/insert/USB interfaces remain unverified.",
+          "org.codex.p2": {
+            "release_allowed": false,
+            "insert_OD_and_pilot": "UNVERIFIED; default pilot 2.8 / reference OD 3.2",
+            "esp32_outline_source": "User-supplied dimensioned image: 18 x 23.5 mm, R1 corners",
+            "usb_strategy": "Bottom -Y X=-27 direct ESP32 USB-C; 18 x 30 x 12 mm cable envelope has 3 mm lateral clearance from mount root. Actual plug and Z stack unverified",
+            "mount_interface": "TWO 3 mm fingers, one 3.3 mm gap; 5.3 mm M5 bore. No outer nut collar; use mating accessory nut receiver. M5 knob on +X side, opposite USB. Hidden nominal mating gauges and 24 mm knob allowance UNVERIFIED",
+            "joint_seal": "1.5 mm uncompressed flat silicone ring, 1.3 mm wide, in 2.1 x 1.15 mm gland; nominal cross-section fill 80.75 percent; not IP rated",
+            "pcb_support": "Rear edge ledges and replaceable retaining tabs; actual display component/edge keepout unverified",
+            "remaining": "Protective USB cap, plug strain relief, insert selection, display drawing, screw length/head selection, component clearance, RF, touch, heat, rain and vibration tests",
+            "native_param_note": "Sketch widths/heights and extrusion depths use parameters; layout offsets and some clearances are source-configurable fixed sketch placements. Rebuild from source for wholesale layout changes."
+          }
+        }
+      }
+    }
+  ]
+}

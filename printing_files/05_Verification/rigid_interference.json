@@ -1,0 +1,76 @@
+{
+  "boolean_ms": 56733.648,
+  "budget_exceeded": false,
+  "budget_s": 55.0,
+  "checked": 18,
+  "count": 0,
+  "interferences": [],
+  "ms": 27396.595,
+  "pairs_candidate": 24,
+  "pairs_cleared": 1,
+  "pairs_intersected": 23,
+  "pairs_not_checked": 0,
+  "skipped_pairs": 0,
+  "slowest": [
+    {
+      "a": "HOUSING_P3",
+      "b": "ESP32_18x23p5_PCB_REFERENCE",
+      "boolean_ms": 19888.553,
+      "ms": 21070.755,
+      "tessellate_ms": 0.0
+    },
+    {
+      "a": "FRONT_BEZEL_P3",
+      "b": "DISPLAY_WINDOW_UNVERIFIED_TOUCH",
+      "boolean_ms": 3846.375,
+      "ms": 7049.898,
+      "tessellate_ms": 0.0
+    },
+    {
+      "a": "HOUSING_P3",
+      "b": "RESERVE_BATTERY_NOT_SELECTED",
+      "boolean_ms": 3574.718,
+      "ms": 6985.124,
+      "tessellate_ms": 0.0
+    },
+    {
+      "a": "HOUSING_P3",
+      "b": "RESERVE_M8M_ASSEMBLY_UNVERIFIED",
+      "boolean_ms": 3361.662,
+      "ms": 6755.579,
+      "tessellate_ms": 0.0
+    },
+    {
+      "a": "HOUSING_P3",
+      "b": "FRONT_BEZEL_P3",
+      "boolean_ms": 1633.326,
+      "ms": 6183.434,
+      "tessellate_ms": 2599.89
+    },
+    {
+      "a": "HOUSING_P3",
+      "b": "DISPLAY_PCB_85x48_T_UNVERIFIED",
+      "boolean_ms": 3690.354,
+      "ms": 5318.407,
+      "tessellate_ms": 0.0
+    },
+    {
+      "a": "HOUSING_P3",
+      "b": "ESP32_USB_C_SOCKET_UNVERIFIED",
+      "boolean_ms": 3706.041,
+      "ms": 5300.717,
+      "tessellate_ms": 0.0
+    },
+    {
+      "a": "HOUSING_P3",
+      "b": "LCD_GLASS_UNVERIFIED",
+      "boolean_ms": 3496.815,
+      "ms": 5124.951,
+      "tessellate_ms": 0.0
+    }
+  ],
+  "tessellate_ms": 6997.819,
+  "threads": 4,
+  "truncated": false,
+  "unchecked": []
+}

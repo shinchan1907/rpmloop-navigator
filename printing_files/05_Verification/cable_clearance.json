@@ -1,0 +1,27 @@
+{
+  "boolean_ms": 2082.731,
+  "budget_exceeded": false,
+  "budget_s": 25.0,
+  "checked": 3,
+  "count": 0,
+  "interferences": [],
+  "ms": 3743.608,
+  "pairs_candidate": 2,
+  "pairs_cleared": 1,
+  "pairs_intersected": 1,
+  "pairs_not_checked": 0,
+  "skipped_pairs": 0,
+  "slowest": [
+    {
+      "a": "HOUSING_P3",
+      "b": "USB_CABLE_CLEARANCE_REFERENCE_18x30x12",
+      "boolean_ms": 2082.731,
+      "ms": 3721.916,
+      "tessellate_ms": 0.0
+    }
+  ],
+  "tessellate_ms": 0.0,
+  "threads": 1,
+  "truncated": false,
+  "unchecked": []
+}
