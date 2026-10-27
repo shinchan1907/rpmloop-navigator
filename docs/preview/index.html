@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore an interactive RPMLOOP navigation display concept in its enclosure. Real map data, simulated ride, 240 × 320 pixels.">
+  <title>RPMLOOP — Display lab</title>
+  <link rel="stylesheet" href="preview.css">
+  <script defer src="data/jaipur.js"></script><script defer src="preview.js"></script>
+</head>
+<body>
+  <header class="masthead">
+    <a class="wordmark" href="https://github.com/shinchan1907/rpmloop-navigator" aria-label="RPMLOOP repository home"><span class="logo">↱</span> RPMLOOP<span class="brand-sub">NAVIGATOR</span></a>
+    <nav aria-label="Main"><span class="nav-current">Display lab <i></i></span><a href="https://github.com/shinchan1907/rpmloop-navigator">View repository ↗</a></nav>
+  </header>
+  <main>
+    <section class="intro">
+      <p class="eyebrow"><span></span> INTERACTIVE HARDWARE CONCEPT / P3</p>
+      <h1>The road ahead.<br><em>At a glance.</em></h1>
+      <p class="lede">A small screen. A clear way forward. Explore a map-first navigation concept inside the RPMLOOP enclosure.</p>
+      <div class="route-card">
+        <div class="card-top"><span>THE DEMO RIDE</span><span class="pill">JAIPUR, IN</span></div>
+        <div class="route-stops"><span class="stops-line"></span><p><small>DEPARTURE</small>Albert Hall Museum</p><p><small>DESTINATION</small>Hawa Mahal</p></div>
+        <div class="route-meta"><span><strong id="total-distance">1.95</strong> km</span><span>8 maneuvers</span><span>OSM street data</span></div>
+      </div>
+      <p class="concept-note"><span>i</span> Browser mockup, not running firmware. Maps and maneuvers use bundled real-world data; movement, speed and connection indicators are simulated.</p>
+    </section>
+    <section class="lab" aria-label="Interactive device preview">
+      <div class="lab-toolbar"><span class="eyebrow">01 / THE DISPLAY</span><div class="segmented" aria-label="Display theme"><button id="day" aria-pressed="true">☀ Day</button><button id="night" aria-pressed="false">☾ Night</button></div></div>
+      <div class="stage" id="stage">
+        <span class="stage-label">P3 ENCLOSURE CONCEPT</span>
+        <div class="device-wrap" id="device-wrap">
+          <div class="device" id="device">
+            <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
+            <span class="top-engraving">RPMLOOP</span>
+            <div class="screen" id="screen">
+              <canvas id="lcd" width="320" height="240" tabindex="0" aria-label="Navigation map. Drag to pan, scroll to zoom. Arrow keys pan, plus and minus zoom, R recenters."></canvas>
+              <div class="screen-controls"><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-out" aria-label="Zoom out">−</button><button id="recenter" aria-label="Recenter map" title="Follow rider">⌖</button></div>
+            </div>
+            <div class="case-brand"><span>◎ rpmloop</span><i></i></div>
+          </div>
+          <div class="mount"><span></span><span></span><i></i></div>
+        </div>
+        <div class="stage-caption"><span class="status-dot"></span><span id="resolution">320 × 240 · LANDSCAPE</span><span class="divider">/</span><span>2.8″ SPI TFT</span></div>
+      </div>
+      <div class="ride-controls">
+        <div class="playback"><button id="play" class="primary" aria-label="Play ride">▶ <span>Play ride</span></button><button id="reset" class="icon-button" aria-label="Reset ride" title="Reset ride">↺</button><select id="speed" aria-label="Playback speed"><option value="1">1× speed</option><option value="4" selected>4× speed</option><option value="12">12× speed</option></select><span id="ride-state">SIMULATION PAUSED</span></div>
+        <label class="timeline-label" for="progress">Ride progress <output id="progress-label">0%</output></label><input id="progress" type="range" min="0" max="1000" value="500" aria-label="Ride progress">
+        <div class="timeline-ends"><span>Albert Hall</span><span>Hawa Mahal</span></div>
+      </div>
+      <div class="view-controls"><label>Orientation <select id="orientation"><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select></label><label>Preview scale <select id="scale"><option value="1">1× native pixels</option><option value="1.35" selected>1.35× enlarged</option><option value="1.6">1.6× enlarged</option></select></label><button id="export">Export LCD PNG ↗</button></div>
+    </section>
+    <section class="details">
+      <div class="detail-heading"><p class="eyebrow">02 / TURN BY TURN</p><h2>Every turn, in view.</h2><p>Click a maneuver to move the rider there. On the display, drag to explore and use + / − to change map detail.</p><p class="map-credit">Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · <a href="https://opendatacommons.org/licenses/odbl/1-0/">ODbL</a><br>Route: OSRM · Bundled Jaipur demo, no live traffic.</p></div>
+      <ol id="turns" aria-label="Route maneuvers"></ol>
+    </section>
+    <section class="specs" aria-label="Concept specifications"><div><small>DISPLAY</small><strong>240 × 320</strong><span>76,800 pixels, rotated for landscape</span></div><div><small>RENDERING CONCEPT</small><strong>Tile + route overlay</strong><span>Simple map palette, legible guidance</span></div><div><small>PLANNED ARCHITECTURE</small><strong>Phone → ESP32-S3</strong><span>Phone prepares route & map assets</span></div></section>
+  </main>
+  <footer><span>RPMLOOP <b> / </b> OPEN HARDWARE. BUILT TO EVOLVE.</span><span>UI exploration · No firmware or performance claims.</span></footer>
+  <a id="lcd-download" hidden download="rpmloop-lcd.png">LCD image</a>
+  <p id="announcement" role="status" class="sr-only"></p>
+</body>
+</html>

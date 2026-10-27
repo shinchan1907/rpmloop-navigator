@@ -10,11 +10,11 @@ An open-source motorcycle navigation dashboard, designed around the Royal Enfiel
 [![Hardware: P3 prototype](https://img.shields.io/badge/Hardware-P3%20prototype-222831?style=flat-square)](printing_files/README.md)
 [![Platform: ESP32-S3](https://img.shields.io/badge/Platform-ESP32--S3-222831?style=flat-square)](#the-platform)
 
-![RPMLOOP Navigator — studio design visualization](docs/images/hero.png)
+![RPMLOOP Navigator — map UI design visualization](docs/images/hero-map-day.png)
 
 **A compact instrument for the ride ahead.**
 
-[Printing files](printing_files/) · [Build and material guide](printing_files/README.md) · [Hardware status](#build-status) · [Contributing](CONTRIBUTING.md)
+[Try the display](https://shinchan1907.github.io/rpmloop-navigator/preview/) · [Printing files](printing_files/) · [Build and material guide](printing_files/README.md) · [Hardware status](#build-status) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
@@ -23,6 +23,37 @@ RPMLOOP Navigator brings a dedicated navigation display to the motorcycle cockpi
 This repository starts with the **P3 enclosure design, individual manufacturing files and engineering notes**. Firmware and the iPhone companion app will be added here as development continues.
 
 > **Design visualization, not a product photograph.** The renders use the current CAD enclosure with illustrative screen UI, window and hardware. They do not demonstrate running firmware, proven touch compatibility, waterproofing or road qualification.
+
+## Try the interactive display
+
+[![Open the RPMLOOP display lab — day and night map concepts](docs/images/display-preview.gif)](https://shinchan1907.github.io/rpmloop-navigator/preview/)
+
+**[Open the interactive HTML mockup →](https://shinchan1907.github.io/rpmloop-navigator/preview/)**
+
+Pan with your mouse, zoom in/out, play or scrub a demo ride, jump between turns,
+switch day/night, and try both **320 × 240 landscape** and **240 × 320 portrait**.
+The case surrounds a native-resolution LCD canvas; its on-screen size can be enlarged.
+The linked card opens the interactive page because GitHub READMEs cannot execute HTML/JavaScript widgets.
+
+The demo uses real OpenStreetMap streets and a bundled road-following OSRM route
+from Albert Hall Museum to Hawa Mahal in Jaipur. It works offline after downloading
+the [`docs/preview/`](docs/preview/) folder: open `index.html` in Chrome or another browser.
+There are no API keys or external tile requests. See the [controls and map credits](docs/preview/README.md).
+
+**UI concept only.** A companion app could prepare a route and map tiles for the
+ESP32-S3 to display with a route overlay and touch controls. This mockup explores
+that appearance; it does not implement firmware, the companion app, GPS, BLE or
+live routing, or demonstrate achievable frame rate, memory use or tile transfer speed.
+The portrait case presentation does not revise the existing landscape enclosure CAD.
+
+<p align="center">
+  <img src="docs/images/hero-map-night.png" width="49%" alt="Existing enclosure rendered with a night map and highlighted route">
+  <img src="docs/images/display-map-detail.png" width="49%" alt="Close view of the native-resolution map concept with a right turn onto Tripolia Bazaar">
+</p>
+
+Map data and map-derived artwork: © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright),
+[ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/). Route snapshot: OSRM driving profile;
+Jaipur demo retrieved 27 October 2026. This is illustrative routing, not motorcycle guidance or live traffic.
 
 ## Designed around the ride
 
@@ -58,7 +89,7 @@ Power currently targets the motorcycle's existing USB-C outlet. A future battery
 
 ## Built in separate, inspectable parts
 
-![Exploded enclosure design visualization](docs/images/exploded.png)
+![Exploded enclosure with map UI design visualization](docs/images/exploded-map.png)
 
 The enclosure separates the outer housing, front bezel, rear lid, ESP32 cradle and display retaining tabs. Seal templates are supplied separately from the rigid print parts. The reinforced two-finger mounting interface is integral to the housing.
 
@@ -123,7 +154,24 @@ CAD and manufacturing changes should preserve the separation between verified me
 
 ## Rendering
 
-The studio images were rendered from the CAD-derived print meshes in Blender. The screen content is an illustrative UI concept. The [render script](rendering/render_product.py) and [studio scene](rendering/rpmloop_studio.blend) are included for reproducibility; render-only lighting and edge highlights do not modify the manufacturing files.
+The studio images were rendered from the CAD-derived print meshes in Blender. The
+new map renders use native **320 × 240** day/night PNG exports from the HTML mockup.
+The [map render script](rendering/render_map_product.py), [map studio scene](rendering/rpmloop_map_studio.blend)
+and [LCD textures](rendering/map-ui/) are included for reproducibility. The screen
+uses a 4:3 render-only active-area illustration; physical active LCD dimensions
+remain subject to module measurement. Rendering does not modify manufacturing files.
+
+The [original render script](rendering/render_product.py), [original studio scene](rendering/rpmloop_studio.blend)
+and all original images remain available.
+
+<details>
+<summary>Original arrow-UI renders (preserved design history)</summary>
+
+![Original enclosure hero with arrow-only screen concept](docs/images/hero.png)
+![Original exploded enclosure visualization](docs/images/exploded.png)
+![Original USB-C port and mounting detail](docs/images/port-and-mount.png)
+
+</details>
 
 ## License
 
