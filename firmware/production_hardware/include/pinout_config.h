@@ -78,10 +78,17 @@
 // corners, then update these four numbers. If taps land mirrored/swapped
 // versus the picture, the fix is the touch offset_rotation in
 // lgfx_config.h, not these ranges.
-#define TOUCH_CAL_X_MIN  200
-#define TOUCH_CAL_X_MAX  3900
-#define TOUCH_CAL_Y_MIN  200
-#define TOUCH_CAL_Y_MAX  3900
+// Calibrated 2026-10-29 from the bench unit (Codex stylus measurements,
+// 5 points). The touch film is axis-swapped vs the screen: raw X tracks
+// screen Y, raw Y tracks screen X — handled by offset_rotation = 4 in
+// lgfx_config.h, so these ranges stay in the driver's own frame.
+// Raw X: ~491 @ screen y=15, ~3559 @ y=224 -> 270..3780 over y 0..239.
+// Raw Y: ~438 @ screen x=15, ~3488 @ x=304 -> 280..3650 over x 0..319.
+// Centre point validated: X error ~5 px, Y within ~14 px (tap slop).
+#define TOUCH_CAL_X_MIN  270
+#define TOUCH_CAL_X_MAX  3780
+#define TOUCH_CAL_Y_MIN  280
+#define TOUCH_CAL_Y_MAX  3650
 
 // ---- Onboard WS2812 status LED (original Waveshare Zero target only) ------
 // The BLE status LED code only matters on the Waveshare board that

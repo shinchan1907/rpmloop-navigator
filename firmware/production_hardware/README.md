@@ -38,18 +38,17 @@ encoder/buttons/joystick and no SD card in this product.
 | Picture shifted on some ST7789 batches | panel `offset_x`/`offset_y` (0 on this module — the knob if a batch shifts) |
 | Backlight LED pin wired straight to 3V3 | No BL GPIO/PWM — brightness = LVGL dim overlay |
 
-### Touch calibration ⚠️
+### Touch calibration
 
-`TOUCH_CAL_X_MIN/X_MAX/Y_MIN/Y_MAX` in `include/pinout_config.h` are
-**unverified presets** (200…3900, typical XPT2046 values) — they have NOT
-been measured on this module yet. Before trusting taps:
-
-1. Run LovyanGFX `calibrateTouch()` once on the real module (it shows
-   corner targets and returns 8 raw values), or log the raw ADC readings
-   at the four screen corners.
-2. Put the measured ranges into the four `TOUCH_CAL_*` defines and rebuild.
-3. If taps land swapped/mirrored versus the picture, adjust the touch
-   `offset_rotation` (0–7) in `include/lgfx_config.h` — not the ranges.
+`TOUCH_CAL_X_MIN/X_MAX/Y_MIN/Y_MAX` in `include/pinout_config.h` were
+**measured on the bench unit on 2026-10-29** (5-point stylus sampling):
+raw X 270…3780, raw Y 280…3650. The touch film is axis-swapped versus
+the screen (raw X tracks screen Y, raw Y tracks screen X), which is
+handled by touch `offset_rotation = 4` in `include/lgfx_config.h` — the
+ranges stay in the driver's own frame. If a different module reads
+differently, re-measure the raw values at the screen corners/centre and
+refit the two ranges; keep `offset_rotation` unless taps come out
+rotated or mirrored.
 
 ## 📌 Wiring Pinout (ESP32-S3 → 2.8" module)
 

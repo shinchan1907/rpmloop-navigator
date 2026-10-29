@@ -93,7 +93,7 @@ public:
         tcfg.x_max       = TOUCH_CAL_X_MAX;   // pinout_config.h calibration
         tcfg.y_min       = TOUCH_CAL_Y_MIN;   // note before trusting taps.
         tcfg.y_max       = TOUCH_CAL_Y_MAX;
-        tcfg.offset_rotation = 0;
+        tcfg.offset_rotation = 4;
         _touch.config(tcfg);
         _panel.setTouch(&_touch);
 
