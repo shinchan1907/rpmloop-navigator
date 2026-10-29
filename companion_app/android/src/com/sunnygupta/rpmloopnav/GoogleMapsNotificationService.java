@@ -110,14 +110,19 @@ public class GoogleMapsNotificationService extends NotificationListenerService {
             try {
                 double val = Double.parseDouble(mDist.group(1));
                 String unit = mDist.group(2).toLowerCase();
+                // IMPORTANT: longer/more-specific prefixes checked FIRST.
+                // "mi"/"miles" must come before "m"/"meters" — otherwise
+                // startsWith("m") matches "miles" and treats the value as
+                // metres instead of converting from imperial miles.
                 if (unit.startsWith("km")) {
                     distMeters = (int) (val * 1000);
-                } else if (unit.startsWith("m")) {
-                    distMeters = (int) val;
                 } else if (unit.startsWith("mi")) {
                     distMeters = (int) (val * 1609.34);
                 } else if (unit.startsWith("ft")) {
                     distMeters = (int) (val * 0.3048);
+                } else if (unit.startsWith("m")) {
+                    // "m", "meter", "meters" — intentionally last
+                    distMeters = (int) val;
                 }
             } catch (Exception ignored) {}
         }
