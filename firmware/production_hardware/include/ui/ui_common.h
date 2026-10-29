@@ -47,6 +47,10 @@
 extern "C" {
 #endif
 extern const lv_img_dsc_t bg_wallpaper;
+
+// Splash artwork (defined in src/ui/splash_art.c, generated asset,
+// owner-picked "Cluster Gauge" design, 2.4.1).
+extern const lv_img_dsc_t splash_art;
 #ifdef __cplusplus
 }
 #endif

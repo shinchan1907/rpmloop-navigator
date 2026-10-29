@@ -141,196 +141,83 @@ static lv_obj_t* make_chip(lv_obj_t* parent, int x, int y, int w) {
 }
 
 // ============================================================ BOOT ========
-// Splash v2 (2.4.0, "gazab"): the sky/lime wallpaper under a ~40% navy
-// dim; a lime ring pulses twice behind the logo while the "RPM" (white) +
-// "LOOP" (lime) letters pop in — transform_zoom 180->256 + fade + rise,
-// staggered; beneath, an RPM gauge sweeps 0->92 then settles to ~70 with
-// a red zone at the top end, a needle tracking the value and a % counter.
-// "RIDE CONNECTED" tagline fades in last. At ~3.4 s the manager advances:
-// Home if the phone is already linked, otherwise the Connect screen.
-static lv_obj_t *bootArc, *bootNeedle, *bootPct;
+// Splash v3 (2.4.1): full-screen generated cluster artwork (owner-picked
+// "Cluster Gauge" design) fading in from black, one light sweep across
+// the arc, then the "RPM LOOP" wordmark + "RIDE CONNECTED" tagline rise
+// into the artwork's clean dark lower third over a thin lime progress
+// line. No gauge, no % counter (owner rejected v2 as boring). At ~3.2 s
+// the manager advances: Home if the phone is already linked, otherwise
+// the Connect screen.
 static uint32_t  bootStartMs;
 
 static void anim_text_opa_cb(void* obj, int32_t v) {
     lv_obj_set_style_text_opa((lv_obj_t*)obj, (lv_opa_t)v, 0);
 }
-static void anim_zoom_cb(void* obj, int32_t v) {
-    lv_obj_set_style_transform_zoom((lv_obj_t*)obj, (uint16_t)v, 0);
+static void anim_opa_cb(void* obj, int32_t v) {
+    lv_obj_set_style_opa((lv_obj_t*)obj, (lv_opa_t)v, 0);
 }
-static void anim_ring_cb(void* obj, int32_t v) {
-    lv_coord_t sz = 70 + v;                       // 70 -> 170 px
-    lv_obj_set_size((lv_obj_t*)obj, sz, sz);
-    lv_obj_set_pos((lv_obj_t*)obj, 160 - sz / 2, 60 - sz / 2);
-    lv_obj_set_style_border_opa((lv_obj_t*)obj, (lv_opa_t)((100 - v) * 2), 0);
-}
-// One callback drives the whole gauge: arc value, needle angle, % text.
-// Needle geometry: a 4x42 bar whose pivot sits on the gauge centre
-// (160,154); transform_angle 0 = pointing up = value 50, so the angle in
-// 0.1-degree units is v*27 - 1350 (270-degree sweep over 0..100).
-static void anim_gauge_cb(void* obj, int32_t v) {
-    (void)obj;
-    lv_arc_set_value(bootArc, (int)v);
-    lv_obj_set_style_transform_angle(bootNeedle, (int16_t)(v * 27 - 1350), 0);
-    char buf[8];
-    snprintf(buf, sizeof(buf), "%d%%", (int)v);
-    lv_label_set_text(bootPct, buf);
+static void anim_bar_cb(void* obj, int32_t v) {
+    lv_obj_set_width((lv_obj_t*)obj, (lv_coord_t)v);
 }
 
 static void build_boot(void) {
     lv_obj_t* r = make_root(UI_BOOT, COL_BG_TOP);
-    ui_apply_wallpaper(r);
 
-    // Dim the wallpaper ~40% so the logo and gauge own the stage.
-    lv_obj_t* dim = lv_obj_create(r);
-    lv_obj_set_size(dim, TFT_LCD_W, TFT_LCD_H);
-    lv_obj_set_style_bg_color(dim, lv_color_hex(0x000000), 0);
-    lv_obj_set_style_bg_opa(dim, LV_OPA_40, 0);
-    lv_obj_set_style_border_width(dim, 0, 0);
-    lv_obj_set_style_radius(dim, 0, 0);
-    lv_obj_set_style_pad_all(dim, 0, 0);
-    lv_obj_clear_flag(dim, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_clear_flag(dim, LV_OBJ_FLAG_CLICKABLE);
+    // ---- full-screen splash artwork, fading in from black ----
+    lv_obj_t* art = lv_img_create(r);
+    lv_img_set_src(art, &splash_art);
+    lv_obj_set_pos(art, 0, 0);
+    lv_obj_set_style_opa(art, LV_OPA_TRANSP, 0);
+    lv_obj_clear_flag(art, LV_OBJ_FLAG_CLICKABLE);
+    lv_anim_t fa;
+    lv_anim_init(&fa);
+    lv_anim_set_var(&fa, art);
+    lv_anim_set_exec_cb(&fa, (lv_anim_exec_xcb_t)anim_opa_cb);
+    lv_anim_set_values(&fa, LV_OPA_TRANSP, LV_OPA_COVER);
+    lv_anim_set_time(&fa, 700);
+    lv_anim_set_path_cb(&fa, lv_anim_path_ease_out);
+    lv_anim_start(&fa);
 
-    // ---- pulsing lime ring behind the logo (two pulses) ----
-    lv_obj_t* ring = lv_obj_create(r);
-    lv_obj_set_size(ring, 70, 70);
-    lv_obj_set_pos(ring, 125, 25);
-    lv_obj_set_style_radius(ring, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_bg_opa(ring, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_color(ring, lv_color_hex(COL_VIB_LIME), 0);
-    lv_obj_set_style_border_width(ring, 3, 0);
-    lv_obj_set_style_pad_all(ring, 0, 0);
-    lv_obj_clear_flag(ring, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_clear_flag(ring, LV_OBJ_FLAG_CLICKABLE);
-    lv_anim_t ra;
-    lv_anim_init(&ra);
-    lv_anim_set_var(&ra, ring);
-    lv_anim_set_exec_cb(&ra, (lv_anim_exec_xcb_t)anim_ring_cb);
-    lv_anim_set_values(&ra, 0, 100);
-    lv_anim_set_time(&ra, 950);
-    lv_anim_set_delay(&ra, 250);
-    lv_anim_set_repeat_count(&ra, 1);             // two pulses total
-    lv_anim_start(&ra);
+    // ---- one light sweep across the artwork ----
+    lv_obj_t* sweep = lv_obj_create(r);
+    lv_obj_set_size(sweep, 44, TFT_LCD_H);
+    lv_obj_set_pos(sweep, -60, 0);
+    lv_obj_set_style_bg_color(sweep, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_set_style_bg_opa(sweep, LV_OPA_20, 0);
+    lv_obj_set_style_border_width(sweep, 0, 0);
+    lv_obj_set_style_radius(sweep, 0, 0);
+    lv_obj_set_style_pad_all(sweep, 0, 0);
+    lv_obj_clear_flag(sweep, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(sweep, LV_OBJ_FLAG_CLICKABLE);
+    lv_anim_t sa;
+    lv_anim_init(&sa);
+    lv_anim_set_var(&sa, sweep);
+    lv_anim_set_exec_cb(&sa, (lv_anim_exec_xcb_t)lv_obj_set_x);
+    lv_anim_set_values(&sa, -60, TFT_LCD_W + 20);
+    lv_anim_set_time(&sa, 850);
+    lv_anim_set_delay(&sa, 750);
+    lv_anim_set_path_cb(&sa, lv_anim_path_ease_in_out);
+    lv_anim_start(&sa);
 
-    // ---- logo: 7 letter labels popping in (zoom + fade + rise) ----
-    static const char* kLetters[7] = {"R", "P", "M", "L", "O", "O", "P"};
-    const lv_font_t* font = &lv_font_montserrat_32;
-    int widths[7], total = 0;
-    for (int i = 0; i < 7; i++) {
-        lv_point_t sz;
-        lv_txt_get_size(&sz, kLetters[i], font, 0, 0, LV_COORD_MAX, 0);
-        widths[i] = sz.x;
-        total += sz.x + 3;                    // 3 px letter tracking
-        if (i == 2) total += 10;              // wider gap: RPM | LOOP
-    }
-    total -= 3;
-    int x = (TFT_LCD_W - total) / 2;
-    const int baseY = 40;
-    for (int i = 0; i < 7; i++) {
-        lv_obj_t* l = ui_label(r, kLetters[i], font,
-                               i < 3 ? COL_TEXT : COL_VIB_LIME);
-        lv_obj_set_pos(l, x, baseY + 16);     // rises 16 px while popping in
-        lv_obj_set_style_text_opa(l, LV_OPA_TRANSP, 0);
-        lv_obj_update_layout(l);
-        lv_obj_set_style_transform_pivot_x(l, lv_obj_get_width(l) / 2, 0);
-        lv_obj_set_style_transform_pivot_y(l, lv_obj_get_height(l) / 2, 0);
-        lv_obj_set_style_transform_zoom(l, 180, 0);
-        x += widths[i] + 3 + (i == 2 ? 10 : 0);
-
-        const uint32_t delay = 100 + i * 80;
-        lv_anim_t a;
-        lv_anim_init(&a);
-        lv_anim_set_var(&a, l);
-        lv_anim_set_time(&a, 380);
-        lv_anim_set_delay(&a, delay);
-        lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
-        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_y);
-        lv_anim_set_values(&a, baseY + 16, baseY);
-        lv_anim_start(&a);
-        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)anim_text_opa_cb);
-        lv_anim_set_values(&a, LV_OPA_TRANSP, LV_OPA_COVER);
-        lv_anim_start(&a);
-        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)anim_zoom_cb);
-        lv_anim_set_values(&a, 180, 256);
-        lv_anim_start(&a);
-    }
-
-    // ---- RPM gauge: track + red zone + needle + hub + % counter ----
-    // Centre (160,154), 100x100. Sweep 135deg -> 405deg (270deg total);
-    // the red zone covers the last 20% (351deg -> 405deg).
-    bootArc = lv_arc_create(r);
-    lv_obj_set_pos(bootArc, 110, 104);
-    lv_obj_set_size(bootArc, 100, 100);
-    lv_arc_set_range(bootArc, 0, 100);
-    lv_arc_set_value(bootArc, 0);
-    lv_arc_set_bg_angles(bootArc, 135, 405);
-    lv_obj_set_style_arc_width(bootArc, 9, LV_PART_MAIN);
-    lv_obj_set_style_arc_width(bootArc, 9, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_color(bootArc, lv_color_hex(COL_PANEL_DIV), LV_PART_MAIN);
-    lv_obj_set_style_arc_color(bootArc, lv_color_hex(COL_VIB_LIME), LV_PART_INDICATOR);
-    lv_obj_set_style_bg_opa(bootArc, LV_OPA_TRANSP, LV_PART_KNOB);   // hide knob
-    lv_obj_set_style_border_width(bootArc, 0, LV_PART_KNOB);
-    lv_obj_clear_flag(bootArc, LV_OBJ_FLAG_CLICKABLE);
-
-    lv_obj_t* redArc = lv_arc_create(r);
-    lv_obj_set_pos(redArc, 110, 104);
-    lv_obj_set_size(redArc, 100, 100);
-    lv_arc_set_range(redArc, 0, 100);
-    lv_arc_set_value(redArc, 0);
-    lv_arc_set_bg_angles(redArc, 351, 405);
-    lv_obj_set_style_arc_width(redArc, 9, LV_PART_MAIN);
-    lv_obj_set_style_arc_width(redArc, 0, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_color(redArc, lv_color_hex(COL_RED), LV_PART_MAIN);
-    lv_obj_set_style_bg_opa(redArc, LV_OPA_TRANSP, LV_PART_KNOB);
-    lv_obj_set_style_border_width(redArc, 0, LV_PART_KNOB);
-    lv_obj_clear_flag(redArc, LV_OBJ_FLAG_CLICKABLE);
-
-    bootNeedle = lv_obj_create(r);
-    lv_obj_set_pos(bootNeedle, 158, 118);
-    lv_obj_set_size(bootNeedle, 4, 42);
-    lv_obj_set_style_bg_color(bootNeedle, lv_color_hex(COL_TEXT), 0);
-    lv_obj_set_style_bg_opa(bootNeedle, LV_OPA_COVER, 0);
-    lv_obj_set_style_radius(bootNeedle, 2, 0);
-    lv_obj_set_style_border_width(bootNeedle, 0, 0);
-    lv_obj_set_style_pad_all(bootNeedle, 0, 0);
-    lv_obj_clear_flag(bootNeedle, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_clear_flag(bootNeedle, LV_OBJ_FLAG_CLICKABLE);
-    // Pivot on the gauge centre (160,154) -> (2,36) in needle-local coords.
-    lv_obj_set_style_transform_pivot_x(bootNeedle, 2, 0);
-    lv_obj_set_style_transform_pivot_y(bootNeedle, 36, 0);
-    lv_obj_set_style_transform_angle(bootNeedle, -1350, 0);
-
-    lv_obj_t* hub = lv_obj_create(r);
-    lv_obj_set_pos(hub, 154, 148);
-    lv_obj_set_size(hub, 12, 12);
-    lv_obj_set_style_radius(hub, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_bg_color(hub, lv_color_hex(COL_TEXT), 0);
-    lv_obj_set_style_bg_opa(hub, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_width(hub, 0, 0);
-    lv_obj_set_style_pad_all(hub, 0, 0);
-    lv_obj_clear_flag(hub, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_clear_flag(hub, LV_OBJ_FLAG_CLICKABLE);
-
-    bootPct = ui_label(r, "0%", &lv_font_montserrat_24, COL_TEXT);
-    lv_obj_set_pos(bootPct, 115, 112);
-    lv_obj_set_width(bootPct, 90);
-    lv_obj_set_style_text_align(bootPct, LV_TEXT_ALIGN_CENTER, 0);
-
-    // Sweep 0 -> 92 (ease-out), then settle back to 70.
-    lv_anim_t ga;
-    lv_anim_init(&ga);
-    lv_anim_set_var(&ga, bootArc);
-    lv_anim_set_exec_cb(&ga, (lv_anim_exec_xcb_t)anim_gauge_cb);
-    lv_anim_set_values(&ga, 0, 92);
-    lv_anim_set_time(&ga, 1500);
-    lv_anim_set_delay(&ga, 500);
-    lv_anim_set_path_cb(&ga, lv_anim_path_ease_out);
-    lv_anim_start(&ga);
-    lv_anim_set_values(&ga, 92, 70);
-    lv_anim_set_time(&ga, 700);
-    lv_anim_set_delay(&ga, 2050);
-    lv_anim_set_path_cb(&ga, lv_anim_path_ease_in_out);
-    lv_anim_start(&ga);
+    // ---- wordmark: rises + fades into the dark lower third ----
+    lv_obj_t* logo = ui_label(r, "RPM LOOP", &lv_font_montserrat_32, COL_TEXT);
+    lv_obj_set_width(logo, TFT_LCD_W);
+    lv_obj_set_style_text_align(logo, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_letter_space(logo, 3, 0);
+    lv_obj_set_pos(logo, 0, 176);
+    lv_obj_set_style_text_opa(logo, LV_OPA_TRANSP, 0);
+    lv_anim_t la;
+    lv_anim_init(&la);
+    lv_anim_set_var(&la, logo);
+    lv_anim_set_time(&la, 500);
+    lv_anim_set_delay(&la, 400);
+    lv_anim_set_path_cb(&la, lv_anim_path_ease_out);
+    lv_anim_set_exec_cb(&la, (lv_anim_exec_xcb_t)lv_obj_set_y);
+    lv_anim_set_values(&la, 188, 176);
+    lv_anim_start(&la);
+    lv_anim_set_exec_cb(&la, (lv_anim_exec_xcb_t)anim_text_opa_cb);
+    lv_anim_set_values(&la, LV_OPA_TRANSP, LV_OPA_COVER);
+    lv_anim_start(&la);
 
     // ---- tagline ----
     lv_obj_t* tag = ui_label(r, "RIDE CONNECTED", &lv_font_montserrat_10, COL_TEXT_SECOND);
@@ -345,15 +232,47 @@ static void build_boot(void) {
     lv_anim_set_exec_cb(&ta, (lv_anim_exec_xcb_t)anim_text_opa_cb);
     lv_anim_set_values(&ta, LV_OPA_TRANSP, LV_OPA_COVER);
     lv_anim_set_time(&ta, 600);
-    lv_anim_set_delay(&ta, 2400);
+    lv_anim_set_delay(&ta, 1100);
     lv_anim_start(&ta);
+
+    // ---- progress line along the very bottom ----
+    lv_obj_t* track = lv_obj_create(r);
+    lv_obj_set_size(track, TFT_LCD_W, 3);
+    lv_obj_set_pos(track, 0, TFT_LCD_H - 3);
+    lv_obj_set_style_bg_color(track, lv_color_hex(0x10222E), 0);
+    lv_obj_set_style_bg_opa(track, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(track, 0, 0);
+    lv_obj_set_style_radius(track, 0, 0);
+    lv_obj_set_style_pad_all(track, 0, 0);
+    lv_obj_clear_flag(track, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(track, LV_OBJ_FLAG_CLICKABLE);
+
+    lv_obj_t* fill = lv_obj_create(r);
+    lv_obj_set_size(fill, 0, 3);
+    lv_obj_set_pos(fill, 0, TFT_LCD_H - 3);
+    lv_obj_set_style_bg_color(fill, lv_color_hex(COL_VIB_LIME), 0);
+    lv_obj_set_style_bg_opa(fill, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(fill, 0, 0);
+    lv_obj_set_style_radius(fill, 0, 0);
+    lv_obj_set_style_pad_all(fill, 0, 0);
+    lv_obj_clear_flag(fill, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(fill, LV_OBJ_FLAG_CLICKABLE);
+    lv_anim_t ba;
+    lv_anim_init(&ba);
+    lv_anim_set_var(&ba, fill);
+    lv_anim_set_exec_cb(&ba, (lv_anim_exec_xcb_t)anim_bar_cb);
+    lv_anim_set_values(&ba, 0, TFT_LCD_W);
+    lv_anim_set_time(&ba, 2300);
+    lv_anim_set_delay(&ba, 500);
+    lv_anim_set_path_cb(&ba, lv_anim_path_ease_in_out);
+    lv_anim_start(&ba);
 
     bootStartMs = lv_tick_get();
 }
 
 static void refresh_boot(void) {
     uint32_t el = lv_tick_get() - bootStartMs;
-    if (el < 3400) return;
+    if (el < 3200) return;
     // Splash done: a linked phone skips Connect entirely.
     ui_show(g_bike_state.bleConnected ? UI_HOME : UI_CONNECT);
 }

@@ -72,10 +72,12 @@ rotated or mirrored.
 ## 🧩 Embedded UI (LVGL 8.3 + LovyanGFX)
 
 - **Screens:** Splash → Connect → Home · Nav · Maps · Music · Tracking · Settings (8 screens; the Headset screen was removed in 2.4.0 — the rider's headset pairs with the phone, never with this device)
-- **Boot flow (2.4.0):** a spectacular animated splash (~3.4 s — the
-  sky/lime wallpaper dimmed ~40%, a pulsing lime ring behind the logo,
-  "RPM LOOP" letters that pop in with a zoom + fade + rise, and an RPM
-  gauge sweeping 0→92→70 with a red zone, needle and % counter) lands on
+- **Boot flow (2.4.1):** a cinematic splash (~3.2 s — full-screen
+  generated "Cluster Gauge" artwork in `src/ui/splash_art.c` fades in
+  from black, one light sweep crosses the arc, then the "RPM LOOP"
+  wordmark + "RIDE CONNECTED" tagline rise into the artwork's dark
+  lower third over a thin lime progress line; the 2.4.0 gauge + %
+  counter splash was dropped after the owner rejected it) lands on
   the **Connect** screen ("Connect your phone"; tap to start the pulsing-ring
   waiting state — BLE advertising is always on, the screen is a UI state).
   A linked phone shows a brief green-check "Connected" beat, then Home;
