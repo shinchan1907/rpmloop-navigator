@@ -24,8 +24,8 @@
 //  * 2.4.0: non-map screens sit on the sky/lime wallpaper image; layouts
 //    are full-bleed (no dead bands); a swipe-down quick shade (Home,
 //    brightness, BT status, Settings) hangs off the top edge of every
-//    screen — gesture on plain screens, a transparent drag strip on the
-//    map screens. There is NO Headset screen: the headset pairs with the
+//    screen — a tappable pull zone + drag strip with manual drag
+//    detection (2.4.2; LVGL gestures never fired on slow drags). There is NO Headset screen: the headset pairs with the
 //    phone, never with this device.
 // ==============================================================================
 
@@ -1298,13 +1298,51 @@ static void shade_init(void) {
 }
 
 // --- per-screen attach points -------------------------------------------
+static int  s_pullY0 = 0;
+static bool s_pullActive = false;
+
+static void shade_pull_cb(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) { shade_open(); return; }
+    lv_indev_t* indev = lv_event_get_indev(e);
+    if (!indev) return;
+    lv_point_t p;
+    lv_indev_get_point(indev, &p);
+    if (code == LV_EVENT_PRESSED) {
+        s_pullY0 = p.y; s_pullActive = true;
+    } else if (code == LV_EVENT_PRESSING && s_pullActive) {
+        if (p.y - s_pullY0 > 28) { s_pullActive = false; shade_open(); }
+    } else if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
+        if (s_pullActive && p.y - s_pullY0 > 28) shade_open();
+        s_pullActive = false;
+    }
+}
+
 static void shade_add_handle(lv_obj_t* root) {
-    lv_obj_t* h = lv_obj_create(root);
-    lv_obj_set_pos(h, (TFT_LCD_W - 28) / 2, 3);
+    // Pull target (2.4.2): a real clickable zone (64x20) centred on the
+    // top edge — a plain TAP on it opens the shade, and so does a short
+    // downward drag starting there. The visible pill sits inside it.
+    // (2.4.0's tiny non-clickable pill + LV_EVENT_GESTURE never fired:
+    // lv_indev zeroes the gesture sum whenever the per-read velocity
+    // dips below the minimum, so a slow resistive-touch drag never
+    // accumulates the 50 px a gesture needs.)
+    lv_obj_t* zone = lv_obj_create(root);
+    lv_obj_set_pos(zone, (TFT_LCD_W - 64) / 2, 0);
+    lv_obj_set_size(zone, 64, 20);
+    lv_obj_set_style_bg_opa(zone, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(zone, 0, 0);
+    lv_obj_set_style_radius(zone, 0, 0);
+    lv_obj_set_style_pad_all(zone, 0, 0);
+    lv_obj_clear_flag(zone, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_add_flag(zone, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(zone, shade_pull_cb, LV_EVENT_ALL, nullptr);
+
+    lv_obj_t* h = lv_obj_create(zone);
+    lv_obj_set_pos(h, (64 - 28) / 2, 4);
     lv_obj_set_size(h, 28, 5);
     lv_obj_set_style_radius(h, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_color(h, lv_color_hex(COL_TEXT), 0);
-    lv_obj_set_style_bg_opa(h, LV_OPA_50, 0);
+    lv_obj_set_style_bg_opa(h, LV_OPA_80, 0);
     lv_obj_set_style_border_width(h, 0, 0);
     lv_obj_set_style_pad_all(h, 0, 0);
     lv_obj_clear_flag(h, LV_OBJ_FLAG_SCROLLABLE);
@@ -1336,8 +1374,11 @@ static void shade_strip_cb(lv_event_t* e) {
     if (code == LV_EVENT_PRESSED) {
         s_stripY0 = p.y; s_stripActive = true; s_stripFired = false;
     } else if (code == LV_EVENT_PRESSING && s_stripActive && !s_stripFired) {
-        if (p.y - s_stripY0 > 40) { s_stripFired = true; shade_open(); }
+        if (p.y - s_stripY0 > 28) { s_stripFired = true; shade_open(); }
     } else if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
+        // 2.4.2: also fire on release — if PRESSING delivery is flaky,
+        // the release point still proves the downward drag happened.
+        if (s_stripActive && !s_stripFired && p.y - s_stripY0 > 28) shade_open();
         s_stripActive = false;
     }
 }

@@ -99,14 +99,19 @@ rotated or mirrored.
   Music / Tracking / Settings / Connect layouts were stretched to fill
   the full 320×240 the same way (glass panels keep white text readable
   over the wallpaper's bright midriff).
-- **Quick shade (2.4.0):** swipe DOWN from the top edge of any screen
-  (look for the small white pull pill) to slide in a quick panel: big
+- **Quick shade (2.4.0, trigger fixed 2.4.2):** swipe DOWN from the top
+  edge of any screen (look for the small white pull pill) — or simply
+  TAP the pill — to slide in a quick panel: big
   **HOME** button, a brightness slider (same control as Settings), a
   Bluetooth Connected / Not connected row, and a Settings shortcut;
   swipe up or tap ✕ to close. This is also the way back Home from the
   **Nav** screen. On Nav/Maps — where a drag means map pan — the swipe
-  is caught by a transparent 320×22 strip along the top edge instead of
-  the gesture recogniser; panning anywhere else on the map is unaffected.
+  is caught by a transparent 320×22 strip along the top edge; panning
+  anywhere else on the map is unaffected. (2.4.2: the original
+  LV_EVENT_GESTURE trigger never fired with a slow resistive-touch
+  drag — lv_indev zeroes its gesture sum whenever the per-read
+  velocity dips — so the pill is now a real clickable zone and both
+  triggers use manual press/drag/release detection.)
 - **Demo mode (Settings, default OFF):** `MockProvider` animates
   BikeState ONLY while the switch is on (demo route, demo tracks, fake
   speed, headset toggling). Turning it off wipes every mock-owned field
