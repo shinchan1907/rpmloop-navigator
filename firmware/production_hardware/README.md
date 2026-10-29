@@ -2,7 +2,7 @@
 
 Firmware flashed onto the ESP32-S3 in the physical RPMLOOP unit: a BLE
 peripheral speaking protocol v1 to the companion apps, plus a complete
-embedded LVGL UI on the 2.8" panel (9 screens, touchscreen input). Demo
+embedded LVGL UI on the 2.8" panel (8 screens, touchscreen input). Demo
 data is **OFF by default** — the device boots honest and shows real empty
 states until the phone feeds it; a MockProvider demo scene is available
 behind the Settings "Demo mode" switch.
@@ -71,22 +71,40 @@ rotated or mirrored.
 
 ## 🧩 Embedded UI (LVGL 8.3 + LovyanGFX)
 
-- **Screens:** Splash → Connect → Home · Nav · Maps · Music · Headset · Tracking · Settings
-- **Boot flow (2.3.0):** an animated splash (~3.5 s — "RPM LOOP" letters
-  fade/rise, an arc sweeps, "RIDE CONNECTED" tagline) lands on the
-  **Connect** screen ("Connect your phone"; tap to start the pulsing-ring
+- **Screens:** Splash → Connect → Home · Nav · Maps · Music · Tracking · Settings (8 screens; the Headset screen was removed in 2.4.0 — the rider's headset pairs with the phone, never with this device)
+- **Boot flow (2.4.0):** a spectacular animated splash (~3.4 s — the
+  sky/lime wallpaper dimmed ~40%, a pulsing lime ring behind the logo,
+  "RPM LOOP" letters that pop in with a zoom + fade + rise, and an RPM
+  gauge sweeping 0→92→70 with a red zone, needle and % counter) lands on
+  the **Connect** screen ("Connect your phone"; tap to start the pulsing-ring
   waiting state — BLE advertising is always on, the screen is a UI state).
   A linked phone shows a brief green-check "Connected" beat, then Home;
   if the phone is already linked at splash end, Connect is skipped. If
   the BLE link drops on any other screen, the UI returns to Connect with
   a "Connection lost" note.
-- **Vibrant theme (2.3.0):** deep navy→indigo gradient background with
-  neon cards (lime `#8BE000`, cyan `#2ED3E6`, pink `#FF4D8D`, amber
-  `#FFB020`, radius 16, dark text on the bright cards). Home is four
-  vibrant tiles (Navigate / Music / Tracking / Settings) with a live
-  connection pill and status lines that show **real** BikeState values
-  ("No active route", "Nothing playing", "Not started") — plus a wide
-  live-speed card that only exists while a route is active.
+- **Wallpaper + vibrant theme (2.4.0):** every non-map screen sits on a
+  sky-blue→cyan wallpaper image with neon-lime light trails
+  (`src/ui/bg_wallpaper.c`, 320×240 RGB565, generated asset) — no more
+  flat navy gradient. Neon cards (lime `#8BE000`, cyan `#2ED3E6`, pink
+  `#FF4D8D`, amber `#FFB020`, radius 16) get a glossy vertical gradient,
+  a 1 px darker border and a soft shadow so they pop on the bright
+  background; dark text on the bright cards. Home is full-bleed: four
+  146×78 tiles in a 2×2 grid (Navigate / Music / Tracking / Settings)
+  with a live connection pill and status lines that show **real**
+  BikeState values ("No active route", "Nothing playing", "Not
+  started"), plus a bottom status strip (street + live speed while
+  navigating, "Phone connected" when linked, "Ready" otherwise).
+  Music / Tracking / Settings / Connect layouts were stretched to fill
+  the full 320×240 the same way (glass panels keep white text readable
+  over the wallpaper's bright midriff).
+- **Quick shade (2.4.0):** swipe DOWN from the top edge of any screen
+  (look for the small white pull pill) to slide in a quick panel: big
+  **HOME** button, a brightness slider (same control as Settings), a
+  Bluetooth Connected / Not connected row, and a Settings shortcut;
+  swipe up or tap ✕ to close. This is also the way back Home from the
+  **Nav** screen. On Nav/Maps — where a drag means map pan — the swipe
+  is caught by a transparent 320×22 strip along the top edge instead of
+  the gesture recogniser; panning anywhere else on the map is unaffected.
 - **Demo mode (Settings, default OFF):** `MockProvider` animates
   BikeState ONLY while the switch is on (demo route, demo tracks, fake
   speed, headset toggling). Turning it off wipes every mock-owned field
@@ -110,7 +128,9 @@ rotated or mirrored.
   `bike_control_*()` seam (sole exception: the Settings Demo-mode switch
   binds `BikeState.demoMode` directly).
 - **Controls (touch only):** tap Home tiles / buttons to navigate, every
-  sub-screen has a Home button (top corner); on Nav/Maps drag the map to
+  sub-screen has a Home button (top corner) — and every screen has the
+  swipe-down quick shade (see above), which is the Home route from Nav;
+  on Nav/Maps drag the map to
   pan and use the on-screen **+ / −** round buttons to zoom, tap the
   recentre button to re-lock on position; Music prev/play/next and
   Tracking start/reset are tap buttons; Settings sliders are dragged

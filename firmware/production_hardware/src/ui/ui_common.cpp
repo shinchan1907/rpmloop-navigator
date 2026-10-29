@@ -42,16 +42,51 @@ void ui_apply_gradient_bg(lv_obj_t* scr) {
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
 }
 
+void ui_apply_wallpaper(lv_obj_t* scr) {
+    lv_obj_t* img = lv_img_create(scr);
+    lv_img_set_src(img, &bg_wallpaper);
+    lv_obj_set_pos(img, 0, 0);
+    lv_obj_move_to_index(img, 0);   // bottom child: everything else draws over it
+    lv_obj_clear_flag(img, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(img, LV_OBJ_FLAG_CLICKABLE);
+}
+
+lv_obj_t* ui_glass_panel(lv_obj_t* parent, int x, int y, int w, int h) {
+    lv_obj_t* p = lv_obj_create(parent);
+    lv_obj_set_pos(p, x, y);
+    lv_obj_set_size(p, w, h);
+    lv_obj_set_style_bg_color(p, lv_color_hex(COL_PANEL_BG), 0);
+    lv_obj_set_style_bg_opa(p, LV_OPA_60, 0);
+    lv_obj_set_style_radius(p, 12, 0);
+    lv_obj_set_style_border_width(p, 0, 0);
+    lv_obj_set_style_pad_all(p, 0, 0);
+    lv_obj_clear_flag(p, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(p, LV_OBJ_FLAG_CLICKABLE);
+    return p;
+}
+
 lv_obj_t* ui_vibrant_card(lv_obj_t* parent, int x, int y, int w, int h, uint32_t colorHex) {
     lv_obj_t* c = lv_obj_create(parent);
     lv_obj_set_pos(c, x, y);
     lv_obj_set_size(c, w, h);
-    lv_obj_set_style_bg_color(c, lv_color_hex(colorHex), 0);
+    // Glossy vertical gradient (2.4.0): lightened neon at the top easing
+    // into the base neon at the bottom, a 1 px darker shade border and a
+    // soft drop shadow so the card pops off the bright wallpaper.
+    lv_color_t base = lv_color_hex(colorHex);
+    lv_obj_set_style_bg_color(c, lv_color_lighten(base, LV_OPA_20), 0);
+    lv_obj_set_style_bg_grad_color(c, base, 0);
+    lv_obj_set_style_bg_grad_dir(c, LV_GRAD_DIR_VER, 0);
     lv_obj_set_style_bg_opa(c, LV_OPA_COVER, 0);
     lv_obj_set_style_radius(c, VIB_CARD_RADIUS, 0);
-    lv_obj_set_style_border_width(c, 0, 0);
+    lv_obj_set_style_border_width(c, 1, 0);
+    lv_obj_set_style_border_color(c, lv_color_darken(base, LV_OPA_40), 0);
+    lv_obj_set_style_border_opa(c, LV_OPA_COVER, 0);
     lv_obj_set_style_pad_all(c, 0, 0);
-    lv_obj_set_style_shadow_width(c, 0, 0);
+    lv_obj_set_style_shadow_width(c, 10, 0);
+    lv_obj_set_style_shadow_color(c, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_shadow_opa(c, LV_OPA_30, 0);
+    lv_obj_set_style_shadow_ofs_x(c, 0, 0);
+    lv_obj_set_style_shadow_ofs_y(c, 3, 0);
     lv_obj_clear_flag(c, LV_OBJ_FLAG_SCROLLABLE);
     return c;
 }

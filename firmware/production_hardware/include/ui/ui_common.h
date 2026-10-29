@@ -42,7 +42,27 @@
 #define COL_CARD_TEXT2   0x2A3050   // softer dark text (card status lines)
 #define VIB_CARD_RADIUS  16
 
-// Paint a screen root with the vibrant vertical gradient background.
+// Wallpaper image (defined in src/ui/bg_wallpaper.c, generated asset).
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern const lv_img_dsc_t bg_wallpaper;
+#ifdef __cplusplus
+}
+#endif
+
+// Paint a screen root with the 2.4.0 wallpaper (sky-blue/lime image) as
+// its background: an lv_img pinned at (0,0) as the bottom child. The
+// screen's own bg colour stays as the fallback behind the image.
+void ui_apply_wallpaper(lv_obj_t* scr);
+
+// Translucent dark-navy panel — keeps white text readable over the
+// bright parts of the wallpaper (Music / Settings / Connect blocks).
+lv_obj_t* ui_glass_panel(lv_obj_t* parent, int x, int y, int w, int h);
+
+// Paint a screen root with the (legacy, pre-2.4.0) vibrant vertical
+// gradient background. Kept for API stability; screens now use the
+// wallpaper via ui_apply_wallpaper().
 void ui_apply_gradient_bg(lv_obj_t* scr);
 
 // Vibrant card factory: solid neon fill, radius 16, no border/padding.
