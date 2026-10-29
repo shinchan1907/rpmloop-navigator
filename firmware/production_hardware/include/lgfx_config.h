@@ -7,8 +7,8 @@
 // ==============================================================================
 // LovyanGFX device for the bench-verified panel:
 //   generic red 2.8" SPI TFT module, ILI9341, 240x320 native, used 320x240,
-//   with its HR2046 (XPT2046-compatible) resistive touch on the same SPI bus
-//   — the touchscreen is the product's ONLY input.
+//   with its HR2046 (XPT2046-compatible) resistive touch wired to its own
+//   SPI pins on SPI3 — the touchscreen is the product's ONLY input.
 // BENCH-PROVEN QUIRKS (2026-10-29, do not remove without re-testing):
 //   * pcfg.invert = true  — this clone panel shows inverted colours otherwise
 //   * SPI write = 16 MHz  — 40 MHz garbles pixels on jumper wires
@@ -61,18 +61,25 @@ public:
         pcfg.bus_shared       = false;
         _panel.config(pcfg);
 
-        // Touchscreen (HR2046) sharing the display's SPI2 bus: only CS and
-        // IRQ are separate wires; SCLK/MOSI/MISO are the TFT pins. Config
-        // fields per lgfx::ITouch::config_t (LovyanGFX 1.2.x, Touch.hpp).
+        // Touchscreen (HR2046) on its OWN SPI peripheral: SPI3 with its
+        // own pins (pinout_config.h). It must NOT reuse the panel's
+        // SPI2_HOST with different pins: on ESP32, lgfx spi::init() only
+        // routes pins the first time a host is initialised (the
+        // _spi_dev_handle guard in platforms/esp32/common.inl), so a
+        // second init on SPI2 would silently keep the display's pins.
+        // Config fields per lgfx::ITouch::config_t (LovyanGFX 1.2.x,
+        // Touch.hpp). pin_int = -1 (T_IRQ not wired) is the library's
+        // supported polling-only mode: Touch_XPT2046::init/getTouchRaw
+        // guard every pin_int use with `>= 0`.
         auto tcfg = _touch.config();
-        tcfg.spi_host    = SPI2_HOST;   // same host as the panel bus
-        tcfg.pin_sclk    = TFT_SCLK;
-        tcfg.pin_mosi    = TFT_MOSI;
-        tcfg.pin_miso    = TFT_MISO;
+        tcfg.spi_host    = SPI3_HOST;   // touch has its own peripheral
+        tcfg.pin_sclk    = TOUCH_SCLK;
+        tcfg.pin_mosi    = TOUCH_MOSI;
+        tcfg.pin_miso    = TOUCH_MISO;
         tcfg.pin_cs      = TOUCH_CS;
-        tcfg.pin_int     = TOUCH_IRQ;
+        tcfg.pin_int     = TOUCH_IRQ;   // -1: not wired, polling only
         tcfg.pin_rst     = -1;          // module breaks out no touch reset
-        tcfg.bus_shared  = true;        // shares SPI2 with the panel
+        tcfg.bus_shared  = false;       // separate bus from the panel
         tcfg.freq        = TOUCH_SPI_FREQ;
         tcfg.x_min       = TOUCH_CAL_X_MIN;   // UNVERIFIED presets — see
         tcfg.x_max       = TOUCH_CAL_X_MAX;   // pinout_config.h calibration

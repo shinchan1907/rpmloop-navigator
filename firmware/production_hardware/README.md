@@ -19,8 +19,8 @@ encoder/buttons/joystick and no SD card in this product.
 - **Display Module:** generic red 2.8" SPI TFT, **ILI9341**, 240×320 native,
   used landscape **320×240**
 - **Touch:** HR2046 resistive (XPT2046-compatible) on the module — the
-  product's **only input**, driven via LovyanGFX `Touch_XPT2046` on the
-  shared display SPI bus
+  product's **only input**, driven via LovyanGFX `Touch_XPT2046` on its
+  own SPI pins (SPI3 peripheral, polled — T_IRQ not wired)
 - **Status LED:** onboard WS2812 on the original Waveshare target (GPIO 21)
 - **Not used:** the module's own microSD slot (back pads) — out of product
   scope, no pins assigned
@@ -58,11 +58,11 @@ been measured on this module yet. Before trusting taps:
 | TFT DC | 10 | |
 | TFT RST | 11 | |
 | TFT LED / VCC | 3V3 | always on |
-| Touch T_CLK | 6 | shares TFT SCLK |
-| Touch T_DIN | 7 | shares TFT MOSI |
-| Touch T_DO | 8 | shares TFT MISO |
-| Touch T_CS | 12 | HR2046 chip select |
-| Touch T_IRQ | 13 | PENIRQ, LOW while pressed |
+| Touch T_CLK | 1 | SPI3, touch has its own pins |
+| Touch T_DIN | 2 | ESP32 → touch (MOSI) |
+| Touch T_DO | 3 | touch → ESP32 (MISO); S3 strapping pin, safe as input (Hi-Z at boot) |
+| Touch T_CS | 5 | HR2046 chip select |
+| Touch T_IRQ | — | **not connected** (driver polls) |
 
 ## 🧩 Embedded UI (LVGL 8.3 + LovyanGFX)
 

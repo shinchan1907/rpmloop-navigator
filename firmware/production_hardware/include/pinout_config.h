@@ -48,11 +48,19 @@
 #define TFT_LCD_H           240   // landscape height (after rotation)
 
 // ---- Touchscreen: HR2046 on the display module (XPT2046-compatible) -------
-// The ONLY input device in the product. T_CLK / T_DIN / T_DO share the
-// display SPI bus — wire T_CLK -> TFT_SCLK (GPIO 6), T_DIN -> TFT_MOSI
-// (GPIO 7), T_DO -> TFT_MISO (GPIO 8). Only CS and IRQ get their own GPIOs.
-#define TOUCH_CS         12   // T_CS (chip select, active low)
-#define TOUCH_IRQ        13   // T_IRQ / PENIRQ (LOW while the panel is pressed)
+// The ONLY input device in the product. On the bench the touch controller
+// is wired to its OWN SPI pins (it does NOT share the display SPI bus) and
+// runs on the ESP32-S3's second SPI peripheral (SPI3) — see lgfx_config.h
+// for why the host must differ. T_IRQ is NOT wired: the driver polls.
+#define TOUCH_SCLK       1    // T_CLK
+#define TOUCH_MOSI       2    // T_DIN (ESP32 -> touch)
+#define TOUCH_MISO       3    // T_DO  (touch -> ESP32). GPIO3 is an S3
+                              // strapping pin, but it is only sampled at
+                              // reset and T_DO is high-impedance unless the
+                              // touch is clocked with CS low, so it cannot
+                              // disturb boot. Safe as a plain input here.
+#define TOUCH_CS         5    // T_CS (chip select, active low)
+#define TOUCH_IRQ        -1   // T_IRQ not wired on the bench — polling only
 #define TOUCH_SPI_FREQ   2500000  // XPT2046-class ADCs top out around 2.5 MHz
 
 // Touch calibration: RAW ADC ranges that map to the panel's corners
