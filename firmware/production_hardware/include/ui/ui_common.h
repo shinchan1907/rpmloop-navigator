@@ -29,6 +29,26 @@
 #define COL_BLUE         0x1A73E8
 #define COL_RED          0xE53935
 
+// ---- Vibrant theme (2.3.0, owner reference: dark EV-cluster UI) ----
+// Deep navy -> indigo vertical gradient behind neon cards; dark text sits
+// on the bright cards, big white numerals on the dark background.
+#define COL_BG_TOP       0x0A1030   // gradient start (top)
+#define COL_BG_BOT       0x241257   // gradient end (bottom)
+#define COL_VIB_LIME     0x8BE000
+#define COL_VIB_CYAN     0x2ED3E6
+#define COL_VIB_PINK     0xFF4D8D
+#define COL_VIB_AMBER    0xFFB020
+#define COL_CARD_TEXT    0x10142E   // dark text on vibrant cards
+#define COL_CARD_TEXT2   0x2A3050   // softer dark text (card status lines)
+#define VIB_CARD_RADIUS  16
+
+// Paint a screen root with the vibrant vertical gradient background.
+void ui_apply_gradient_bg(lv_obj_t* scr);
+
+// Vibrant card factory: solid neon fill, radius 16, no border/padding.
+// Content is NOT auto-laid-out — callers place labels at absolute offsets.
+lv_obj_t* ui_vibrant_card(lv_obj_t* parent, int x, int y, int w, int h, uint32_t colorHex);
+
 // TurnDir (bike_state.h) -> LVGL symbol glyph for the maneuver arrow.
 const char* ui_turn_symbol(int turnDir);
 

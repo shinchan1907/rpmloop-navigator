@@ -8,14 +8,19 @@
 #include "protocol_def.h"   // RPMLOPP_FIRMWARE_VERSION (About row)
 
 // ==============================================================================
-// All 8 screens. Conventions:
+// All 9 screens. Conventions:
 //  * A screen's widgets are created once (lazy build) and only refreshed.
 //  * Refresh functions READ g_bike_state; user actions go through the
-//    bike_control_*() seam — screens never write state fields directly.
+//    bike_control_*() seam — screens never write state fields directly
+//    (the one exception: the Settings "Demo mode" switch is bound straight
+//    to BikeState.demoMode, as specified).
 //  * Input: touchscreen only (LVGL pointer indev from lvgl_port). Buttons,
 //    tiles and sliders are tapped/dragged directly; the map pans by drag
 //    (inside MapView) and zooms via on-screen +/- buttons; every sub-screen
 //    carries a Home button (touch replacement for the old HOME key).
+//  * Flow (2.3.0): Boot is an animated splash (~3.5 s) -> Connect (pair the
+//    phone) -> Home. If BLE drops anywhere else, the manager sends the UI
+//    back to Connect with a "Connection lost" note.
 // ==============================================================================
 
 struct ScrDef {
@@ -118,88 +123,411 @@ static lv_obj_t* make_chip(lv_obj_t* parent, int x, int y, int w) {
     return c;
 }
 
-// ============================================================ BOOT ==========
-static lv_obj_t* bootBar;
+// ============================================================ BOOT ========
+// Animated splash (2.3.0): "RPM" (white) + "LOOP" (lime) letters fade and
+// rise one by one, an arc sweeps 0->100 beneath the logo over ~3.2 s, and
+// the "RIDE CONNECTED" tagline fades in. At ~3.5 s the manager advances:
+// Home if the phone is already linked, otherwise the Connect screen.
+static lv_obj_t* bootArc;
 static uint32_t  bootStartMs;
 
+static void anim_text_opa_cb(void* obj, int32_t v) {
+    lv_obj_set_style_text_opa((lv_obj_t*)obj, (lv_opa_t)v, 0);
+}
+static void anim_arc_cb(void* obj, int32_t v) {
+    lv_arc_set_value((lv_obj_t*)obj, (int)v);
+}
+
 static void build_boot(void) {
-    lv_obj_t* r = make_root(UI_BOOT, COL_PANEL_BG);
-    lv_obj_t* logo = ui_label(r, "BIKE NAV", &lv_font_montserrat_28, COL_TEXT);
-    lv_obj_set_pos(logo, 86, 74);
-    lv_obj_t* sub = ui_label(r, "R P M L O O P   N A V I G A T O R", &lv_font_montserrat_10, COL_TEXT_SECOND);
-    lv_obj_set_pos(sub, 74, 112);
-    bootBar = lv_bar_create(r);
-    lv_obj_set_pos(bootBar, 70, 146);
-    lv_obj_set_size(bootBar, 180, 8);
-    lv_bar_set_range(bootBar, 0, 100);
-    lv_bar_set_value(bootBar, 0, LV_ANIM_OFF);
-    lv_obj_set_style_bg_color(bootBar, lv_color_hex(COL_PANEL_DIV), 0);
-    lv_obj_set_style_bg_color(bootBar, lv_color_hex(COL_BLUE), LV_PART_INDICATOR);
-    lv_obj_set_style_radius(bootBar, 4, 0);
-    lv_obj_set_style_radius(bootBar, 4, LV_PART_INDICATOR);
+    lv_obj_t* r = make_root(UI_BOOT, COL_BG_TOP);
+    ui_apply_gradient_bg(r);
+
+    // ---- logo: 7 letter labels, absolute-laid-out from measured widths --
+    static const char* kLetters[7] = {"R", "P", "M", "L", "O", "O", "P"};
+    const lv_font_t* font = &lv_font_montserrat_32;
+    int widths[7], total = 0;
+    for (int i = 0; i < 7; i++) {
+        lv_point_t sz;
+        lv_txt_get_size(&sz, kLetters[i], font, 0, 0, LV_COORD_MAX, 0);
+        widths[i] = sz.x;
+        total += sz.x + 3;                    // 3 px letter tracking
+        if (i == 2) total += 10;              // wider gap: RPM | LOOP
+    }
+    total -= 3;
+    int x = (TFT_LCD_W - total) / 2;
+    const int baseY = 74;
+    for (int i = 0; i < 7; i++) {
+        lv_obj_t* l = ui_label(r, kLetters[i], font,
+                               i < 3 ? COL_TEXT : COL_VIB_LIME);
+        lv_obj_set_pos(l, x, baseY + 16);     // rises 16 px while fading in
+        lv_obj_set_style_text_opa(l, LV_OPA_TRANSP, 0);
+        x += widths[i] + 3 + (i == 2 ? 10 : 0);
+
+        lv_anim_t a;
+        lv_anim_init(&a);
+        lv_anim_set_var(&a, l);
+        lv_anim_set_time(&a, 420);
+        lv_anim_set_delay(&a, 120 + i * 90);
+        lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
+        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_y);
+        lv_anim_set_values(&a, baseY + 16, baseY);
+        lv_anim_start(&a);
+        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)anim_text_opa_cb);
+        lv_anim_set_values(&a, LV_OPA_TRANSP, LV_OPA_COVER);
+        lv_anim_start(&a);
+    }
+
+    // ---- sweeping arc under the logo ----
+    bootArc = lv_arc_create(r);
+    lv_obj_set_pos(bootArc, 122, 122);
+    lv_obj_set_size(bootArc, 76, 76);
+    lv_arc_set_range(bootArc, 0, 100);
+    lv_arc_set_value(bootArc, 0);
+    lv_arc_set_bg_angles(bootArc, 0, 360);
+    lv_arc_set_rotation(bootArc, 270);        // sweep starts at the top
+    lv_obj_set_style_arc_width(bootArc, 6, LV_PART_MAIN);
+    lv_obj_set_style_arc_width(bootArc, 6, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_color(bootArc, lv_color_hex(COL_PANEL_DIV), LV_PART_MAIN);
+    lv_obj_set_style_arc_color(bootArc, lv_color_hex(COL_VIB_LIME), LV_PART_INDICATOR);
+    lv_obj_set_style_bg_opa(bootArc, LV_OPA_TRANSP, LV_PART_KNOB);   // hide knob
+    lv_obj_set_style_border_width(bootArc, 0, LV_PART_KNOB);
+    lv_obj_clear_flag(bootArc, LV_OBJ_FLAG_CLICKABLE);
+    lv_anim_t aa;
+    lv_anim_init(&aa);
+    lv_anim_set_var(&aa, bootArc);
+    lv_anim_set_exec_cb(&aa, (lv_anim_exec_xcb_t)anim_arc_cb);
+    lv_anim_set_values(&aa, 0, 100);
+    lv_anim_set_time(&aa, 3200);
+    lv_anim_set_delay(&aa, 200);
+    lv_anim_set_path_cb(&aa, lv_anim_path_ease_in_out);
+    lv_anim_start(&aa);
+
+    // ---- tagline ----
+    lv_obj_t* tag = ui_label(r, "RIDE CONNECTED", &lv_font_montserrat_10, COL_TEXT_SECOND);
+    lv_obj_set_pos(tag, 0, 214);
+    lv_obj_set_width(tag, TFT_LCD_W);
+    lv_obj_set_style_text_align(tag, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_letter_space(tag, 4, 0);
+    lv_obj_set_style_text_opa(tag, LV_OPA_TRANSP, 0);
+    lv_anim_t ta;
+    lv_anim_init(&ta);
+    lv_anim_set_var(&ta, tag);
+    lv_anim_set_exec_cb(&ta, (lv_anim_exec_xcb_t)anim_text_opa_cb);
+    lv_anim_set_values(&ta, LV_OPA_TRANSP, LV_OPA_COVER);
+    lv_anim_set_time(&ta, 600);
+    lv_anim_set_delay(&ta, 1000);
+    lv_anim_start(&ta);
+
     bootStartMs = lv_tick_get();
 }
 
 static void refresh_boot(void) {
     uint32_t el = lv_tick_get() - bootStartMs;
-    int pct = (int)(el * 100 / 1200);
-    if (pct >= 100) { ui_show(UI_HOME); return; }
-    lv_bar_set_value(bootBar, pct, LV_ANIM_OFF);
+    if (el < 3500) return;
+    // Splash done: a linked phone skips Connect entirely.
+    ui_show(g_bike_state.bleConnected ? UI_HOME : UI_CONNECT);
+}
+
+// ============================================================ CONNECT =====
+// Pairing screen. BLE advertising is ALWAYS on (started in setup()) — this
+// screen is a pure UI state and never claims the device is "scanning".
+// Idle: BT icon + "Connect your phone". Tap anywhere -> SEARCHING: three
+// rings pulse outward around the icon while we wait. The moment
+// BikeState.bleConnected flips true, a brief green-check "Connected"
+// state (~600 ms) plays, then Home. Arriving here via a dropped link
+// (manager sets s_connLost) shows a "Connection lost" note.
+enum ConnState { CONN_IDLE, CONN_SEARCHING, CONN_SUCCESS };
+static ConnState connState = CONN_IDLE;
+static lv_obj_t *connRings[3], *connBtCircle, *connOkCircle,
+                *connHead, *connSub, *connChip, *connLost;
+static uint32_t connSuccessMs = 0;
+static bool s_connLost = false;   // set by the manager's disconnect rule
+
+static void ring_anim_cb(void* obj, int32_t v) {
+    lv_coord_t sz = 64 + v;                       // 64 -> 164 px
+    lv_obj_set_size((lv_obj_t*)obj, sz, sz);
+    lv_obj_set_pos((lv_obj_t*)obj, 160 - sz / 2, 88 - sz / 2);
+    lv_obj_set_style_border_opa((lv_obj_t*)obj, (lv_opa_t)((100 - v) * 2), 0);
+}
+
+static void conn_rings_start(void) {
+    for (int i = 0; i < 3; i++) {
+        lv_obj_clear_flag(connRings[i], LV_OBJ_FLAG_HIDDEN);
+        ring_anim_cb(connRings[i], 0);
+        lv_anim_t a;
+        lv_anim_init(&a);
+        lv_anim_set_var(&a, connRings[i]);
+        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)ring_anim_cb);
+        lv_anim_set_values(&a, 0, 100);
+        lv_anim_set_time(&a, 1600);
+        lv_anim_set_delay(&a, i * 530);
+        lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE);
+        lv_anim_start(&a);
+    }
+}
+
+static void conn_rings_stop(void) {
+    for (int i = 0; i < 3; i++) {
+        lv_anim_del(connRings[i], (lv_anim_exec_xcb_t)ring_anim_cb);
+        lv_obj_add_flag(connRings[i], LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+// Idle visuals (also the reset used whenever the screen is entered).
+static void conn_apply_idle(void) {
+    connState = CONN_IDLE;
+    conn_rings_stop();
+    lv_obj_clear_flag(connBtCircle, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(connOkCircle, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(connChip, LV_OBJ_FLAG_HIDDEN);
+    lv_label_set_text(connHead, "Connect your phone");
+    lv_label_set_text(connSub, "Pair with RPMLOOP from your phone's Bluetooth / companion app");
+    if (s_connLost) lv_obj_clear_flag(connLost, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(connLost, LV_OBJ_FLAG_HIDDEN);
+}
+
+static void conn_tap_cb(lv_event_t* e) {
+    (void)e;
+    if (g_bike_state.bleConnected || connState != CONN_IDLE) return;
+    connState = CONN_SEARCHING;
+    lv_label_set_text(connHead, "Waiting for your phone\xE2\x80\xA6");
+    lv_obj_clear_flag(connChip, LV_OBJ_FLAG_HIDDEN);
+    conn_rings_start();
+}
+
+// Entry hook (called from ui_show): every visit starts from idle visuals;
+// refresh_connect() immediately upgrades to the success state if the
+// phone is somehow already linked.
+static void connect_on_show(void) { conn_apply_idle(); }
+
+static void build_connect(void) {
+    lv_obj_t* r = make_root(UI_CONNECT, COL_BG_TOP);
+    ui_apply_gradient_bg(r);
+    lv_obj_add_flag(r, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(r, conn_tap_cb, LV_EVENT_CLICKED, nullptr);
+
+    connLost = ui_label(r, "Connection lost", &lv_font_montserrat_12, COL_VIB_AMBER);
+    lv_obj_set_pos(connLost, 0, 12);
+    lv_obj_set_width(connLost, TFT_LCD_W);
+    lv_obj_set_style_text_align(connLost, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_add_flag(connLost, LV_OBJ_FLAG_HIDDEN);
+
+    for (int i = 0; i < 3; i++) {
+        lv_obj_t* ring = lv_obj_create(r);
+        lv_obj_set_size(ring, 64, 64);
+        lv_obj_set_pos(ring, 128, 56);
+        lv_obj_set_style_radius(ring, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_bg_opa(ring, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_color(ring, lv_color_hex(COL_VIB_CYAN), 0);
+        lv_obj_set_style_border_width(ring, 2, 0);
+        lv_obj_set_style_pad_all(ring, 0, 0);
+        lv_obj_clear_flag(ring, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_clear_flag(ring, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_flag(ring, LV_OBJ_FLAG_HIDDEN);
+        connRings[i] = ring;
+    }
+
+    connBtCircle = lv_obj_create(r);
+    lv_obj_set_pos(connBtCircle, 128, 56);
+    lv_obj_set_size(connBtCircle, 64, 64);
+    lv_obj_set_style_radius(connBtCircle, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(connBtCircle, lv_color_hex(0x1B2A52), 0);
+    lv_obj_set_style_bg_opa(connBtCircle, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_color(connBtCircle, lv_color_hex(COL_VIB_CYAN), 0);
+    lv_obj_set_style_border_width(connBtCircle, 2, 0);
+    lv_obj_set_style_pad_all(connBtCircle, 0, 0);
+    lv_obj_clear_flag(connBtCircle, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_add_event_cb(connBtCircle, conn_tap_cb, LV_EVENT_CLICKED, nullptr);
+    lv_obj_t* bt = ui_label(connBtCircle, LV_SYMBOL_BLUETOOTH, &lv_font_montserrat_28, COL_VIB_CYAN);
+    lv_obj_center(bt);
+
+    connOkCircle = lv_obj_create(r);
+    lv_obj_set_pos(connOkCircle, 128, 56);
+    lv_obj_set_size(connOkCircle, 64, 64);
+    lv_obj_set_style_radius(connOkCircle, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(connOkCircle, lv_color_hex(COL_VIB_LIME), 0);
+    lv_obj_set_style_bg_opa(connOkCircle, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(connOkCircle, 0, 0);
+    lv_obj_set_style_pad_all(connOkCircle, 0, 0);
+    lv_obj_clear_flag(connOkCircle, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(connOkCircle, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_t* ok = ui_label(connOkCircle, LV_SYMBOL_OK, &lv_font_montserrat_28, COL_CARD_TEXT);
+    lv_obj_center(ok);
+    lv_obj_add_flag(connOkCircle, LV_OBJ_FLAG_HIDDEN);
+
+    connHead = ui_label(r, "Connect your phone", &lv_font_montserrat_20, COL_TEXT);
+    lv_obj_set_pos(connHead, 0, 134);
+    lv_obj_set_width(connHead, TFT_LCD_W);
+    lv_obj_set_style_text_align(connHead, LV_TEXT_ALIGN_CENTER, 0);
+    connSub = ui_label(r, "Pair with RPMLOOP from your phone's Bluetooth / companion app",
+                       &lv_font_montserrat_10, COL_TEXT_SECOND);
+    lv_obj_set_pos(connSub, 28, 164);
+    lv_obj_set_width(connSub, 264);
+    lv_obj_set_style_text_align(connSub, LV_TEXT_ALIGN_CENTER, 0);
+    lv_label_set_long_mode(connSub, LV_LABEL_LONG_WRAP);
+
+    connChip = make_chip(r, 113, 206, 94);
+    lv_obj_t* chipLbl = ui_label(connChip, LV_SYMBOL_BLUETOOTH " RPMLOOP", &lv_font_montserrat_10, COL_TEXT);
+    lv_obj_center(chipLbl);
+    lv_obj_add_flag(connChip, LV_OBJ_FLAG_HIDDEN);
+}
+
+static void refresh_connect(void) {
+    BikeState& b = g_bike_state;
+    if (b.bleConnected) {
+        if (connState != CONN_SUCCESS) {
+            connState = CONN_SUCCESS;
+            connSuccessMs = lv_tick_get();
+            conn_rings_stop();
+            lv_obj_add_flag(connBtCircle, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(connOkCircle, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(connChip, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(connLost, LV_OBJ_FLAG_HIDDEN);
+            s_connLost = false;
+            lv_label_set_text(connHead, "Connected");
+            lv_label_set_text(connSub, "Your phone is linked");
+        } else if (lv_tick_get() - connSuccessMs >= 600) {
+            ui_show(UI_HOME);
+        }
+        return;
+    }
+    if (connState == CONN_SUCCESS) {
+        // Link dropped during the success beat — fall back to idle with
+        // the lost-link note (the manager rule does not fire on this
+        // screen, so handle it here).
+        s_connLost = true;
+        conn_apply_idle();
+    }
 }
 
 // ============================================================ HOME ==========
-static lv_obj_t *homeClock, *homeGps, *homeBt;
+// Vibrant restyle (2.3.0): gradient bg, "RPM LOOP" header + connection
+// pill, four neon tiles (Navigate cyan / Music pink / Tracking lime /
+// Settings amber) whose status lines are REAL BikeState values only — and
+// a wide speed card that exists solely while a route is live.
+static lv_obj_t *homePillDot, *homePillLbl, *homeNavStatus, *homeMusStatus,
+                *homeTrkStatus, *homeSpeedCard, *homeSpeedVal, *homeSpeedUnit,
+                *homeSpeedStreet;
+
+static lv_obj_t* home_tile(lv_obj_t* parent, int x, int y, uint32_t colorHex,
+                           const char* icon, const char* title, UiScreen target,
+                           lv_obj_t** statusOut) {
+    lv_obj_t* c = ui_vibrant_card(parent, x, y, 145, 64, colorHex);
+    lv_obj_add_event_cb(c, show_cb, LV_EVENT_CLICKED, (void*)(intptr_t)target);
+    lv_obj_t* ic = ui_label(c, icon, &lv_font_montserrat_24, COL_CARD_TEXT);
+    lv_obj_set_pos(ic, 10, 8);
+    lv_obj_t* t = ui_label(c, title, &lv_font_montserrat_14, COL_CARD_TEXT);
+    lv_obj_set_pos(t, 40, 11);
+    *statusOut = ui_label(c, "", &lv_font_montserrat_10, COL_CARD_TEXT2);
+    lv_obj_set_pos(*statusOut, 10, 42);
+    lv_obj_set_width(*statusOut, 128);
+    lv_label_set_long_mode(*statusOut, LV_LABEL_LONG_DOT);
+    return c;
+}
 
 static void build_home(void) {
-    lv_obj_t* r = make_root(UI_HOME, COL_PANEL_BG);
+    lv_obj_t* r = make_root(UI_HOME, COL_BG_TOP);
+    ui_apply_gradient_bg(r);
 
-    lv_obj_t* bar = lv_obj_create(r);
-    lv_obj_set_pos(bar, 0, 0);
-    lv_obj_set_size(bar, 320, 22);
-    lv_obj_set_style_bg_color(bar, lv_color_hex(0x111C33), 0);
-    lv_obj_set_style_border_width(bar, 0, 0);
-    lv_obj_set_style_radius(bar, 0, 0);
-    lv_obj_set_style_pad_all(bar, 0, 0);
-    lv_obj_clear_flag(bar, LV_OBJ_FLAG_SCROLLABLE);
-    homeGps = ui_label(bar, LV_SYMBOL_GPS " --", &lv_font_montserrat_10, COL_TEXT_SECOND);
-    lv_obj_set_pos(homeGps, 6, 4);
-    homeBt = ui_label(bar, LV_SYMBOL_CALL " --", &lv_font_montserrat_10, COL_TEXT_SECOND);
-    lv_obj_set_pos(homeBt, 128, 4);
-    lv_obj_t* usb = ui_label(bar, LV_SYMBOL_CHARGE, &lv_font_montserrat_10, COL_GREEN);
-    lv_obj_set_pos(usb, 262, 4);
-    homeClock = ui_label(bar, "10:24", &lv_font_montserrat_10, COL_TEXT);
-    lv_obj_set_pos(homeClock, 282, 4);
+    lv_obj_t* title = ui_label(r, "RPM LOOP", &lv_font_montserrat_16, COL_TEXT);
+    lv_obj_set_pos(title, 10, 8);
 
-    struct Tile { const char* text; UiScreen target; int x, y; };
-    static const Tile kTiles[] = {
-        {LV_SYMBOL_AUDIO "\nMUSIC",    UI_MUSIC,    10, 32},
-        {LV_SYMBOL_GPS "\nMAPS",       UI_MAPS,     170, 32},
-        {LV_SYMBOL_CALL "\nHEADSET",   UI_HEADSET,  10, 112},
-        {LV_SYMBOL_BARS "\nTRACKING",  UI_TRACKING, 170, 112},
-    };
-    for (unsigned i = 0; i < sizeof(kTiles) / sizeof(kTiles[0]); i++) {
-        lv_obj_t* b = ui_button(r, kTiles[i].text, &lv_font_montserrat_16);
-        lv_obj_set_pos(b, kTiles[i].x, kTiles[i].y);
-        lv_obj_set_size(b, 140, 70);
-        lv_obj_add_event_cb(b, show_cb, LV_EVENT_CLICKED, (void*)(intptr_t)kTiles[i].target);
-    }
-    lv_obj_t* nav = ui_button(r, LV_SYMBOL_GPS "  NAVIGATE", &lv_font_montserrat_14);
-    lv_obj_set_pos(nav, 10, 190);
-    lv_obj_set_size(nav, 190, 42);
-    lv_obj_add_event_cb(nav, show_cb, LV_EVENT_CLICKED, (void*)(intptr_t)UI_NAV);
-    lv_obj_t* set = ui_button(r, LV_SYMBOL_SETTINGS "  SETTINGS", &lv_font_montserrat_14);
-    lv_obj_set_pos(set, 208, 190);
-    lv_obj_set_size(set, 102, 42);
-    lv_obj_add_event_cb(set, show_cb, LV_EVENT_CLICKED, (void*)(intptr_t)UI_SETTINGS);
+    // Connection pill (top-right): dot + text, both refreshed live.
+    lv_obj_t* pill = lv_obj_create(r);
+    lv_obj_set_pos(pill, 192, 7);
+    lv_obj_set_size(pill, 118, 20);
+    lv_obj_set_style_bg_color(pill, lv_color_hex(COL_PANEL_CARD), 0);
+    lv_obj_set_style_bg_opa(pill, LV_OPA_COVER, 0);
+    lv_obj_set_style_radius(pill, 10, 0);
+    lv_obj_set_style_border_width(pill, 0, 0);
+    lv_obj_set_style_pad_all(pill, 0, 0);
+    lv_obj_clear_flag(pill, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(pill, LV_OBJ_FLAG_CLICKABLE);
+    homePillDot = lv_obj_create(pill);
+    lv_obj_set_pos(homePillDot, 8, 6);
+    lv_obj_set_size(homePillDot, 8, 8);
+    lv_obj_set_style_radius(homePillDot, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(homePillDot, lv_color_hex(COL_TEXT_SECOND), 0);
+    lv_obj_set_style_bg_opa(homePillDot, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(homePillDot, 0, 0);
+    lv_obj_set_style_pad_all(homePillDot, 0, 0);
+    lv_obj_clear_flag(homePillDot, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(homePillDot, LV_OBJ_FLAG_CLICKABLE);
+    homePillLbl = ui_label(pill, "Not connected", &lv_font_montserrat_10, COL_TEXT_SECOND);
+    lv_obj_set_pos(homePillLbl, 22, 4);
+
+    home_tile(r, 10, 38, COL_VIB_CYAN, LV_SYMBOL_GPS, "NAVIGATE", UI_NAV, &homeNavStatus);
+    home_tile(r, 165, 38, COL_VIB_PINK, LV_SYMBOL_AUDIO, "MUSIC", UI_MUSIC, &homeMusStatus);
+    home_tile(r, 10, 110, COL_VIB_LIME, LV_SYMBOL_BARS, "TRACKING", UI_TRACKING, &homeTrkStatus);
+    lv_obj_t* setStatus = nullptr;
+    home_tile(r, 165, 110, COL_VIB_AMBER, LV_SYMBOL_SETTINGS, "SETTINGS", UI_SETTINGS, &setStatus);
+    char fw[24];
+    snprintf(fw, sizeof(fw), "Firmware %s", RPMLOPP_FIRMWARE_VERSION);
+    lv_label_set_text(setStatus, fw);
+
+    // Wide live-speed card — only visible while navigating.
+    homeSpeedCard = lv_obj_create(r);
+    lv_obj_set_pos(homeSpeedCard, 10, 184);
+    lv_obj_set_size(homeSpeedCard, 300, 46);
+    lv_obj_set_style_bg_color(homeSpeedCard, lv_color_hex(COL_PANEL_CARD), 0);
+    lv_obj_set_style_bg_opa(homeSpeedCard, LV_OPA_COVER, 0);
+    lv_obj_set_style_radius(homeSpeedCard, VIB_CARD_RADIUS, 0);
+    lv_obj_set_style_border_width(homeSpeedCard, 0, 0);
+    lv_obj_set_style_pad_all(homeSpeedCard, 0, 0);
+    lv_obj_clear_flag(homeSpeedCard, LV_OBJ_FLAG_SCROLLABLE);
+    homeSpeedVal = ui_label(homeSpeedCard, "0", &lv_font_montserrat_28, COL_TEXT);
+    lv_obj_set_pos(homeSpeedVal, 12, 8);
+    homeSpeedUnit = ui_label(homeSpeedCard, "km/h", &lv_font_montserrat_10, COL_TEXT_SECOND);
+    lv_obj_set_pos(homeSpeedUnit, 36, 28);    // nudged next to number in refresh
+    homeSpeedStreet = ui_label(homeSpeedCard, "", &lv_font_montserrat_12, COL_TEXT);
+    lv_obj_set_pos(homeSpeedStreet, 92, 16);
+    lv_obj_set_width(homeSpeedStreet, 200);
+    lv_label_set_long_mode(homeSpeedStreet, LV_LABEL_LONG_DOT);
+    lv_obj_add_flag(homeSpeedCard, LV_OBJ_FLAG_HIDDEN);
 }
 
 static void refresh_home(void) {
-    char buf[48];
-    snprintf(buf, sizeof(buf), LV_SYMBOL_GPS " ±%.1fm", (double)g_bike_state.gpsAccuracy_m);
-    lv_label_set_text(homeGps, buf);
-    lv_label_set_text(homeBt, g_bike_state.headsetConnected ? LV_SYMBOL_CALL " Helmet" : LV_SYMBOL_CALL " --");
-    snprintf(buf, sizeof(buf), "%02d:%02d", g_bike_state.clockHour, g_bike_state.clockMin);
-    lv_label_set_text(homeClock, buf);
+    BikeState& b = g_bike_state;
+    char buf[64];
+
+    // Connection pill.
+    lv_obj_set_style_bg_color(homePillDot,
+        lv_color_hex(b.bleConnected ? COL_VIB_LIME : COL_TEXT_SECOND), 0);
+    lv_label_set_text(homePillLbl, b.bleConnected ? "Phone connected" : "Not connected");
+    lv_obj_set_style_text_color(homePillLbl,
+        lv_color_hex(b.bleConnected ? COL_TEXT : COL_TEXT_SECOND), 0);
+
+    // Tile status lines — real state or an honest empty message.
+    if (b.navigating) {
+        lv_label_set_text(homeNavStatus,
+            b.instruction[0] ? b.instruction : b.streetName);
+    } else {
+        lv_label_set_text(homeNavStatus, "No active route");
+    }
+    lv_label_set_text(homeMusStatus,
+        (b.playing && b.trackTitle[0]) ? b.trackTitle : "Nothing playing");
+    if (b.trackingActive) {
+        snprintf(buf, sizeof(buf), "%.2f km", (double)b.tripKm);
+        lv_label_set_text(homeTrkStatus, buf);
+    } else {
+        lv_label_set_text(homeTrkStatus, "Not started");
+    }
+
+    // Wide speed card only while a route is live.
+    if (b.navigating) {
+        lv_obj_clear_flag(homeSpeedCard, LV_OBJ_FLAG_HIDDEN);
+        snprintf(buf, sizeof(buf), "%d", (int)(b.speedKmh + 0.5f));
+        lv_label_set_text(homeSpeedVal, buf);
+        // Unit + street sit right of the number regardless of its width.
+        lv_point_t sz;
+        lv_txt_get_size(&sz, buf, &lv_font_montserrat_28, 0, 0, LV_COORD_MAX, 0);
+        lv_obj_set_pos(homeSpeedUnit, 16 + sz.x, 28);
+        lv_obj_set_pos(homeSpeedStreet, 48 + sz.x, 16);
+        lv_obj_set_width(homeSpeedStreet, 292 - (48 + sz.x));
+        lv_label_set_text(homeSpeedStreet, b.streetName);
+    } else {
+        lv_obj_add_flag(homeSpeedCard, LV_OBJ_FLAG_HIDDEN);
+    }
 }
 
 // White circular map-control button (36 px) for the NAV screen's left
@@ -235,7 +563,14 @@ static lv_obj_t* make_map_ctrl_btn(lv_obj_t* parent, const char* symbol, int x, 
 static MapView navMap;
 static lv_obj_t *navArrow, *navDist, *navUnit, *navStreet, *navThenArrow,
                 *navSpdLimit, *navSpdNow, *navRemLbl, *navStalePill,
-                *navRecentre, *navRecentreLbl;
+                *navRecentre, *navRecentreLbl,
+                *navMainSeg, *navThenSeg, *navSpdDisc, *navKmhLbl,
+                *navRemPill, *navIdlePill;
+
+static void nav_set_hidden(lv_obj_t* o, bool hidden) {
+    if (hidden) lv_obj_add_flag(o, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_clear_flag(o, LV_OBJ_FLAG_HIDDEN);
+}
 static int navLastDist = -1, navLastSpeed = -1, navLastLimit = -1;
 
 static void nav_recentre(void) {
@@ -268,6 +603,7 @@ static void build_nav(void) {
 
     // ---- two-segment banner: main (0..226) + 2 px gap + Then (228..320) --
     lv_obj_t* mainSeg = nav_banner_seg(r, 0, 226);
+    navMainSeg = mainSeg;
     navArrow = ui_label(mainSeg, LV_SYMBOL_UP, &lv_font_montserrat_28, COL_TEXT);
     lv_obj_set_pos(navArrow, 10, 9);
     navDist = ui_label(mainSeg, "150", &lv_font_montserrat_32, COL_TEXT);
@@ -280,6 +616,7 @@ static void build_nav(void) {
     lv_label_set_long_mode(navStreet, LV_LABEL_LONG_DOT);
 
     lv_obj_t* thenSeg = nav_banner_seg(r, 228, 92);
+    navThenSeg = thenSeg;
     lv_obj_t* thenCap = ui_label(thenSeg, "Then", &lv_font_montserrat_10, COL_TEXT);
     lv_obj_set_pos(thenCap, 10, 3);
     navThenArrow = ui_label(thenSeg, LV_SYMBOL_RIGHT, &lv_font_montserrat_24, COL_TEXT);
@@ -319,10 +656,11 @@ static void build_nav(void) {
     lv_obj_clear_flag(disc, LV_OBJ_FLAG_CLICKABLE);
     navSpdLimit = ui_label(disc, "50", &lv_font_montserrat_20, 0x111111);
     lv_obj_center(navSpdLimit);
+    navSpdDisc = disc;
     navSpdNow = ui_label(r, "48", &lv_font_montserrat_32, 0x111111);
     lv_obj_set_pos(navSpdNow, 168, 194);
-    lv_obj_t* kmh = ui_label(r, "km/h", &lv_font_montserrat_10, COL_MAP_LABEL);
-    lv_obj_set_pos(kmh, 170, 224);
+    navKmhLbl = ui_label(r, "km/h", &lv_font_montserrat_10, COL_MAP_LABEL);
+    lv_obj_set_pos(navKmhLbl, 170, 224);
 
     // ---- remaining pill (bottom-right, dark translucent) ----
     lv_obj_t* pill = lv_obj_create(r);
@@ -337,6 +675,25 @@ static void build_nav(void) {
     lv_obj_clear_flag(pill, LV_OBJ_FLAG_CLICKABLE);
     navRemLbl = ui_label(pill, "", &lv_font_montserrat_10, COL_TEXT);
     lv_obj_center(navRemLbl);
+    navRemPill = pill;
+
+    // ---- idle overlay (2.3.0): centred pill shown instead of all route
+    // chrome while no route is active. The map underneath still draws.
+    navIdlePill = lv_obj_create(r);
+    lv_obj_set_pos(navIdlePill, 10, 104);
+    lv_obj_set_size(navIdlePill, 300, 32);
+    lv_obj_set_style_bg_color(navIdlePill, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_bg_opa(navIdlePill, LV_OPA_70, 0);
+    lv_obj_set_style_radius(navIdlePill, 16, 0);
+    lv_obj_set_style_border_width(navIdlePill, 0, 0);
+    lv_obj_set_style_pad_all(navIdlePill, 0, 0);
+    lv_obj_clear_flag(navIdlePill, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(navIdlePill, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_t* idleLbl = ui_label(navIdlePill,
+        "No active route \xE2\x80\x94 start navigation on your phone",
+        &lv_font_montserrat_12, COL_TEXT);
+    lv_obj_center(idleLbl);
+    lv_obj_add_flag(navIdlePill, LV_OBJ_FLAG_HIDDEN);
 }
 
 static void refresh_nav(void) {
@@ -345,6 +702,25 @@ static void refresh_nav(void) {
     // (the recentre button's dimming keys off mapLocked).
     b.mapLocked = navMap.locked();
     b.zoomLevel = navMap.zoom();
+
+    // Idle (2.3.0): no route -> hide ALL route chrome (banner, speed
+    // cluster, remaining pill, stale pill) and show the centred hint.
+    // The map itself still draws beneath.
+    bool idle = !b.navigating;
+    nav_set_hidden(navIdlePill, !idle);
+    nav_set_hidden(navMainSeg, idle);
+    nav_set_hidden(navThenSeg, idle);
+    nav_set_hidden(navSpdDisc, idle);
+    nav_set_hidden(navSpdNow, idle);
+    nav_set_hidden(navKmhLbl, idle);
+    nav_set_hidden(navRemPill, idle);
+    if (idle) {
+        lv_obj_add_flag(navStalePill, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_style_bg_opa(navRecentre, b.mapLocked ? LV_OPA_60 : LV_OPA_COVER, 0);
+        lv_obj_set_style_text_color(navRecentreLbl,
+            lv_color_hex(b.mapLocked ? COL_TEXT_SECOND : COL_BLUE), 0);
+        return;
+    }
 
     // Banner main segment: maneuver arrow + distance + street.
     lv_label_set_text(navArrow, ui_turn_symbol(b.turnDir));
@@ -467,7 +843,8 @@ static void music_next_cb(lv_event_t* e) { (void)e; bike_control_next_track(); }
 static void music_prev_cb(lv_event_t* e) { (void)e; bike_control_prev_track(); }
 
 static void build_music(void) {
-    lv_obj_t* r = make_root(UI_MUSIC, COL_PANEL_BG);
+    lv_obj_t* r = make_root(UI_MUSIC, COL_BG_TOP);
+    ui_apply_gradient_bg(r);
     lv_obj_t* t = ui_label(r, "MUSIC", &lv_font_montserrat_14, COL_TEXT_SECOND);
     lv_obj_set_pos(t, 10, 8);
 
@@ -522,12 +899,17 @@ static void build_music(void) {
 
 static void refresh_music(void) {
     BikeState& b = g_bike_state;
-    if (strcmp(musLastTitle, b.trackTitle) != 0) {
-        strncpy(musLastTitle, b.trackTitle, sizeof(musLastTitle) - 1);
-        lv_label_set_text(musTitle, b.trackTitle);
-        lv_label_set_text(musArtist, b.trackArtist);
+    // Empty state: no track loaded (Demo off, nothing from the phone yet)
+    // shows "Nothing playing" instead of a blank title and a frozen bar.
+    const char* dispTitle = b.trackTitle[0] ? b.trackTitle : "Nothing playing";
+    if (strcmp(musLastTitle, dispTitle) != 0) {
+        strncpy(musLastTitle, dispTitle, sizeof(musLastTitle) - 1);
+        musLastTitle[sizeof(musLastTitle) - 1] = '\0';
+        lv_label_set_text(musTitle, dispTitle);
+        lv_label_set_text(musArtist, b.trackTitle[0] ? b.trackArtist : "");
     }
     if (b.trackDurSec > 0) lv_bar_set_value(musBar, b.trackPosSec * 100 / b.trackDurSec, LV_ANIM_OFF);
+    else lv_bar_set_value(musBar, 0, LV_ANIM_OFF);
     char tb[16], db[16], buf[40];
     ui_format_mmss(tb, b.trackPosSec);
     ui_format_mmss(db, b.trackDurSec);
@@ -544,7 +926,8 @@ static int hsLastConn = -1;
 static void headset_toggle_cb(lv_event_t* e) { (void)e; bike_control_toggle_headset(); }
 
 static void build_headset(void) {
-    lv_obj_t* r = make_root(UI_HEADSET, COL_PANEL_BG);
+    lv_obj_t* r = make_root(UI_HEADSET, COL_BG_TOP);
+    ui_apply_gradient_bg(r);
     lv_obj_t* t = ui_label(r, "HEADSET", &lv_font_montserrat_14, COL_TEXT_SECOND);
     lv_obj_set_pos(t, 10, 8);
 
@@ -600,19 +983,19 @@ static void refresh_headset(void) {
     if (conn) {
         lv_label_set_text(hsStatus, "Connected");
         lv_obj_set_style_text_color(hsStatus, lv_color_hex(COL_GREEN), 0);
-        lv_label_set_text(hsDetail, "Rider Helmet · A2DP (mock link)");
+        lv_label_set_text(hsDetail, "Rider Helmet \xC2\xB7 A2DP");
         lv_label_set_text(hsBtnLbl, "DISCONNECT");
         snprintf(buf, sizeof(buf), "%02d:%02d  BT radio ready", b.clockHour, b.clockMin);
         lv_label_set_text(hsLog[0], buf);
-        lv_label_set_text(hsLog[1], "Link up: Rider Helmet · A2DP streaming ready");
+        lv_label_set_text(hsLog[1], "Link up: Rider Helmet \xC2\xB7 A2DP streaming ready");
     } else {
         lv_label_set_text(hsStatus, "Not connected");
         lv_obj_set_style_text_color(hsStatus, lv_color_hex(COL_RED), 0);
-        lv_label_set_text(hsDetail, "Helmet headset not in range (mock)");
+        lv_label_set_text(hsDetail, "No headset connected");
         lv_label_set_text(hsBtnLbl, "CONNECT");
         snprintf(buf, sizeof(buf), "%02d:%02d  BT radio ready", b.clockHour, b.clockMin);
         lv_label_set_text(hsLog[0], buf);
-        lv_label_set_text(hsLog[1], "Scanning for headsets... last: Rider Helmet");
+        lv_label_set_text(hsLog[1], "No headset connected");
     }
 }
 
@@ -639,7 +1022,8 @@ static lv_obj_t* stat_card(lv_obj_t* parent, int x, int y, const char* caption, 
 }
 
 static void build_tracking(void) {
-    lv_obj_t* r = make_root(UI_TRACKING, COL_PANEL_BG);
+    lv_obj_t* r = make_root(UI_TRACKING, COL_BG_TOP);
+    ui_apply_gradient_bg(r);
     stat_card(r, 10, 10, "SPEED KM/H", &trkSpeed);
     stat_card(r, 165, 10, "TRIP KM", &trkTrip);
     stat_card(r, 10, 96, "RIDE TIME", &trkTime);
@@ -672,13 +1056,19 @@ static void refresh_tracking(void) {
 }
 
 // ============================================================ SETTINGS ======
-static lv_obj_t *setBright, *setVol;
+static lv_obj_t *setBright, *setVol, *setDemoSwitch, *setDemoNote;
 
 static void bright_changed_cb(lv_event_t* e) {
     bike_control_set_brightness((int)lv_slider_get_value(lv_event_get_target(e)));
 }
 static void vol_changed_cb(lv_event_t* e) {
     bike_control_set_volume((int)lv_slider_get_value(lv_event_get_target(e)));
+}
+// The Demo mode switch is bound straight to BikeState.demoMode (spec'd
+// exception to the bike_control_* seam — there is no driver action here,
+// just the provider gate flag).
+static void demo_changed_cb(lv_event_t* e) {
+    g_bike_state.demoMode = lv_obj_has_state(lv_event_get_target(e), LV_STATE_CHECKED);
 }
 
 static lv_obj_t* settings_slider(lv_obj_t* parent, int y, int vmin, int vmax, int val, lv_event_cb_t cb) {
@@ -695,32 +1085,55 @@ static lv_obj_t* settings_slider(lv_obj_t* parent, int y, int vmin, int vmax, in
 }
 
 static void build_settings(void) {
-    lv_obj_t* r = make_root(UI_SETTINGS, COL_PANEL_BG);
+    lv_obj_t* r = make_root(UI_SETTINGS, COL_BG_TOP);
+    ui_apply_gradient_bg(r);
     lv_obj_t* t = ui_label(r, "SETTINGS", &lv_font_montserrat_14, COL_TEXT_SECOND);
     lv_obj_set_pos(t, 10, 8);
 
     lv_obj_t* l1 = ui_label(r, "Brightness", &lv_font_montserrat_14, COL_TEXT);
-    lv_obj_set_pos(l1, 10, 44);
-    setBright = settings_slider(r, 48, 40, 100, g_bike_state.brightnessPct, bright_changed_cb);
+    lv_obj_set_pos(l1, 10, 40);
+    setBright = settings_slider(r, 44, 40, 100, g_bike_state.brightnessPct, bright_changed_cb);
 
     lv_obj_t* l2 = ui_label(r, "Volume", &lv_font_montserrat_14, COL_TEXT);
-    lv_obj_set_pos(l2, 10, 84);
-    setVol = settings_slider(r, 88, 0, 100, g_bike_state.volumePct, vol_changed_cb);
+    lv_obj_set_pos(l2, 10, 76);
+    setVol = settings_slider(r, 80, 0, 100, g_bike_state.volumePct, vol_changed_cb);
 
-    lv_obj_t* l3 = ui_label(r, "Units", &lv_font_montserrat_14, COL_TEXT);
-    lv_obj_set_pos(l3, 10, 124);
-    lv_obj_t* l3v = ui_label(r, "km/h (fixed)", &lv_font_montserrat_12, COL_TEXT_DIM);
-    lv_obj_set_pos(l3v, 118, 126);
+    lv_obj_t* l3 = ui_label(r, "Demo mode", &lv_font_montserrat_14, COL_TEXT);
+    lv_obj_set_pos(l3, 10, 112);
+    setDemoSwitch = lv_switch_create(r);
+    lv_obj_set_pos(setDemoSwitch, 118, 110);
+    lv_obj_set_size(setDemoSwitch, 46, 24);
+    lv_obj_set_style_bg_color(setDemoSwitch, lv_color_hex(COL_PANEL_DIV), 0);
+    lv_obj_set_style_bg_color(setDemoSwitch, lv_color_hex(COL_VIB_LIME),
+                              (lv_style_selector_t)(LV_PART_INDICATOR | LV_STATE_CHECKED));
+    lv_obj_set_style_bg_color(setDemoSwitch, lv_color_hex(COL_TEXT), LV_PART_KNOB);
+    if (g_bike_state.demoMode) lv_obj_add_state(setDemoSwitch, LV_STATE_CHECKED);
+    lv_obj_add_event_cb(setDemoSwitch, demo_changed_cb, LV_EVENT_VALUE_CHANGED, nullptr);
+    setDemoNote = ui_label(r, "", &lv_font_montserrat_10, COL_TEXT_DIM);
+    lv_obj_set_pos(setDemoNote, 176, 117);
 
-    lv_obj_t* l4 = ui_label(r, "About", &lv_font_montserrat_14, COL_TEXT);
-    lv_obj_set_pos(l4, 10, 164);
+    lv_obj_t* l4 = ui_label(r, "Units", &lv_font_montserrat_14, COL_TEXT);
+    lv_obj_set_pos(l4, 10, 148);
+    lv_obj_t* l4v = ui_label(r, "km/h (fixed)", &lv_font_montserrat_12, COL_TEXT_DIM);
+    lv_obj_set_pos(l4v, 118, 150);
+
+    lv_obj_t* l5 = ui_label(r, "About", &lv_font_montserrat_14, COL_TEXT);
+    lv_obj_set_pos(l5, 10, 180);
     char buf[64];
-    snprintf(buf, sizeof(buf), "RPMLOOP FW %s · LVGL 8.3 · ST7789V", RPMLOPP_FIRMWARE_VERSION);
-    lv_obj_t* l4v = ui_label(r, buf, &lv_font_montserrat_10, COL_TEXT_DIM);
-    lv_obj_set_pos(l4v, 10, 188);
-    lv_obj_t* l5v = ui_label(r, "Mock data — phone nav feeds BikeState over BLE", &lv_font_montserrat_10, COL_TEXT_DIM);
-    lv_obj_set_pos(l5v, 10, 206);
+    snprintf(buf, sizeof(buf), "RPMLOOP FW %s \xC2\xB7 LVGL 8.3 \xC2\xB7 ST7789V", RPMLOPP_FIRMWARE_VERSION);
+    lv_obj_t* l5v = ui_label(r, buf, &lv_font_montserrat_10, COL_TEXT_DIM);
+    lv_obj_set_pos(l5v, 118, 183);
     make_home_btn(r, 284, 6);
+}
+
+static void refresh_settings(void) {
+    // Keep the switch + its caption honest if the flag changed elsewhere.
+    bool on = g_bike_state.demoMode;
+    if (lv_obj_has_state(setDemoSwitch, LV_STATE_CHECKED) != on) {
+        if (on) lv_obj_add_state(setDemoSwitch, LV_STATE_CHECKED);
+        else lv_obj_clear_state(setDemoSwitch, LV_STATE_CHECKED);
+    }
+    lv_label_set_text(setDemoNote, on ? "Simulated data" : "Off \xE2\x80\x94 live data only");
 }
 
 // ============================================================ MANAGER =======
@@ -728,13 +1141,14 @@ static void build_screen(UiScreen id) {
     if (S[id].root) return;
     switch (id) {
         case UI_BOOT:     build_boot();     S[id].refresh = refresh_boot; break;
+        case UI_CONNECT:  build_connect();  S[id].refresh = refresh_connect; break;
         case UI_HOME:     build_home();     S[id].refresh = refresh_home; break;
         case UI_NAV:      build_nav();      S[id].refresh = refresh_nav; break;
         case UI_MAPS:     build_maps();     S[id].refresh = refresh_maps; break;
         case UI_MUSIC:    build_music();    S[id].refresh = refresh_music; break;
         case UI_HEADSET:  build_headset();  S[id].refresh = refresh_headset; break;
         case UI_TRACKING: build_tracking(); S[id].refresh = refresh_tracking; break;
-        case UI_SETTINGS: build_settings(); S[id].refresh = nullptr; break;
+        case UI_SETTINGS: build_settings(); S[id].refresh = refresh_settings; break;
         default: break;
     }
 }
@@ -745,8 +1159,18 @@ static void apply_dim_overlay(void) {
     lv_obj_set_style_bg_opa(s_dimOverlay, (lv_opa_t)(dimPct * 255 / 100), 0);
 }
 
+static bool s_prevBle = false;   // disconnect-rule edge detector
+
 static void refresh_timer_cb(lv_timer_t* t) {
     (void)t;
+    // Disconnect rule (2.3.0): if the phone link drops anywhere other
+    // than Splash/Connect, go back to Connect with the lost-link note.
+    bool ble = g_bike_state.bleConnected;
+    if (s_prevBle && !ble && s_cur != UI_BOOT && s_cur != UI_CONNECT) {
+        s_connLost = true;
+        ui_show(UI_CONNECT);
+    }
+    s_prevBle = ble;
     if (S[s_cur].refresh) S[s_cur].refresh();
     apply_dim_overlay();
 }
@@ -776,6 +1200,7 @@ void ui_show(UiScreen id) {
     build_screen(id);
     s_cur = id;
     lv_scr_load(S[id].root);
+    if (id == UI_CONNECT) connect_on_show();
     if (S[id].refresh) S[id].refresh();
 }
 

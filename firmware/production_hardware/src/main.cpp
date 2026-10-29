@@ -13,12 +13,13 @@
 #include "ui/screens.h"
 
 // ==============================================================================
-// RPMLOOP production firmware 2.2.0
+// RPMLOOP production firmware 2.3.0
 //   BLE peripheral (protocol v1, JSON)  +  LVGL UI on the physical panel.
 // Data flow: phone packets -> NavigationState -> bike_state_apply_nav() ->
-// BikeState -> LVGL screens. With no phone, MockProvider animates BikeState
-// so the device demos standalone. Display rendering lives entirely in the UI
-// layer (the old DisplayDriver stub never drove a single pixel — removed).
+// BikeState -> LVGL screens. With no phone linked the UI boots honest:
+// animated splash -> Connect screen -> Home with real empty states.
+// MockProvider animates BikeState ONLY while the Settings "Demo mode"
+// switch is ON. Display rendering lives entirely in the UI layer.
 // ==============================================================================
 
 static BLEServer* pServer = nullptr;
@@ -207,7 +208,7 @@ void setup() {
     bike_state_init();
     lvgl_port_init();          // display + LVGL + input devices
     ui_init();                 // screens (boots into Boot -> Home)
-    mock_provider_init();      // standalone demo data until the phone talks
+    mock_provider_init();      // demo data provider (gated by Demo Mode, default OFF)
 
     // BLE peripheral (protocol v1).
     BLEDevice::init(RPMLOPP_BLE_DEVICE_NAME);
@@ -268,7 +269,7 @@ void setup() {
 void loop() {
     uint32_t now = millis();
 
-    mock_provider_update(now);       // demo data (yields nav fields to live BLE)
+    mock_provider_update(now);       // demo data, only while Demo Mode is ON (nav fields yield to live BLE)
     bike_state_check_stale(now);     // live feed silent > 5 s -> STALE pill
     lv_timer_handler();              // LVGL: renders + polls the touchscreen
     delay(5);

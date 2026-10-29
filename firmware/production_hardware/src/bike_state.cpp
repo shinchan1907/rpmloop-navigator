@@ -11,22 +11,16 @@ static bool     s_liveSession = false;   // NAV_START..NAV_STOP window
 void bike_state_init(void) {
     memset(&g_bike_state, 0, sizeof(g_bike_state));
     BikeState& b = g_bike_state;
-    b.navigating = true;                 // mock demo route is active at boot
-    b.turnDir = TURN_DIR_RIGHT;
-    b.nextTurnDir = TURN_DIR_LEFT;
-    b.speedLimitKmh = 50;
-    strncpy(b.streetName, "Grand Promenade", sizeof(b.streetName) - 1);
-    strncpy(b.instruction, "Turn right onto Grand Promenade", sizeof(b.instruction) - 1);
-    b.distToTurn_m = 150.0f;
-    b.remainKm = 2.4f;
-    b.etaMin = 3;
-    b.speedKmh = 48.0f;
-    b.gpsAccuracy_m = 2.4f;
+    // Idle defaults (2.3.0): the device boots HONEST — no route, no track,
+    // no speed until the phone feeds real data over BLE or the user turns
+    // Demo Mode ON in Settings (MockProvider then seeds its demo scene).
+    b.navigating = false;
+    b.turnDir = TURN_DIR_STRAIGHT;
+    b.nextTurnDir = TURN_DIR_STRAIGHT;
+    b.speedLimitKmh = 0;
     b.zoomLevel = 16;
     b.mapLocked = true;
-    strncpy(b.trackTitle, "Midnight Ride (Instrumental)", sizeof(b.trackTitle) - 1);
-    strncpy(b.trackArtist, "RPM Loop Sessions", sizeof(b.trackArtist) - 1);
-    b.trackDurSec = 214;
+    b.demoMode = false;
     b.clockHour = 10;
     b.clockMin = 24;
     b.usbPower = true;
@@ -62,10 +56,12 @@ void bike_state_apply_nav(const NavigationState& s) {
     s_lastNavMs = s.last_update_ms;
 
     if (s.status == NAV_STATUS_CONNECTED_IDLE) {
-        // NAV_STOP: live session over — MockProvider resumes the demo route.
+        // NAV_STOP: live session over — nav fields fall back to idle
+        // (MockProvider re-seeds its demo route only if Demo Mode is ON).
         s_liveSession = false;
         b.navigating = false;
         b.navStale = false;
+        b.speedKmh = 0.0f;   // no provider owns speed now — don't show stale
         return;
     }
     s_liveSession = true;
@@ -91,7 +87,8 @@ void bike_state_on_ble_connect(void) {
 
 void bike_state_on_ble_disconnect(void) {
     g_bike_state.bleConnected = false;
-    // Live session dies with the link; the mock demo route takes over again.
+    // Live session dies with the link; nav fields idle again (or the mock
+    // demo route, if Demo Mode is ON). The UI returns to the Connect screen.
     s_liveSession = false;
     g_bike_state.navStale = false;
 }

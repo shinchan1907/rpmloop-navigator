@@ -5,6 +5,9 @@
 
 // MockProvider — the demo data provider. Animates BikeState so the whole UI
 // can be developed and demoed on the bench with no GPS / phone / headset.
+// GATED by BikeState.demoMode (Settings switch, default OFF): with Demo
+// Mode off, update() only ticks the clock and — on the ON->OFF edge —
+// clears every mock-owned field back to idle defaults.
 // Call mock_provider_update() regularly from loop(); it self-throttles to
 // 100 ms. While a live BLE nav session is fresh it leaves nav fields alone
 // (see bike_state_nav_live). The bike_control_*() UI actions are also

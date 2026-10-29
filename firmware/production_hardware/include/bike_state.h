@@ -72,6 +72,8 @@ struct BikeState {
     int    clockMin;
     bool   usbPower;
     bool   bleConnected;      // phone linked over BLE
+    bool   demoMode;          // Settings switch: MockProvider may feed demo
+                              // data only while true (default false)
     int    brightnessPct;     // 40..100 (software dim overlay; no BL pin)
     int    volumePct;         // 0..100 (stored only until A2DP lands)
 };

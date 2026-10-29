@@ -2,8 +2,10 @@
 
 Firmware flashed onto the ESP32-S3 in the physical RPMLOOP unit: a BLE
 peripheral speaking protocol v1 to the companion apps, plus a complete
-embedded LVGL UI on the 2.8" panel (8 screens, touchscreen input, mock
-data provider for standalone bench demos).
+embedded LVGL UI on the 2.8" panel (9 screens, touchscreen input). Demo
+data is **OFF by default** — the device boots honest and shows real empty
+states until the phone feeds it; a MockProvider demo scene is available
+behind the Settings "Demo mode" switch.
 
 **Product scope (final):** the device is ONLY the ESP32-S3 + this display
 module. All navigation data comes from the phone companion apps over BLE;
@@ -69,21 +71,44 @@ rotated or mirrored.
 
 ## 🧩 Embedded UI (LVGL 8.3 + LovyanGFX)
 
-- **Screens:** Boot → Home · Nav · Maps · Music · Headset · Tracking · Settings
-- **Nav screen (2.2.2):** TomTom/Google-style full-bleed 2D nav — the map
+- **Screens:** Splash → Connect → Home · Nav · Maps · Music · Headset · Tracking · Settings
+- **Boot flow (2.3.0):** an animated splash (~3.5 s — "RPM LOOP" letters
+  fade/rise, an arc sweeps, "RIDE CONNECTED" tagline) lands on the
+  **Connect** screen ("Connect your phone"; tap to start the pulsing-ring
+  waiting state — BLE advertising is always on, the screen is a UI state).
+  A linked phone shows a brief green-check "Connected" beat, then Home;
+  if the phone is already linked at splash end, Connect is skipped. If
+  the BLE link drops on any other screen, the UI returns to Connect with
+  a "Connection lost" note.
+- **Vibrant theme (2.3.0):** deep navy→indigo gradient background with
+  neon cards (lime `#8BE000`, cyan `#2ED3E6`, pink `#FF4D8D`, amber
+  `#FFB020`, radius 16, dark text on the bright cards). Home is four
+  vibrant tiles (Navigate / Music / Tracking / Settings) with a live
+  connection pill and status lines that show **real** BikeState values
+  ("No active route", "Nothing playing", "Not started") — plus a wide
+  live-speed card that only exists while a route is active.
+- **Demo mode (Settings, default OFF):** `MockProvider` animates
+  BikeState ONLY while the switch is on (demo route, demo tracks, fake
+  speed, headset toggling). Turning it off wipes every mock-owned field
+  back to idle defaults. The clock ticks regardless (no RTC on the bench).
+- **Nav screen (2.2.2, idle overlay 2.3.0):** TomTom/Google-style full-bleed 2D nav — the map
   fills all 320×240 (river band, building blocks, route). Over it: a
   two-segment blue instruction banner (maneuver arrow + big distance +
   street, and a "Then" preview of the next maneuver), a left rail of
   round recentre/+/- buttons, a bottom-centre speed cluster (red-ring
   speed-limit disc + current speed) and a remaining-distance/ETA pill.
+  With no active route, all that chrome hides behind a centred
+  "No active route — start navigation on your phone" pill (map still draws).
 - **Map:** procedural `MapView` component (road grid, river, buildings,
   park/water, route polyline #1A73E8 with white casing, two-tone position
   chevron) with drag-pan/zoom/lock — rendering lives inside
   `MapView::render()`, so screens never change if the world renderer does.
 - **Data seam:** screens only READ `BikeState` (`include/bike_state.h`).
-  Providers write it: `MockProvider` today (animated demo data) and the BLE
-  handler (`bike_state_apply_nav`) when the phone is navigating — no UI
-  changes needed either way. Actions go through the `bike_control_*()` seam.
+  Providers write it: the BLE handler (`bike_state_apply_nav`) when the
+  phone is navigating, and `MockProvider` ONLY while Demo Mode is ON —
+  no UI changes needed either way. Actions go through the
+  `bike_control_*()` seam (sole exception: the Settings Demo-mode switch
+  binds `BikeState.demoMode` directly).
 - **Controls (touch only):** tap Home tiles / buttons to navigate, every
   sub-screen has a Home button (top corner); on Nav/Maps drag the map to
   pan and use the on-screen **+ / −** round buttons to zoom, tap the

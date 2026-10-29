@@ -29,7 +29,7 @@ flowchart TD
 
 ### 2. [Production Hardware Firmware](production_hardware/)
 - **Use Case:** Real-world motorcycle installation inside the 3D-printed enclosure.
-- **Hardware Output:** Direct SPI signals to the physical 2.8" 320 × 240 TFT LCD (ST7789V, bench-verified pinout), full embedded LVGL UI (8 screens, HR2046 resistive TOUCH input — the only input; product hardware is the ESP32-S3 + this display module, nothing else), brightness via software dim overlay (backlight is wired to 3V3).
+- **Hardware Output:** Direct SPI signals to the physical 2.8" 320 × 240 TFT LCD (ST7789V, bench-verified pinout), full embedded LVGL UI (9 screens — animated splash → phone-connect flow → vibrant Home; HR2046 resistive TOUCH input — the only input; product hardware is the ESP32-S3 + this display module, nothing else), brightness via software dim overlay (backlight is wired to 3V3). Demo data is OFF by default (Settings "Demo mode" switch) — the UI shows real empty states until a phone feeds it over BLE.
 - **Status LED:** Onboard WS2812 mini RGB LED (`SOLID RED` = Disconnected, `SOLID BLUE` = Connected).
 - **Directory:** [`firmware/production_hardware/`](production_hardware/)
 

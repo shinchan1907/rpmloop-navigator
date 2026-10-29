@@ -35,6 +35,27 @@ lv_obj_t* ui_label(lv_obj_t* parent, const char* text, const lv_font_t* font, ui
     return l;
 }
 
+void ui_apply_gradient_bg(lv_obj_t* scr) {
+    lv_obj_set_style_bg_color(scr, lv_color_hex(COL_BG_TOP), 0);
+    lv_obj_set_style_bg_grad_color(scr, lv_color_hex(COL_BG_BOT), 0);
+    lv_obj_set_style_bg_grad_dir(scr, LV_GRAD_DIR_VER, 0);
+    lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
+}
+
+lv_obj_t* ui_vibrant_card(lv_obj_t* parent, int x, int y, int w, int h, uint32_t colorHex) {
+    lv_obj_t* c = lv_obj_create(parent);
+    lv_obj_set_pos(c, x, y);
+    lv_obj_set_size(c, w, h);
+    lv_obj_set_style_bg_color(c, lv_color_hex(colorHex), 0);
+    lv_obj_set_style_bg_opa(c, LV_OPA_COVER, 0);
+    lv_obj_set_style_radius(c, VIB_CARD_RADIUS, 0);
+    lv_obj_set_style_border_width(c, 0, 0);
+    lv_obj_set_style_pad_all(c, 0, 0);
+    lv_obj_set_style_shadow_width(c, 0, 0);
+    lv_obj_clear_flag(c, LV_OBJ_FLAG_SCROLLABLE);
+    return c;
+}
+
 lv_obj_t* ui_button(lv_obj_t* parent, const char* text, const lv_font_t* font) {
     lv_obj_t* b = lv_btn_create(parent);
     lv_obj_set_style_bg_color(b, lv_color_hex(COL_PANEL_CARD), 0);

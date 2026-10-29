@@ -7,7 +7,7 @@
 // carries its own Home button to come back.
 
 enum UiScreen {
-    UI_BOOT = 0, UI_HOME, UI_NAV, UI_MAPS,
+    UI_BOOT = 0, UI_CONNECT, UI_HOME, UI_NAV, UI_MAPS,
     UI_MUSIC, UI_HEADSET, UI_TRACKING, UI_SETTINGS, UI_COUNT
 };
 
