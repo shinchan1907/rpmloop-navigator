@@ -3,7 +3,14 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
+// ==============================================================================
+// RPMLOOP BLE PROTOCOL v1 — shared by phone apps, simulator bridge and this
+// production firmware. UUIDs / message types / payload field names are the
+// wire contract: do not rename. (Verified identical to
+// firmware/simulator_bridge/include/protocol_def.h on 2026-10-29.)
+// ==============================================================================
 #define RPMLOPP_BLE_DEVICE_NAME        "RPMLOOP"
 #define RPMLOPP_SERVICE_UUID           "4E415601-5250-4D4C-6F70-704E61760001"
 #define RPMLOPP_CHAR_CMD_NAV_UUID      "4E415602-5250-4D4C-6F70-704E61760002"
@@ -11,8 +18,8 @@
 #define RPMLOPP_CHAR_DEVICE_INFO_UUID  "4E415604-5250-4D4C-6F70-704E61760004"
 
 #define RPMLOPP_PROTOCOL_VERSION       1
-#define RPMLOPP_FIRMWARE_VERSION       "1.0.0"
-#define RPMLOPP_HARDWARE_MODEL         "Waveshare ESP32-S3 Mini (ESP32-S3FH4R2)"
+#define RPMLOPP_FIRMWARE_VERSION       "2.1.0"
+#define RPMLOPP_HARDWARE_MODEL         "ESP32-S3 (Mini) + 2.8in ILI9341 SPI"
 
 #define RPMLOPP_STALE_TIMEOUT_MS       5000
 #define RPMLOPP_VIRTUAL_LCD_W          320
@@ -40,6 +47,7 @@ enum ManeuverType {
     MANEUVER_DESTINATION = 10
 };
 
+// Parsed phone -> device navigation state (one per NAV_* packet).
 struct NavigationState {
     bool valid;
     bool is_sim;
@@ -62,5 +70,11 @@ struct NavigationState {
     float gps_acc_m;
     uint32_t last_update_ms;
 };
+
+// Maneuver string <-> enum helpers (implemented in src/protocol_util.cpp).
+// NOTE: production main.cpp called parseManeuver() before 2.1.0 but the
+// function only existed in the simulator bridge — that was a build break.
+ManeuverType parseManeuver(const char* m);
+const char* maneuverToString(ManeuverType m);
 
 #endif // PROTOCOL_DEF_H

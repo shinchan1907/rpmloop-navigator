@@ -29,7 +29,7 @@ flowchart TD
 
 ### 2. [Production Hardware Firmware](production_hardware/)
 - **Use Case:** Real-world motorcycle installation inside the 3D-printed enclosure.
-- **Hardware Output:** Direct SPI signals to the physical 2.8" 320 × 240 TFT LCD with 5 kHz PWM backlight dimming, resistive touch (XPT2046), and internal MicroSD storage.
+- **Hardware Output:** Direct SPI signals to the physical 2.8" 320 × 240 TFT LCD (ILI9341, bench-verified pinout), full embedded LVGL UI (8 screens, encoder/joystick/button input — the module's resistive touch is unused by design), brightness via software dim overlay (backlight is wired to 3V3), MicroSD reserved for a future tile store.
 - **Status LED:** Onboard WS2812 mini RGB LED (`SOLID RED` = Disconnected, `SOLID BLUE` = Connected).
 - **Directory:** [`firmware/production_hardware/`](production_hardware/)
 

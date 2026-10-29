@@ -1,0 +1,178 @@
+#include <stdlib.h>
+#include "esp_heap_caps.h"
+#include "ui/map_view.h"
+#include "ui/ui_common.h"
+
+// World model: a 960x720 "city" in world units. The route runs north through
+// the middle; the view centre sits on the route so the arrow anchor
+// (bottom-centre of the view) is on the route when locked.
+static const int kWorldCx = 480;
+static const int kWorldCy = 430;
+
+static const int kRoute[][2] = {
+    {480, 715}, {480, 560}, {520, 470}, {610, 430},
+    {640, 330}, {600, 240}, {660, 150}, {700, 40},
+};
+static const int kRouteN = sizeof(kRoute) / sizeof(kRoute[0]);
+
+static const int kPark1[][2] = {{110, 120}, {250, 100}, {290, 190}, {200, 250}, {120, 220}};
+static const int kPark2[][2] = {{700, 500}, {820, 480}, {860, 560}, {760, 610}, {690, 570}};
+static const int kWater[][2] = {{0, 520}, {150, 540}, {190, 640}, {90, 720}, {0, 700}};
+
+MapView::MapView()
+    : _canvas(nullptr), _buf(nullptr), _w(0), _h(0),
+      _panX(0), _panY(0), _zoom(16), _locked(true) {}
+
+MapView::~MapView() { if (_buf) free(_buf); }
+
+void MapView::create(lv_obj_t* parent, int x, int y, int w, int h) {
+    _w = w; _h = h;
+    size_t bytes = (size_t)w * (size_t)h * sizeof(lv_color_t);
+    _buf = (lv_color_t*)heap_caps_malloc(bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (!_buf) _buf = (lv_color_t*)heap_caps_malloc(bytes, MALLOC_CAP_8BIT);
+    _canvas = lv_canvas_create(parent);
+    lv_canvas_set_buffer(_canvas, _buf, w, h, LV_IMG_CF_TRUE_COLOR);
+    lv_obj_set_pos(_canvas, x, y);
+    lv_obj_clear_flag(_canvas, LV_OBJ_FLAG_CLICKABLE);
+    render();
+}
+
+float MapView::scale() const {
+    static const float kScales[] = {0.5f, 0.71f, 1.0f, 1.41f, 2.0f};  // z14..z18
+    int idx = _zoom - 14;
+    if (idx < 0) idx = 0;
+    if (idx > 4) idx = 4;
+    return kScales[idx];
+}
+
+int MapView::sx(int worldX) const {
+    return (int)((worldX - (kWorldCx + _panX)) * scale()) + _w / 2;
+}
+int MapView::sy(int worldY) const {
+    return (int)((worldY - (kWorldCy + _panY)) * scale()) + (_h - 35);
+}
+
+void MapView::drawLine(int x0, int y0, int x1, int y1, uint32_t colorHex, int width) {
+    lv_point_t pts[2] = {{(lv_coord_t)x0, (lv_coord_t)y0}, {(lv_coord_t)x1, (lv_coord_t)y1}};
+    lv_draw_line_dsc_t dsc;
+    lv_draw_line_dsc_init(&dsc);
+    dsc.color = lv_color_hex(colorHex);
+    dsc.width = width;
+    dsc.round_start = 1;
+    dsc.round_end = 1;
+    lv_canvas_draw_line(_canvas, pts, 2, &dsc);
+}
+
+void MapView::drawPoly(const int pts[][2], int count, uint32_t colorHex) {
+    lv_point_t* poly = (lv_point_t*)alloca(sizeof(lv_point_t) * count);
+    for (int i = 0; i < count; i++) {
+        poly[i].x = (lv_coord_t)sx(pts[i][0]);
+        poly[i].y = (lv_coord_t)sy(pts[i][1]);
+    }
+    lv_draw_rect_dsc_t dsc;
+    lv_draw_rect_dsc_init(&dsc);
+    dsc.bg_color = lv_color_hex(colorHex);
+    dsc.bg_opa = LV_OPA_COVER;
+    lv_canvas_draw_polygon(_canvas, poly, count, &dsc);
+}
+
+void MapView::drawRoute() {
+    // White casing first, then the Google-blue core line.
+    for (int pass = 0; pass < 2; pass++) {
+        uint32_t col = pass == 0 ? COL_ROAD : COL_ROUTE;
+        int width = (int)((pass == 0 ? 13 : 8) * scale());
+        if (width < 4) width = 4;
+        for (int i = 0; i + 1 < kRouteN; i++) {
+            drawLine(sx(kRoute[i][0]), sy(kRoute[i][1]),
+                     sx(kRoute[i + 1][0]), sy(kRoute[i + 1][1]), col, width);
+        }
+    }
+}
+
+void MapView::drawArrow() {
+    int ax = _w / 2;
+    int ay = _h - 35;
+    const int whiteTri[3][2] = {{ax, ay - 15}, {ax - 10, ay + 11}, {ax + 10, ay + 11}};
+    const int blueTri[3][2]  = {{ax, ay - 10}, {ax - 6, ay + 8},  {ax + 6, ay + 8}};
+    lv_draw_rect_dsc_t dsc;
+    lv_draw_rect_dsc_init(&dsc);
+    dsc.bg_opa = LV_OPA_COVER;
+    lv_point_t pts[3];
+    for (int i = 0; i < 3; i++) { pts[i].x = (lv_coord_t)whiteTri[i][0]; pts[i].y = (lv_coord_t)whiteTri[i][1]; }
+    dsc.bg_color = lv_color_hex(COL_ROAD);
+    lv_canvas_draw_polygon(_canvas, pts, 3, &dsc);
+    for (int i = 0; i < 3; i++) { pts[i].x = (lv_coord_t)blueTri[i][0]; pts[i].y = (lv_coord_t)blueTri[i][1]; }
+    dsc.bg_color = lv_color_hex(COL_ROUTE);
+    lv_canvas_draw_polygon(_canvas, pts, 3, &dsc);
+}
+
+void MapView::render() {
+    if (!_canvas || !_buf) return;
+    lv_canvas_fill_bg(_canvas, lv_color_hex(COL_MAP_BG), LV_OPA_COVER);
+
+    drawPoly(kPark1, 5, COL_PARK);
+    drawPoly(kPark2, 5, COL_PARK);
+    drawPoly(kWater, 5, COL_WATER);
+
+    // Road grid (world coords), casing pass then surface pass.
+    float sc = scale();
+    int casingW = (int)(10 * sc); if (casingW < 3) casingW = 3;
+    int roadW = (int)(7 * sc);    if (roadW < 2) roadW = 2;
+    for (int pass = 0; pass < 2; pass++) {
+        uint32_t col = pass == 0 ? COL_ROAD_EDGE : COL_ROAD;
+        int wdt = pass == 0 ? casingW : roadW;
+        for (int wx = 60; wx <= 900; wx += 120)
+            drawLine(sx(wx), sy(0), sx(wx), sy(720), col, wdt);
+        for (int wy = 60; wy <= 660; wy += 120)
+            drawLine(sx(0), sy(wy), sx(960), sy(wy), col, wdt);
+        // Two diagonals for a less mechanical city feel.
+        drawLine(sx(0), sy(600), sx(500), sy(120), col, wdt);
+        drawLine(sx(350), sy(720), sx(960), sy(300), col, wdt);
+    }
+
+    drawRoute();
+
+    // Street labels (skip when they'd land far off-view).
+    struct Label { int x, y; const char* text; };
+    static const Label kLabels[] = {
+        {505, 448, "Grand Promenade"}, {300, 288, "Station Road"},
+        {628, 610, "Canal Road"},      {128, 428, "Mall Road"},
+    };
+    lv_draw_label_dsc_t ldsc;
+    lv_draw_label_dsc_init(&ldsc);
+    ldsc.color = lv_color_hex(COL_MAP_LABEL);
+    ldsc.font = &lv_font_montserrat_10;
+    for (unsigned i = 0; i < sizeof(kLabels) / sizeof(kLabels[0]); i++) {
+        int x = sx(kLabels[i].x), y = sy(kLabels[i].y);
+        if (x > -80 && x < _w && y > -10 && y < _h)
+            lv_canvas_draw_text(_canvas, x, y, 120, &ldsc, kLabels[i].text);
+    }
+
+    drawArrow();
+    lv_obj_invalidate(_canvas);
+}
+
+void MapView::setPan(int dx, int dy) {
+    _panX += dx;
+    _panY += dy;
+    if (_panX > 260) _panX = 260;
+    if (_panX < -260) _panX = -260;
+    if (_panY > 200) _panY = 200;
+    if (_panY < -200) _panY = -200;
+    _locked = false;
+    render();
+}
+
+void MapView::setZoom(int level) {
+    if (level < 14) level = 14;
+    if (level > 18) level = 18;
+    if (level == _zoom) return;
+    _zoom = level;
+    render();
+}
+
+void MapView::setLocked(bool locked) {
+    _locked = locked;
+    if (locked) { _panX = 0; _panY = 0; }
+    render();
+}
