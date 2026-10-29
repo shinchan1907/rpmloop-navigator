@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RPMLoppNavProtocol",
+  "version": "1.0.0",
+  "description": "RPMLopp Nav BLE and USB Serial communication specification",
+  "ble": {
+    "advertised_name": "RPMLopp Nav",
+    "service_uuid": "4E415601-5250-4D4C-6F70-704E61760001",
+    "characteristics": {
+      "cmd_nav": {
+        "uuid": "4E415602-5250-4D4C-6F70-704E61760002",
+        "properties": ["write", "write_without_response"],
+        "description": "Incoming commands and navigation data from iOS to ESP32"
+      },
+      "status_ack": {
+        "uuid": "4E415603-5250-4D4C-6F70-704E61760003",
+        "properties": ["notify", "read"],
+        "description": "Outgoing acknowledgements and state updates from ESP32 to iOS"
+      },
+      "device_info": {
+        "uuid": "4E415604-5250-4D4C-6F70-704E61760004",
+        "properties": ["read"],
+        "description": "Firmware capabilities, hardware info, and protocol version"
+      }
+    },
+    "mtu_default": 23,
+    "mtu_target": 256,
+    "stale_timeout_ms": 5000
+  },
+  "message_types": [
+    "HELLO",
+    "HELLO_ACK",
+    "PING",
+    "PONG",
+    "NAV_START",
+    "NAV_UPDATE",
+    "NAV_PAUSE",
+    "NAV_RESUME",
+    "NAV_STOP",
+    "SET_BRIGHTNESS",
+    "ACK",
+    "ERROR"
+  ],
+  "maneuver_types": [
+    "NONE",
+    "STRAIGHT",
+    "SLIGHT_RIGHT",
+    "TURN_RIGHT",
+    "SHARP_RIGHT",
+    "UTURN",
+    "SHARP_LEFT",
+    "TURN_LEFT",
+    "SLIGHT_LEFT",
+    "ROUNDABOUT",
+    "DESTINATION"
+  ],
+  "status_codes": [
+    "ACCEPTED",
+    "REJECTED_STALE",
+    "REJECTED_CHECKSUM",
+    "REJECTED_MALFORMED",
+    "REJECTED_UNAUTHORIZED",
+    "REJECTED_OVERSIZED",
+    "BUFFER_FULL"
+  ],
+  "usb_serial": {
+    "baud_rate": 115200,
+    "frame_prefixes": {
+      "event": "[RPMLOPP_EVT] ",
+      "ack": "[RPMLOPP_ACK] ",
+      "log": "[RPMLOPP_LOG] ",
+      "err": "[RPMLOPP_ERR] "
+    }
+  }
+}

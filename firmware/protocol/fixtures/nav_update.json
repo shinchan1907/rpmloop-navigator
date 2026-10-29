@@ -1,0 +1,26 @@
+{
+  "v": 1,
+  "type": "NAV_UPDATE",
+  "seq": 2,
+  "sid": "sess_init_001",
+  "rid": "synthetic_coastal_loop",
+  "t_ms": 1729864205000,
+  "payload": {
+    "pos_valid": true,
+    "lat": 37.774929,
+    "lon": -122.419416,
+    "spd_mps": 12.5,
+    "head_deg": 185.0,
+    "maneuver": "TURN_RIGHT",
+    "dist_m": 220,
+    "road": "Ocean Boulevard",
+    "instr": "In 220m, turn right onto Ocean Blvd",
+    "rem_dist_m": 3800,
+    "rem_time_s": 320,
+    "progress_pct": 15,
+    "off_route": false,
+    "gps_acc_m": 3.2,
+    "is_sim": true
+  },
+  "crc": 5432
+}

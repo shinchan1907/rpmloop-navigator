@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>RPMLoppNav</string>
+	<key>CFBundleExecutable</key>
+	<string>RPMLoppNav</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.sunnygupta.RPMLoppNav</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>RPMLoppNav</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleSupportedPlatforms</key>
+	<array>
+		<string>iPhoneOS</string>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>2</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>MinimumOSVersion</key>
+	<string>15.0</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>RPMLoop Nav requires Bluetooth to discover and communicate with your ESP32 navigation display.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>RPMLoop Nav connects to the RPMLOOP BLE peripheral to transmit turn-by-turn maneuvers.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>RPMLoop Nav needs your GPS location to calculate real-time turn guidance and speed.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>RPMLoop Nav needs background location updates to keep your handlebar display synchronized while riding.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+		<string>location</string>
+	</array>
+	<key>UIDeviceFamily</key>
+	<array>
+		<integer>1</integer>
+		<integer>2</integer>
+	</array>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+</dict>
+</plist>

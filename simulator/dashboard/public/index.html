@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RPMLopp Nav — Desktop Dashboard & Virtual LCD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Leaflet Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #111827;
+      --border: #1f2937;
+      --accent: #3b82f6;
+      --accent-glow: rgba(59, 130, 246, 0.4);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --lcd-bg: #000000;
+      --lcd-fg: #ffffff;
+      --lcd-accent: #00e5ff;
+    }
+
+    body.day-mode {
+      --lcd-bg: #f8fafc;
+      --lcd-fg: #0f172a;
+      --lcd-accent: #0284c7;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      color: #fff;
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-live { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid var(--success); }
+    .badge-replay { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid var(--warning); }
+    .badge-sim { background: rgba(59, 130, 246, 0.15); color: var(--accent); border: 1px solid var(--accent); }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #1e293b;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .indicator-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--danger);
+      box-shadow: 0 0 8px var(--danger);
+    }
+    .indicator-dot.online {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    main {
+      flex: 1;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 24px;
+      max-width: 1600px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Virtual LCD Column */
+    .lcd-column {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .lcd-frame-container {
+      background: #182234;
+      border: 2px solid #2d3e58;
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .lcd-header-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* THE VIRTUAL LCD SCREEN (320x240 Pixel Hardware Display — Google Maps Style) */
+    .virtual-lcd {
+      width: 320px;
+      height: 240px;
+      background: #202124;
+      color: #ffffff;
+      border-radius: 12px;
+      padding: 0;
+      display: grid;
+      grid-template-columns: 96px 224px;
+      border: 3px solid #3c4043;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+
+    body.day-mode .virtual-lcd {
+      background: #f8f9fa;
+      color: #202124;
+      border-color: #dadce0;
+    }
+
+    /* Left Pane: Google Maps Style Maneuver HUD (Compact 96px width) */
+    .lcd-hud-pane {
+      background: #1e293b;
+      border-right: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      z-index: 10;
+      overflow: hidden;
+    }
+
+    body.day-mode .lcd-hud-pane {
+      background: #ffffff;
+      border-right-color: #dadce0;
+    }
+
+    /* Google Maps Navigation Green Banner */
+    .lcd-gmaps-banner {
+      background: #137333; /* Google Maps Signature Navigation Green */
+      padding: 8px 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      color: #ffffff;
+      border-bottom: 2px solid rgba(0,0,0,0.15);
+    }
+
+    .lcd-status-badge {
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-align: center;
+      background: rgba(0,0,0,0.25);
+      color: #ffffff;
+      text-transform: uppercase;
+    }
+    .lcd-status-badge.navigating { background: #0f9d58; color: #ffffff; }
+    .lcd-status-badge.stale { background: #ea8600; color: #ffffff; }
+    .lcd-status-badge.disconnected { background: #c5221f; color: #ffffff; }
+
+    .lcd-maneuver-box {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .lcd-mini-arrow {
+      width: 32px;
+      height: 32px;
+      stroke: #ffffff;
+      fill: none;
+      stroke-width: 7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+      flex-shrink: 0;
+    }
+
+    .lcd-hud-dist-wrap {
+      display: flex;
+      flex-direction: column;
+      line-height: 1;
+    }
+
+    .lcd-hud-dist {
+      font-size: 22px;
+      font-weight: 900;
+      font-family: 'JetBrains Mono', monospace;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+    }
+
+    .lcd-hud-dist-unit {
+      font-size: 9px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      text-transform: uppercase;
+    }
+
+    .lcd-hud-road {
+      font-size: 10px;
+      font-weight: 700;
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    .lcd-hud-instr {
+      font-size: 8px;
+      color: rgba(255,255,255,0.75);
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Bottom Speed & Trip */
+    .lcd-hud-bottom {
+      padding: 8px 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: #0f172a;
+    }
+
+    body.day-mode .lcd-hud-bottom {
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .lcd-speedo-badge {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      padding: 4px 6px;
+    }
+
+    body.day-mode .lcd-speedo-badge {
+      background: #ffffff;
+      border-color: #cbd5e1;
+    }
+
+    .lcd-hud-speed {
+      font-size: 20px;
+      font-weight: 900;
+      font-family: 'JetBrains Mono', monospace;
+      color: #ffffff;
+      line-height: 1;
+    }
+
+    body.day-mode .lcd-hud-speed {
+      color: #0f172a;
+    }
+
+    .lcd-speedo-unit {
+      font-size: 8px;
+      font-weight: 800;
+      color: #94a3b8;
+      text-transform: uppercase;
+    }
+
+    .lcd-trip-stat {
+      font-size: 9px;
+      font-weight: 700;
+      color: #94a3b8;
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1.2;
+    }
+
+    body.day-mode .lcd-trip-stat {
+      color: #475569;
+    }
+
+    .lcd-progress-bar-bg {
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+
+    .lcd-progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: #1a73e8; /* Google Maps Blue */
+      transition: width 0.3s ease;
+    }
+
+    /* Right Pane: Turn-by-Turn Map Viewport (224px width — Expanded) */
+    .lcd-map-pane {
+      position: relative;
+      background: #202124;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body.day-mode .lcd-map-pane {
+      background: #e8eaed;
+    }
+
+    #navMapCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .map-header-overlay {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      font-size: 9px;
+      font-weight: 700;
+      background: rgba(0,0,0,0.6);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #94a3b8;
+      backdrop-filter: blur(4px);
+    }
+
+    /* Floating Google Maps Style Recenter Button */
+    .lcd-recenter-btn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1px solid rgba(0,0,0,0.12);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 20;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      outline: none;
+    }
+
+    .lcd-recenter-btn:active {
+      transform: scale(0.92);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    }
+
+    .lcd-recenter-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: #1a73e8; /* Google Maps Navigation Blue */
+      transform: rotate(-45deg);
+    }
+
+    .lcd-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .lcd-status-badge {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      background: #334155;
+      color: #94a3b8;
+    }
+    .lcd-status-badge.navigating { background: #059669; color: #fff; }
+    .lcd-status-badge.stale { background: #d97706; color: #fff; animation: pulse 1s infinite; }
+    .lcd-status-badge.disconnected { background: #dc2626; color: #fff; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .lcd-main-maneuver {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 10px 0;
+    }
+
+    .lcd-arrow-icon {
+      width: 72px;
+      height: 72px;
+      stroke: var(--lcd-accent);
+      fill: none;
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 8px var(--lcd-accent));
+    }
+
+    .lcd-distance-block {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .lcd-distance-val {
+      font-size: 42px;
+      font-weight: 800;
+      line-height: 1;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--lcd-accent);
+    }
+
+    .lcd-distance-unit {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .lcd-instruction-box {
+      margin: 8px 0;
+    }
+    .lcd-road-name {
+      font-size: 16px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .lcd-instruction-text {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      line-height: 1.3;
+    }
+
+    .lcd-speed-and-stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 8px;
+    }
+
+    .lcd-speed-val {
+      font-size: 28px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1;
+    }
+    .lcd-speed-unit {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .lcd-trip-stats {
+      text-align: right;
+      font-size: 11px;
+      line-height: 1.3;
+    }
+
+    .lcd-progress-bar-bg {
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+    .lcd-progress-bar-fill {
+      height: 100%;
+      background: var(--lcd-accent);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Panels & Content Column */
+    .content-column {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background: #1f2937;
+      color: #fff;
+      border: 1px solid #374151;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    button:hover {
+      background: #374151;
+      border-color: #4b5563;
+    }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    button.primary:hover {
+      background: #2563eb;
+    }
+
+    /* Inspector Grid */
+    .inspector-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    .inspector-item {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      padding: 10px 14px;
+      border-radius: 10px;
+    }
+    .inspector-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .inspector-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    /* Raw Terminal Log */
+    .terminal-container {
+      background: #030712;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      height: 280px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .log-line {
+      display: flex;
+      gap: 8px;
+      word-break: break-all;
+    }
+    .log-tag {
+      font-weight: 700;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 10px;
+    }
+    .tag-EVT { background: #065f46; color: #34d399; }
+    .tag-ACK { background: #1e3a8a; color: #93c5fd; }
+    .tag-LOG { background: #374151; color: #d1d5db; }
+    .tag-ERR { background: #7f1d1d; color: #f87171; }
+
+    select {
+      background: #1f2937;
+      color: #fff;
+      border: 1px solid #374151;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-logo">R</div>
+      <div class="brand-title">RPMLopp Nav Desktop</div>
+      <span class="badge badge-live" id="modeBadge">Live Hardware</span>
+    </div>
+    <div class="header-controls">
+      <a href="/RPMLoopNav.apk" download="RPMLoopNav.apk" style="text-decoration:none;">
+        <button class="primary" style="background:#10b981; border-color:#10b981;">📱 Download APK</button>
+      </a>
+      <a href="/android" target="_blank" style="text-decoration:none;">
+        <button style="border-color:#00e5ff; color:#00e5ff;">🌐 Web Map Companion</button>
+      </a>
+      <div class="status-pill">
+        <div class="indicator-dot" id="serialDot"></div>
+        <span id="serialText">ESP32 (COM3): Disconnected</span>
+      </div>
+      <div class="status-pill">
+        <div class="indicator-dot" id="bleDot"></div>
+        <span id="bleText">Phone BLE: Standby</span>
+      </div>
+      <button onclick="toggleDayNight()" id="themeBtn">🌙 Night</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Left Column: Virtual LCD Display -->
+    <div class="lcd-column">
+      <div class="lcd-frame-container">
+        <div class="lcd-header-bar">
+          <span>VIRTUAL LCD (320x240 SPI DISPLAY)</span>
+          <span id="lcdSeq">SEQ: #--</span>
+        </div>
+
+        <div class="virtual-lcd" id="virtualLcd">
+          <!-- Left Pane: Google Maps Style Maneuver HUD (Compact 96px width) -->
+          <div class="lcd-hud-pane">
+            <div class="lcd-gmaps-banner">
+              <span class="lcd-status-badge disconnected" id="lcdStatusBadge">DISCONNECTED</span>
+              
+              <div class="lcd-maneuver-box">
+                <svg class="lcd-mini-arrow" id="maneuverSvg" viewBox="0 0 64 64">
+                  <path d="M32 54 V14 M20 26 L32 14 L44 26" />
+                </svg>
+                <div class="lcd-hud-dist-wrap">
+                  <div class="lcd-hud-dist" id="lcdDistVal">--</div>
+                  <div class="lcd-hud-dist-unit" id="lcdDistUnit">m</div>
+                </div>
+              </div>
+
+              <div class="lcd-hud-road" id="lcdRoadName">No Route</div>
+              <div class="lcd-hud-instr" id="lcdInstruction">Waiting for turn...</div>
+            </div>
+
+            <!-- Bottom Speed & Trip -->
+            <div class="lcd-hud-bottom">
+              <div class="lcd-speedo-badge">
+                <span class="lcd-hud-speed" id="lcdSpeed">0</span>
+                <span class="lcd-speedo-unit">km/h</span>
+              </div>
+              <div class="lcd-trip-stat" id="lcdRemDist">2.4 km</div>
+              <div class="lcd-trip-stat" id="lcdRemTime">3 min</div>
+              <div class="lcd-progress-bar-bg">
+                <div class="lcd-progress-bar-fill" id="lcdProgressFill"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Pane: Vector Turn-by-Turn Map (Expanded 224px width) -->
+          <div class="lcd-map-pane">
+            <canvas id="navMapCanvas" width="224" height="240"></canvas>
+            <div class="map-header-overlay" id="lcdGpsText">GPS ±2.5m</div>
+            <!-- Google Maps Style Floating Recenter Button -->
+            <button class="lcd-recenter-btn" id="lcdRecenterBtn" title="Re-center view" onclick="onLcdRecenterClick()">
+              <svg viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; display: flex; gap: 8px; width: 100%;">
+          <select id="portSelect" style="flex: 1;" onchange="changePort()">
+            <option value="COM3">COM3 (Waveshare S3)</option>
+          </select>
+          <button onclick="refreshPorts()">↻ Ports</button>
+        </div>
+      </div>
+
+      <!-- Quick Control Card -->
+      <div class="card">
+        <div class="card-title">Hardware & Session Actions</div>
+        <div class="btn-group">
+          <button class="primary" onclick="triggerReplay()">▶ Replay Recorded Route</button>
+          <button onclick="injectSimTurn()">Turn Simulation</button>
+          <button onclick="pingEsp()">Ping ESP32</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Live Map, Inspector & Raw Event Stream -->
+    <div class="content-column">
+      <!-- Real-World Live Mobile Phone Map Tracker -->
+      <div class="card" style="margin-bottom: 20px;">
+        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+          <span>Live Mobile Phone GPS Tracker (Real Map)</span>
+          <span id="mapCoordsBadge" style="font-size:12px; font-family:'JetBrains Mono', monospace; color:var(--accent);">Waiting for Mobile GPS...</span>
+        </div>
+        <div id="desktopLiveMap" style="width: 100%; height: 260px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border);"></div>
+      </div>
+
+      <!-- State Inspector -->
+      <div class="card">
+        <div class="card-title">
+          <span>Decoded Navigation State (ESP32-Accepted)</span>
+          <span style="font-size: 12px; color: var(--text-muted);" id="lastUpdateTs">Updated: Never</span>
+        </div>
+        <div class="inspector-grid">
+          <div class="inspector-item">
+            <div class="inspector-label">Session Status</div>
+            <div class="inspector-value" id="valStatus">DISCONNECTED</div>
+          </div>
+          <div class="inspector-item">
+            <div class="inspector-label">Maneuver</div>
+            <div class="inspector-value" id="valManeuver">NONE</div>
+          </div>
+          <div class="inspector-item">
+            <div class="inspector-label">Turn Distance</div>
+            <div class="inspector-value" id="valTurnDist">0 m</div>
+          </div>
+          <div class="inspector-item">
+            <div class="inspector-label">Current Speed</div>
+            <div class="inspector-value" id="valSpeed">0.0 km/h</div>
+          </div>
+          <div class="inspector-item">
+            <div class="inspector-label">Heading</div>
+            <div class="inspector-value" id="valHeading">0.0°</div>
+          </div>
+          <div class="inspector-item">
+            <div class="inspector-label">Remaining Distance</div>
+            <div class="inspector-value" id="valRemDist">0 m</div>
+          </div>
+          <div class="inspector-item">
+            <div class="inspector-label">Remaining Time</div>
+            <div class="inspector-value" id="valRemTime">0 s</div>
+          </div>
+          <div class="inspector-item">
+            <div class="inspector-label">GPS Accuracy</div>
+            <div class="inspector-value" id="valGpsAcc">-- m</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Raw Event Stream -->
+      <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+        <div class="card-title">
+          <span>Raw Event & Diagnostic Stream</span>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="logFilter" placeholder="Filter logs..." oninput="filterLogs()" style="background:#1f2937; border:1px solid #374151; color:#fff; padding:4px 8px; border-radius:6px; font-size:12px;">
+            <button onclick="clearLogs()" style="padding:4px 8px; font-size:12px;">Clear</button>
+          </div>
+        </div>
+        <div class="terminal-container" id="terminal">
+          <!-- Live events will populate here -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let ws = null;
+    let logsCache = [];
+    let isDayMode = false;
+    let latestState = null;
+    let liveMap = null;
+    let liveCarMarker = null;
+    let livePathPolyline = null;
+    let liveCoordsHistory = [];
+
+    // Maneuver SVG Paths
+    const ARROWS = {
+      STRAIGHT: "M32 54 V14 M20 26 L32 14 L44 26",
+      TURN_RIGHT: "M20 50 V34 C20 22 28 16 40 16 H48 M36 8 L48 16 L36 24",
+      TURN_LEFT: "M44 50 V34 C44 22 36 16 24 16 H16 M28 8 L16 16 L28 24",
+      SLIGHT_RIGHT: "M24 50 L38 22 M26 18 L44 18 L44 36",
+      SLIGHT_LEFT: "M40 50 L26 22 M38 18 L20 18 L20 36",
+      UTURN: "M44 52 V30 C44 16 20 16 20 30 V46 M12 36 L20 46 L28 36",
+      ROUNDABOUT: "M32 16 A16 16 0 1 1 31.9 16 M32 4 L42 14 L32 24",
+      DESTINATION: "M32 12 A12 12 0 0 1 32 36 C32 44 32 52 32 52 C32 52 32 44 32 36 A12 12 0 0 1 32 12 M32 20 A4 4 0 1 1 31.9 20",
+      NONE: "M32 54 V14 M20 26 L32 14 L44 26"
+    };
+
+    function connectWs() {
+      const loc = window.location;
+      const wsUrl = (loc.protocol === "https:" ? "wss://" : "ws://") + loc.host + "/ws";
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        addLog({ type: "LOG", raw: "Connected to RPMLopp Nav Desktop Bridge" });
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          handleIncoming(msg);
+        } catch (e) {
+          console.error("Parse error:", e);
+        }
+      };
+
+      ws.onclose = () => {
+        document.getElementById("serialDot").className = "indicator-dot";
+        document.getElementById("serialText").innerText = "ESP32: Bridge Reconnecting...";
+        setTimeout(connectWs, 2000);
+      };
+    }
+
+    function handleIncoming(msg) {
+      if (msg.type === "SERIAL_STATUS") {
+        const dot = document.getElementById("serialDot");
+        const txt = document.getElementById("serialText");
+        if (msg.connected) {
+          dot.className = "indicator-dot online";
+          txt.innerText = `ESP32 (${msg.port}): Online`;
+        } else {
+          dot.className = "indicator-dot";
+          txt.innerText = `ESP32 (${msg.port}): Disconnected`;
+        }
+      } else if (msg.type === "INIT_STATE") {
+        if (msg.latest_state) updateLcd(msg.latest_state);
+        if (msg.logs) msg.logs.forEach(addLog);
+      } else if (msg.type === "EVENT" && msg.payload && msg.payload.event === "ACCEPTED_STATE") {
+        updateLcd(msg.payload.data);
+        addLog(msg);
+      } else if (msg.type === "MODE_CHANGE") {
+        const badge = document.getElementById("modeBadge");
+        badge.innerText = msg.mode;
+        badge.className = msg.mode === "LIVE_HARDWARE" ? "badge badge-live" : "badge badge-replay";
+      } else {
+        addLog(msg);
+      }
+    }
+
+    let recenterPulse = 0;
+    function onLcdRecenterClick() {
+      recenterPulse = 1.0;
+      if (latestState) {
+        drawTurnByTurnMap(latestState);
+      }
+      const btn = document.getElementById("lcdRecenterBtn");
+      if (btn) {
+        btn.style.transform = "scale(0.88)";
+        setTimeout(() => { btn.style.transform = "scale(1)"; }, 150);
+      }
+      // Animate fade-out of pulse
+      let anim = setInterval(() => {
+        recenterPulse -= 0.15;
+        if (recenterPulse <= 0) {
+          recenterPulse = 0;
+          clearInterval(anim);
+        }
+        if (latestState) drawTurnByTurnMap(latestState);
+      }, 40);
+    }
+
+    function drawTurnByTurnMap(state) {
+      const canvas = document.getElementById("navMapCanvas");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // Google Maps Terrain Background
+      ctx.fillStyle = isDayMode ? "#E8EAED" : "#202124";
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle Google Maps Terrain Grid
+      ctx.strokeStyle = isDayMode ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.03)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x < w; x += 28) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y < h; y += 28) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // Vehicle anchor point (bottom center of expanded 224px viewport)
+      const carX = w / 2;
+      const carY = h - 50;
+
+      // Helper for path geometry
+      function buildRoadPath() {
+        ctx.beginPath();
+        ctx.moveTo(carX, h + 20);
+        ctx.lineTo(carX, carY - 25);
+
+        const m = state.maneuver || "STRAIGHT";
+        if (m === "TURN_RIGHT" || m === "SHARP_RIGHT") {
+          ctx.quadraticCurveTo(carX, carY - 80, carX + 75, carY - 95);
+        } else if (m === "SLIGHT_RIGHT") {
+          ctx.quadraticCurveTo(carX, carY - 70, carX + 50, carY - 110);
+        } else if (m === "TURN_LEFT" || m === "SHARP_LEFT") {
+          ctx.quadraticCurveTo(carX, carY - 80, carX - 75, carY - 95);
+        } else if (m === "SLIGHT_LEFT") {
+          ctx.quadraticCurveTo(carX, carY - 70, carX - 50, carY - 110);
+        } else if (m === "UTURN") {
+          ctx.arc(carX - 25, carY - 60, 25, 0, Math.PI, true);
+          ctx.lineTo(carX - 50, carY + 10);
+        } else if (m === "ROUNDABOUT") {
+          ctx.lineTo(carX, carY - 45);
+          ctx.arc(carX, carY - 75, 30, Math.PI / 2, -Math.PI / 2, true);
+          ctx.lineTo(carX + 55, carY - 105);
+        } else {
+          ctx.lineTo(carX, 20);
+        }
+      }
+
+      // Step 1: Road Border Casing (Google Maps Asphalt Casing)
+      ctx.lineWidth = 42;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = isDayMode ? "#DADCE0" : "#2D3033";
+      buildRoadPath();
+      ctx.stroke();
+
+      // Step 2: Road Surface (Google Maps Asphalt)
+      ctx.lineWidth = 38;
+      ctx.strokeStyle = isDayMode ? "#FFFFFF" : "#3C4043";
+      buildRoadPath();
+      ctx.stroke();
+
+      // Step 3: Center Divider Dash
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 8]);
+      ctx.strokeStyle = isDayMode ? "#BDC1C6" : "#5F6368";
+      buildRoadPath();
+      ctx.stroke();
+      ctx.setLineDash([]); // Reset dash
+
+      // Step 4: Active Route Polyline (Signature Google Maps Route Blue)
+      ctx.lineWidth = 14;
+      ctx.strokeStyle = "#1A73E8"; // Google Maps Blue
+      ctx.shadowColor = "rgba(26, 115, 232, 0.4)";
+      ctx.shadowBlur = 8;
+      buildRoadPath();
+      ctx.stroke();
+      ctx.shadowBlur = 0; // Reset shadow
+
+      // Route Core Highlight
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "#8AB4F8";
+      buildRoadPath();
+      ctx.stroke();
+
+      // Step 5: Next Maneuver Waypoint Dot (Google Maps Red Waypoint Pin)
+      const m = state.maneuver || "STRAIGHT";
+      let destX = carX;
+      let destY = 22;
+      if (m === "TURN_RIGHT" || m === "SHARP_RIGHT") {
+        destX = carX + 72; destY = carY - 95;
+      } else if (m === "TURN_LEFT" || m === "SHARP_LEFT") {
+        destX = carX - 72; destY = carY - 95;
+      }
+
+      ctx.fillStyle = "#EA4335"; // Google Maps Red
+      ctx.strokeStyle = "#FFFFFF";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(destX, destY, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Step 6: Vehicle GPS Position Marker (Google Navigation Chevron)
+      ctx.save();
+      ctx.translate(carX, carY);
+
+      // Re-center Animated Pulse Ring
+      if (recenterPulse > 0) {
+        ctx.strokeStyle = `rgba(66, 133, 244, ${recenterPulse})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, 22 + (1 - recenterPulse) * 20, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // GPS Accuracy Radius Halo (Google Light Blue)
+      ctx.fillStyle = "rgba(66, 133, 244, 0.22)";
+      ctx.beginPath();
+      ctx.arc(0, 0, 18, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Vehicle Chevron (White Triangle with Google Blue Stroke)
+      ctx.fillStyle = "#FFFFFF";
+      ctx.strokeStyle = "#1A73E8";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(0, -12);
+      ctx.lineTo(9, 10);
+      ctx.lineTo(0, 6);
+      ctx.lineTo(-9, 10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      // Off-route warning banner
+      if (state.off_route) {
+        ctx.fillStyle = "rgba(234, 67, 53, 0.9)";
+        ctx.fillRect(10, h - 35, w - 20, 24);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 10px Inter, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("OFF ROUTE — REROUTING", w / 2, h - 20);
+        ctx.textAlign = "start";
+      }
+    }
+
+    function initDesktopLiveMap() {
+      try {
+        if (typeof L === 'undefined') return;
+        liveMap = L.map('desktopLiveMap', {
+          zoomControl: true,
+          attributionControl: false
+        }).setView([28.6139, 77.2090], 15);
+
+        // OpenStreetMap Voyager Tiles (Crisp high-contrast map)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          maxZoom: 19
+        }).addTo(liveMap);
+
+        // Custom Vehicle Chevron Marker
+        const carIcon = L.divIcon({
+          className: 'desktop-car-marker-container',
+          html: `
+            <div id="desktopCarIcon" style="width:36px; height:36px; transform-origin:center center; transition:transform 0.3s ease;">
+              <svg viewBox="0 0 40 40" width="36" height="36" style="filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));">
+                <circle cx="20" cy="20" r="16" fill="#1A73E8" fill-opacity="0.2" stroke="#1A73E8" stroke-width="2"/>
+                <path d="M20 7 L31 31 L20 25 L9 31 Z" fill="#1A73E8" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          `,
+          iconSize: [36, 36],
+          iconAnchor: [18, 18]
+        });
+
+        liveCarMarker = L.marker([28.6139, 77.2090], { icon: carIcon }).addTo(liveMap);
+
+        livePathPolyline = L.polyline([], {
+          color: '#1A73E8',
+          weight: 5,
+          opacity: 0.85,
+          lineJoin: 'round'
+        }).addTo(liveMap);
+      } catch (e) {
+        console.error("Leaflet init error:", e);
+      }
+    }
+
+    function updateLcd(state) {
+      if (!state) return;
+      latestState = state;
+      drawTurnByTurnMap(state);
+
+      // Real Leaflet Map Position Update
+      if (state.lat && state.lon && Math.abs(state.lat) > 0.0001 && Math.abs(state.lon) > 0.0001) {
+        const lat = Number(state.lat);
+        const lon = Number(state.lon);
+        const heading = state.heading !== undefined ? Number(state.heading) : 0;
+        const currentCoord = [lat, lon];
+
+        if (liveMap && liveCarMarker) {
+          liveCarMarker.setLatLng(currentCoord);
+          const carEl = document.getElementById("desktopCarIcon");
+          if (carEl) {
+            carEl.style.transform = `rotate(${heading}deg)`;
+          }
+          liveMap.panTo(currentCoord, { animate: true, duration: 1.0 });
+
+          // Track path history
+          liveCoordsHistory.push(currentCoord);
+          if (liveCoordsHistory.length > 500) liveCoordsHistory.shift();
+          if (livePathPolyline) livePathPolyline.setLatLngs(liveCoordsHistory);
+        }
+
+        const badge = document.getElementById("mapCoordsBadge");
+        if (badge) {
+          badge.innerText = `GPS: ${lat.toFixed(5)}, ${lon.toFixed(5)} (${state.speed_kmh || 0} km/h) • ±${(state.gps_acc_m || 2.5).toFixed(1)}m`;
+          badge.style.color = "#10B981";
+        }
+      }
+
+      // Status Badge
+      const statusBadge = document.getElementById("lcdStatusBadge");
+      const status = state.status || "DISCONNECTED";
+      statusBadge.innerText = status;
+      statusBadge.className = "lcd-status-badge " + status.toLowerCase();
+
+      // BLE Indicator
+      const bleDot = document.getElementById("bleDot");
+      const bleText = document.getElementById("bleText");
+      if (status === "DISCONNECTED") {
+        bleDot.className = "indicator-dot";
+        bleText.innerText = "Phone BLE: Standby";
+      } else {
+        bleDot.className = "indicator-dot online";
+        bleText.innerText = `Phone BLE: ${status}`;
+      }
+
+      // Maneuver Arrow
+      const arrow = ARROWS[state.maneuver] || ARROWS.NONE;
+      document.getElementById("maneuverSvg").innerHTML = `<path d="${arrow}" />`;
+
+      // Distance
+      const dist = state.dist_m || 0;
+      if (dist >= 1000) {
+        document.getElementById("lcdDistVal").innerText = (dist / 1000).toFixed(1);
+        document.getElementById("lcdDistUnit").innerText = "KM";
+      } else {
+        document.getElementById("lcdDistVal").innerText = dist;
+        document.getElementById("lcdDistUnit").innerText = "METERS";
+      }
+
+      // Road & Instruction
+      document.getElementById("lcdRoadName").innerText = state.road || "Unnamed Road";
+      document.getElementById("lcdInstruction").innerText = state.instr || "--";
+
+      // Speed & Stats
+      document.getElementById("lcdSpeed").innerText = state.speed_kmh !== undefined ? state.speed_kmh : Math.round((state.speed_mps || 0) * 3.6);
+      document.getElementById("lcdRemDist").innerText = `Rem: ${((state.rem_dist_m || 0) / 1000).toFixed(1)} km`;
+      document.getElementById("lcdRemTime").innerText = `ETA: ${Math.round((state.rem_time_s || 0) / 60)} min`;
+      document.getElementById("lcdProgressFill").style.width = (state.progress_pct || 0) + "%";
+      document.getElementById("lcdSeq").innerText = `SEQ: #${state.seq || "--"}`;
+      document.getElementById("lcdGpsText").innerText = `GPS: ±${(state.gps_acc_m || 3.0).toFixed(1)}m`;
+
+      // Inspector Fields
+      document.getElementById("valStatus").innerText = status;
+      document.getElementById("valManeuver").innerText = state.maneuver || "NONE";
+      document.getElementById("valTurnDist").innerText = `${state.dist_m || 0} m`;
+      document.getElementById("valSpeed").innerText = `${state.speed_kmh || 0} km/h`;
+      document.getElementById("valHeading").innerText = `${(state.heading || 0).toFixed(1)}°`;
+      document.getElementById("valRemDist").innerText = `${state.rem_dist_m || 0} m`;
+      document.getElementById("valRemTime").innerText = `${state.rem_time_s || 0} s`;
+      document.getElementById("valGpsAcc").innerText = `±${(state.gps_acc_m || 0).toFixed(1)} m`;
+      document.getElementById("lastUpdateTs").innerText = `Updated: ${new Date().toLocaleTimeString()}`;
+    }
+
+    function addLog(item) {
+      logsCache.push(item);
+      if (logsCache.length > 500) logsCache.shift();
+
+      const term = document.getElementById("terminal");
+      const line = document.createElement("div");
+      line.className = "log-line";
+
+      const type = item.type || "LOG";
+      let tagClass = "tag-LOG";
+      if (type === "EVENT") tagClass = "tag-EVT";
+      if (type === "ACK") tagClass = "tag-ACK";
+      if (type === "ERROR") tagClass = "tag-ERR";
+
+      line.innerHTML = `
+        <span style="color:#6b7280;">${new Date(item.ts || Date.now()).toLocaleTimeString()}</span>
+        <span class="log-tag ${tagClass}">${type}</span>
+        <span>${escapeHtml(item.raw || JSON.stringify(item.payload || ""))}</span>
+      `;
+      term.appendChild(line);
+      term.scrollTop = term.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+      return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function filterLogs() {
+      const q = document.getElementById("logFilter").value.toLowerCase();
+      const lines = document.querySelectorAll(".log-line");
+      lines.forEach(l => {
+        l.style.display = l.innerText.toLowerCase().includes(q) ? "flex" : "none";
+      });
+    }
+
+    function clearLogs() {
+      logsCache = [];
+      document.getElementById("terminal").innerHTML = "";
+    }
+
+    function triggerReplay() {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: "REPLAY" }));
+      }
+    }
+
+    function pingEsp() {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: "SEND_SERIAL", text: "PING" }));
+      }
+    }
+
+    function injectSimTurn() {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        const testState = {
+          status: "NAVIGATING",
+          maneuver: "TURN_RIGHT",
+          dist_m: 150,
+          road: "Grand Promenade",
+          instr: "In 150m, turn right onto Grand Promenade",
+          speed_kmh: 48,
+          rem_dist_m: 2400,
+          rem_time_s: 180,
+          progress_pct: 65,
+          seq: 99,
+          gps_acc_m: 2.4,
+          is_sim: true
+        };
+        ws.send(JSON.stringify({ action: "SIMULATE", state: testState }));
+      }
+    }
+
+    function toggleDayNight() {
+      isDayMode = !isDayMode;
+      document.body.className = isDayMode ? "day-mode" : "";
+      document.getElementById("themeBtn").innerText = isDayMode ? "☀️ Day" : "🌙 Night";
+    }
+
+    async function refreshPorts() {
+      try {
+        const res = await fetch("/api/ports");
+        const data = await res.json();
+        const sel = document.getElementById("portSelect");
+        sel.innerHTML = "";
+        data.ports.forEach(p => {
+          const opt = document.createElement("option");
+          opt.value = p;
+          opt.innerText = p + (p === data.current ? " (Active)" : "");
+          if (p === data.current) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      } catch (e) {
+        console.error("Port fetch error:", e);
+      }
+    }
+
+    function changePort() {
+      const port = document.getElementById("portSelect").value;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: "SET_PORT", port }));
+      }
+    }
+
+    window.onload = () => {
+      connectWs();
+      refreshPorts();
+      initDesktopLiveMap();
+    };
+  </script>
+</body>
+</html>

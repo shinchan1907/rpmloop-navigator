@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="RPMLopp Nav Synthetic Generator" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Coastal Highway Synthetic Test Route</name>
+    <desc>Synthetic route for offline testing without paid map APIs</desc>
+    <time>2026-10-29T10:00:00Z</time>
+  </metadata>
+  <rte>
+    <name>Synthetic Coastal Loop</name>
+    <rtept lat="37.7749" lon="-122.4194">
+      <name>Start on Main Street</name>
+      <desc>Proceed straight on Main Street</desc>
+      <extensions>
+        <maneuver>STRAIGHT</maneuver>
+        <distance>500</distance>
+        <speed>11.1</speed>
+      </extensions>
+    </rtept>
+    <rtept lat="37.7700" lon="-122.4194">
+      <name>Turn right onto Ocean Blvd</name>
+      <desc>Turn right onto Ocean Boulevard</desc>
+      <extensions>
+        <maneuver>TURN_RIGHT</maneuver>
+        <distance>850</distance>
+        <speed>13.8</speed>
+      </extensions>
+    </rtept>
+    <rtept lat="37.7700" lon="-122.4290">
+      <name>Turn left onto Harbor Drive</name>
+      <desc>Turn left onto Harbor Drive</desc>
+      <extensions>
+        <maneuver>TURN_LEFT</maneuver>
+        <distance>1200</distance>
+        <speed>16.6</speed>
+      </extensions>
+    </rtept>
+    <rtept lat="37.7600" lon="-122.4290">
+      <name>Enter Roundabout</name>
+      <desc>Take the 2nd exit at roundabout</desc>
+      <extensions>
+        <maneuver>ROUNDABOUT</maneuver>
+        <distance>400</distance>
+        <speed>8.3</speed>
+      </extensions>
+    </rtept>
+    <rtept lat="37.7580" lon="-122.4250">
+      <name>Destination</name>
+      <desc>Arrive at scenic overlook destination</desc>
+      <extensions>
+        <maneuver>DESTINATION</maneuver>
+        <distance>0</distance>
+        <speed>0.0</speed>
+      </extensions>
+    </rtept>
+  </rte>
+</gpx>

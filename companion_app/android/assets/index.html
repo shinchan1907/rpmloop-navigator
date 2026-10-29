@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RPMLoop Nav — Pro Light Edition</title>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --bg-base: #F8FAFC;
+            --bg-surface: #FFFFFF;
+            --bg-card: #FFFFFF;
+            --bg-card-hover: #F1F5F9;
+            --bg-input: #F1F5F9;
+            --primary: #0066FF;
+            --primary-glow: rgba(0, 102, 255, 0.2);
+            --primary-dim: rgba(0, 102, 255, 0.08);
+            --amber-warn: #D97706;
+            --amber-bg: #FEF3C7;
+            --amber-border: #FCD34D;
+            --red-err: #DC2626;
+            --red-bg: #FEE2E2;
+            --red-border: #FCA5A5;
+            --green-ok: #16A34A;
+            --green-bg: #DCFCE7;
+            --green-border: #86EFAC;
+            --text-main: #0F172A;
+            --text-sub: #475569;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+            --border-hover: #CBD5E1;
+            --nav-height: 64px;
+            --header-height: 58px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08);
+            --shadow-lg: 0 10px 25px rgba(15, 23, 42, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            user-select: none;
+        }
+
+        html, body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        #app-root {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        /* LIGHT AUTOMOTIVE SPLASH SCREEN */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 100%);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+
+        #splash-screen.fade-out {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .splash-logo-wrap {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .splash-pulse-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            box-shadow: 0 0 20px var(--primary-glow);
+            animation: pulse-ring 2s infinite ease-out;
+        }
+
+        .splash-center-badge {
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #0066FF, #0284C7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(0, 102, 255, 0.35);
+            z-index: 2;
+        }
+
+        .splash-center-badge svg {
+            width: 38px;
+            height: 38px;
+            fill: none;
+            stroke: #FFFFFF;
+            stroke-width: 2.2;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.85); opacity: 0.9; }
+            50% { transform: scale(1.2); opacity: 0.2; }
+            100% { transform: scale(0.85); opacity: 0.9; }
+        }
+
+        .splash-title {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            color: var(--text-main);
+            text-transform: uppercase;
+        }
+
+        .splash-subtitle {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: 2px;
+            margin-top: 6px;
+            text-transform: uppercase;
+        }
+
+        .splash-status-box {
+            margin-top: 32px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            padding: 8px 18px;
+            border-radius: 20px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .splash-spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(0, 102, 255, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* HEADER */
+        header {
+            height: var(--header-height);
+            background: #FFFFFF;
+            border-bottom: 1px solid var(--border);
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 1000;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-icon {
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(135deg, #0066FF, #0284C7);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px var(--primary-glow);
+        }
+
+        .brand-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: #FFFFFF;
+            fill: none;
+            stroke-width: 2.2;
+        }
+
+        .brand-title {
+            font-size: 17px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            color: var(--text-main);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* HIGH-CONTRAST STATUS PILLS */
+        .status-pill {
+            font-size: 11px;
+            font-weight: 800;
+            padding: 5px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 0.2px;
+        }
+
+        .status-pill.offline {
+            background: var(--red-bg);
+            color: var(--red-err);
+            border: 1px solid var(--red-border);
+        }
+
+        .status-pill.scanning {
+            background: var(--amber-bg);
+            color: var(--amber-warn);
+            border: 1px solid var(--amber-border);
+        }
+
+        .status-pill.connected {
+            background: var(--green-bg);
+            color: var(--green-ok);
+            border: 1px solid var(--green-border);
+        }
+
+        .pulse-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .btn-header-action {
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-pair {
+            background: var(--primary);
+            color: #FFFFFF;
+            box-shadow: 0 2px 8px var(--primary-glow);
+        }
+
+        .btn-stop-scan {
+            background: var(--red-err);
+            color: #FFFFFF;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+        }
+
+        .btn-disconnect {
+            background: #F1F5F9;
+            color: var(--red-err);
+            border: 1px solid var(--red-border);
+        }
+
+        /* CONTENT VIEWPORT */
+        .content-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            height: calc(100vh - var(--header-height) - var(--nav-height));
+            background: var(--bg-base);
+        }
+
+        .tab-page {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            display: none !important;
+            flex-direction: column;
+            background: var(--bg-base);
+        }
+
+        .tab-page.active-page {
+            display: flex !important;
+        }
+
+        /* TAB 1: NAVIGATION & REAL MAP */
+        #page-nav {
+            position: relative;
+            overflow: hidden;
+        }
+
+        #map-container {
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        /* SEARCH BAR */
+        .map-search-bar {
+            position: absolute;
+            top: 10px;
+            left: 12px;
+            right: 12px;
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .search-input-wrap {
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            box-shadow: var(--shadow-md);
+            gap: 8px;
+        }
+
+        .search-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--text-muted);
+            fill: none;
+            stroke-width: 2.2;
+        }
+
+        .search-input-wrap input {
+            flex: 1;
+            height: 46px;
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 500;
+            user-select: text;
+        }
+
+        .search-input-wrap input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .btn-search-clear {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+            display: none;
+        }
+
+        .btn-search-route {
+            background: #0066FF;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 6px 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 102, 255, 0.35);
+            white-space: nowrap;
+            margin-right: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-search-route:active {
+            transform: scale(0.95);
+            background: #0052CC;
+        }
+
+        .gmaps-overlay-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #FFFFFF;
+            border-top: 1px solid var(--border);
+            padding: 14px 16px;
+            z-index: 500;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.1);
+        }
+
+        .search-results-dropdown {
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            max-height: 230px;
+            overflow-y: auto;
+            display: none;
+            flex-direction: column;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .search-result-item {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            cursor: pointer;
+        }
+
+        .search-result-item:active {
+            background: var(--bg-card-hover);
+        }
+
+        .res-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .res-desc {
+            font-size: 11px;
+            color: var(--text-sub);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* FLOATING MAP CONTROLS */
+        .floating-controls-left {
+            position: absolute;
+            top: 66px;
+            left: 12px;
+            z-index: 500;
+            display: flex;
+            gap: 6px;
+        }
+
+        .layer-btn {
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            color: var(--text-sub);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .layer-btn.active {
+            background: var(--primary);
+            color: #FFFFFF;
+            border-color: var(--primary);
+        }
+
+        .floating-controls-right {
+            position: absolute;
+            top: 66px;
+            right: 12px;
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .map-tool-btn {
+            width: 42px;
+            height: 42px;
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-md);
+        }
+
+        .map-tool-btn:active {
+            transform: scale(0.94);
+            border-color: var(--primary);
+        }
+
+        .map-tool-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--text-main);
+            fill: none;
+            stroke-width: 2.2;
+        }
+
+        /* ROUTE SUMMARY CARD */
+        .route-summary-card {
+            position: absolute;
+            bottom: 120px;
+            left: 12px;
+            right: 12px;
+            background: #FFFFFF;
+            border: 1px solid var(--primary);
+            border-radius: 14px;
+            padding: 14px 16px;
+            z-index: 500;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .route-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dest-title {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text-main);
+            max-width: 70%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .route-stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            background: var(--bg-base);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-box { display: flex; flex-direction: column; }
+        .stat-val { font-size: 18px; font-weight: 900; color: var(--primary); }
+        .stat-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+
+        .route-buttons-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-action {
+            flex: 1;
+            padding: 11px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-start-route { background: var(--green-ok); color: #FFFFFF; }
+        .btn-launch-gmaps { background: #1A73E8; color: #FFFFFF; }
+        .btn-cancel-route { background: var(--red-bg); color: var(--red-err); border: 1px solid var(--red-border); flex: 0 0 42px; font-size: 18px; }
+
+        /* REAL-TIME NAVIGATION HUD (HIGH VISIBILITY) */
+        .nav-hud {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #FFFFFF;
+            border-top: 1px solid var(--border);
+            padding: 12px 16px;
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.08);
+        }
+
+        .hud-main-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .maneuver-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .maneuver-icon-badge {
+            width: 48px;
+            height: 48px;
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .maneuver-icon-badge svg {
+            width: 26px;
+            height: 26px;
+            stroke: var(--primary);
+            fill: none;
+            stroke-width: 2.4;
+        }
+
+        .maneuver-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .maneuver-dist {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--primary);
+            line-height: 1;
+        }
+
+        .maneuver-street {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-main);
+            max-width: 170px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 3px;
+        }
+
+        /* SPEEDOMETER HUD */
+        .speedo-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 6px 14px;
+            min-width: 74px;
+        }
+
+        .speedo-digits {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--text-main);
+            line-height: 1;
+        }
+
+        .speedo-unit {
+            font-size: 9px;
+            font-weight: 800;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .hud-telemetry-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-sub);
+            border-top: 1px solid var(--border);
+            padding-top: 8px;
+        }
+
+        .gps-acc-pill {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--green-ok);
+            font-weight: 700;
+        }
+
+        .btn-stop-nav-link {
+            background: none;
+            border: none;
+            color: var(--red-err);
+            font-weight: 700;
+            font-size: 11px;
+            cursor: pointer;
+            display: none;
+        }
+
+        /* TABS 2, 3, 4 SCROLLABLE PAGES */
+        .page-scroll-content {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card {
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .card-header-title {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .card-header-title svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--primary);
+            fill: none;
+            stroke-width: 2.2;
+        }
+
+        .gmaps-banner {
+            background: #EFF6FF;
+            border: 1px solid #BFDBFE;
+            border-radius: 14px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .gmaps-tag {
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 8px;
+            width: fit-content;
+        }
+
+        .gmaps-tag.active {
+            background: var(--green-bg);
+            color: var(--green-ok);
+            border: 1px solid var(--green-border);
+        }
+
+        .gmaps-tag.inactive {
+            background: var(--amber-bg);
+            color: var(--amber-warn);
+            border: 1px solid var(--amber-border);
+        }
+
+        .metrics-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .metric-cell {
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .metric-cell-lbl {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .metric-cell-val {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--text-main);
+        }
+
+        /* BRIGHTNESS SLIDER */
+        .brightness-slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .slider-label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 10px;
+            background: var(--border);
+            border-radius: 5px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 2px 8px var(--primary-glow);
+            cursor: pointer;
+        }
+
+        /* TAB 4: TELEMETRY LOGS (CLEAN DARK TERMINAL IN LIGHT UI) */
+        #page-logs {
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .logs-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .logs-window {
+            flex: 1;
+            background: #0F172A;
+            border: 1px solid #1E293B;
+            border-radius: 12px;
+            padding: 12px;
+            overflow-y: auto;
+            font-family: "SF Mono", Consolas, "Courier New", monospace;
+            font-size: 11px;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            color: #F8FAFC;
+        }
+
+        .log-entry { display: flex; gap: 8px; word-break: break-all; }
+        .log-t { color: #64748B; font-size: 10px; }
+        .log-lvl-INFO { color: #38BDF8; font-weight: 700; }
+        .log-lvl-WARN { color: #FBBF24; font-weight: 700; }
+        .log-lvl-ERR { color: #F87171; font-weight: 700; }
+
+        /* BOTTOM NAVIGATION BAR */
+        nav.bottom-nav {
+            height: var(--nav-height);
+            background: #FFFFFF;
+            border-top: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            z-index: 1000;
+            flex-shrink: 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
+        }
+
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-btn svg {
+            width: 22px;
+            height: 22px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2.2;
+        }
+
+        .nav-btn span {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        .nav-btn.active {
+            color: var(--primary);
+        }
+
+        .nav-btn.active svg {
+            stroke: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div id="app-root">
+
+        <!-- PRODUCTION LIGHT SPLASH SCREEN -->
+        <div id="splash-screen">
+            <div class="splash-logo-wrap">
+                <div class="splash-pulse-ring"></div>
+                <div class="splash-center-badge">
+                    <svg viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                </div>
+            </div>
+            <div class="splash-title">RPMLOOP NAV</div>
+            <div class="splash-subtitle">Automotive Display HUD</div>
+            <div class="splash-status-box">
+                <div class="splash-spinner"></div>
+                <span class="splash-status-txt" id="splash-status-txt">Locking Phone Hardware GPS...</span>
+            </div>
+        </div>
+
+        <!-- TOP HEADER -->
+        <header>
+            <div class="brand-container">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                </div>
+                <div class="brand-title">RPMLOOP</div>
+            </div>
+            <div class="header-actions">
+                <div id="ble-status-pill" class="status-pill offline">
+                    <span class="pulse-dot"></span>
+                    <span id="ble-status-label">ESP32 Offline</span>
+                </div>
+                <button id="btn-ble-connect" class="btn-header-action btn-pair" onclick="onHeaderButtonClick()">PAIR</button>
+            </div>
+        </header>
+
+        <!-- VIEWPORT AREA -->
+        <div class="content-area">
+
+            <!-- TAB 1: NAVIGATION & REAL MAP -->
+            <div id="page-nav" class="tab-page active-page">
+
+                <!-- Search Bar -->
+                <div class="map-search-bar">
+                    <div class="search-input-wrap">
+                        <div class="search-icon">
+                            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </div>
+                        <input type="text" id="destination-input" placeholder="Search destination (airport, hotel, landmark)..." oninput="onSearchInput(this.value)" onkeydown="if(event.key==='Enter') executeSearchAndRoute()">
+                        <button id="btn-clear-search" class="btn-search-clear" onclick="clearSearchInput()">&times;</button>
+                        <button id="btn-search-go" class="btn-search-route" onclick="executeSearchAndRoute()">ROUTE</button>
+                    </div>
+                    <div id="search-dropdown" class="search-results-dropdown"></div>
+                </div>
+
+                <!-- Floating Left Controls: Map Layer Switcher -->
+                <div class="floating-controls-left">
+                    <button class="layer-btn active" id="btn-layer-osm" onclick="setMapLayer('osm')">Street</button>
+                    <button class="layer-btn" id="btn-layer-gmap" onclick="setMapLayer('google')">Google</button>
+                    <button class="layer-btn" id="btn-layer-sat" onclick="setMapLayer('satellite')">Satellite</button>
+                </div>
+
+                <!-- Floating Right Controls: Recenter & Offline Cache -->
+                <div class="floating-controls-right">
+                    <button class="map-tool-btn" title="Snap to My Location" onclick="recenterToMyLocation()">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><line x1="12" y1="1" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="1" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="23" y2="12"/></svg>
+                    </button>
+                    <button class="map-tool-btn" title="Cache Visible Area Offline" onclick="cacheVisibleRegion()">
+                        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </button>
+                </div>
+
+                <!-- Leaflet Interactive Map -->
+                <div id="map-container"></div>
+
+                <!-- Route Calculated Summary Card -->
+                <div id="route-summary" class="route-summary-card">
+                    <div class="route-header-row">
+                        <div class="dest-title" id="summary-dest-title">Destination</div>
+                        <span style="font-size:11px; color:var(--primary); font-weight:800;">OSRM Driving Route</span>
+                    </div>
+                    <div class="route-stats-grid">
+                        <div class="stat-box">
+                            <span class="stat-val" id="summary-dist">0.0 km</span>
+                            <span class="stat-label">Total Distance</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-val" id="summary-duration">0 min</span>
+                            <span class="stat-label">Estimated Time</span>
+                        </div>
+                    </div>
+                    <div class="route-buttons-row">
+                        <button class="btn-action btn-start-route" onclick="startInAppNavigation()">
+                            <svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.5;" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            START NAVIGATION
+                        </button>
+                        <button class="btn-action btn-launch-gmaps" onclick="launchInGoogleMaps()">
+                            <svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                            GOOGLE MAPS
+                        </button>
+                        <button class="btn-action btn-cancel-route" onclick="cancelRoute()">&times;</button>
+                    </div>
+                </div>
+
+                <!-- Bottom Real-time Navigation HUD -->
+                <div class="nav-hud">
+                    <div class="hud-main-row">
+                        <div class="maneuver-container">
+                            <div class="maneuver-icon-badge" id="hud-icon-wrap">
+                                <svg id="hud-maneuver-svg" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                            </div>
+                            <div class="maneuver-details">
+                                <div class="maneuver-dist" id="hud-dist">-- m</div>
+                                <div class="maneuver-street" id="hud-road">Real GPS Ready</div>
+                            </div>
+                        </div>
+                        <div class="speedo-wrap">
+                            <div class="speedo-digits" id="hud-speed">0</div>
+                            <div class="speedo-unit">KM/H</div>
+                        </div>
+                    </div>
+                    <div class="hud-telemetry-row">
+                        <div class="gps-acc-pill">
+                            <span class="pulse-dot"></span>
+                            <span id="hud-gps-acc">GPS ± 0m</span>
+                        </div>
+                        <button id="btn-stop-nav" class="btn-stop-nav-link" onclick="cancelRoute()">STOP NAVIGATION</button>
+                        <div id="hud-coords" style="font-family:monospace; font-size:10px;">Waiting for fix...</div>
+                    </div>
+                </div>
+
+                <!-- Google Maps Turn-by-Turn Mirroring Overlay Panel (Tab 2) -->
+                <div id="gmaps-overlay-panel" class="gmaps-overlay-panel">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span class="card-header-title" style="font-size:13px; color:#1A73E8;">
+                            <svg viewBox="0 0 24 24" style="stroke:#1A73E8;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                            Google Maps Sync (Offline)
+                        </span>
+                        <span id="gmaps-sync-badge-overlay" class="gmaps-tag active">ACTIVE</span>
+                    </div>
+
+                    <div style="background:var(--bg-base); border:1px solid var(--border); border-radius:10px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                        <div style="display:flex; flex-direction:column; overflow:hidden;">
+                            <span style="font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Interception Status</span>
+                            <span id="gmaps-overlay-text" style="font-size:13px; font-weight:800; color:var(--text-main); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Waiting for active navigation...</span>
+                        </div>
+                        <button class="btn-action btn-launch-gmaps" style="flex:none; padding:8px 14px; font-size:11px;" onclick="launchInGoogleMaps()">
+                            OPEN GOOGLE MAPS
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TAB 2: GOOGLE MAPS OFFLINE MIRRORING -->
+            <div id="page-gmaps" class="tab-page">
+                <div class="page-scroll-content">
+                    <div class="gmaps-banner">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="card-header-title">
+                                <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                                Google Maps Offline Sync
+                            </span>
+                            <span id="gmaps-sync-badge" class="gmaps-tag inactive">CHECKING...</span>
+                        </div>
+                        <p style="font-size:12px; color:var(--text-sub); line-height:1.5;">
+                            Turn-by-turn directions from the official Google Maps app are mirrored to your RPMLOOP hardware display in real time. Works <strong>100% offline</strong> when using downloaded offline areas!
+                        </p>
+                        <button id="btn-request-notif" class="btn-action btn-launch-gmaps" style="padding:10px;" onclick="openNotificationSettings()">
+                            GRANT NOTIFICATION ACCESS
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header-title">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+                            Live Turn Interceptor
+                        </div>
+                        <div class="metrics-2col">
+                            <div class="metric-cell">
+                                <span class="metric-cell-lbl">Next Maneuver</span>
+                                <span class="metric-cell-val" id="gmaps-last-maneuver" style="color:var(--primary);">NONE</span>
+                            </div>
+                            <div class="metric-cell">
+                                <span class="metric-cell-lbl">Distance Remaining</span>
+                                <span class="metric-cell-val" id="gmaps-last-dist">-- m</span>
+                            </div>
+                        </div>
+                        <div class="metric-cell">
+                            <span class="metric-cell-lbl">Active Turn Instruction</span>
+                            <span class="metric-cell-val" id="gmaps-last-road" style="font-size:14px; font-weight:700;">No active Google Maps trip</span>
+                        </div>
+                        <button class="btn-action btn-launch-gmaps" style="padding:12px;" onclick="launchInGoogleMaps()">
+                            OPEN GOOGLE MAPS NAVIGATION
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: HARDWARE HEALTH & BRIGHTNESS -->
+            <div id="page-health" class="tab-page">
+                <div class="page-scroll-content">
+                    <div class="card">
+                        <div class="card-header-title">
+                            <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                            ESP32 Connection & Signal
+                        </div>
+                        <div class="metrics-2col">
+                            <div class="metric-cell">
+                                <span class="metric-cell-lbl">Hardware Model</span>
+                                <span class="metric-cell-val" style="font-size:14px;">ESP32-S3 Mini</span>
+                            </div>
+                            <div class="metric-cell">
+                                <span class="metric-cell-lbl">BLE Signal (RSSI)</span>
+                                <span class="metric-cell-val" id="ble-rssi-val" style="color:var(--primary);">-60 dBm</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn-action" style="background:#F1F5F9; border:1px solid var(--border); color:var(--text-main);" onclick="pingEsp32()">
+                                PING HARDWARE
+                            </button>
+                            <button class="btn-action" style="background:var(--primary-dim); border:1px solid var(--primary); color:var(--primary);" onclick="reconnectBle()">
+                                RECONNECT BLE
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header-title">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                            Display Brightness
+                        </div>
+                        <div class="brightness-slider-container">
+                            <div class="slider-label-row">
+                                <span style="color:var(--text-sub);">LCD Backlight Level</span>
+                                <span id="brightness-pct" style="color:var(--primary); font-weight:800;">80%</span>
+                            </div>
+                            <input type="range" id="brightness-slider" min="5" max="100" value="80" oninput="onBrightnessChanged(this.value)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: ISOLATED SYSTEM LOGS -->
+            <div id="page-logs" class="tab-page">
+                <div class="logs-bar">
+                    <span style="font-size:12px; font-weight:700; color:var(--text-sub);" id="log-count">0 events</span>
+                    <button class="btn-action" style="flex:none; padding:6px 14px; background:#FFFFFF; border:1px solid var(--border); color:var(--text-main); box-shadow:var(--shadow-sm);" onclick="copyAllLogs()">
+                        COPY LOGS
+                    </button>
+                </div>
+                <div class="logs-window" id="logs-container"></div>
+            </div>
+
+        </div>
+
+        <!-- BOTTOM NAVIGATION BAR -->
+        <nav class="bottom-nav">
+            <button class="nav-btn active" id="btn-tab-nav" onclick="switchTab('nav')">
+                <svg viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                <span>Navigation</span>
+            </button>
+            <button class="nav-btn" id="btn-tab-gmaps" onclick="switchTab('gmaps')">
+                <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                <span>Google Sync</span>
+            </button>
+            <button class="nav-btn" id="btn-tab-health" onclick="switchTab('health')">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span>Hardware</span>
+            </button>
+            <button class="nav-btn" id="btn-tab-logs" onclick="switchTab('logs')">
+                <svg viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                <span>Telemetry</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <script>
+        // Global State
+        let map = null;
+        let carMarker = null;
+        let destMarker = null;
+        let routePolyline = null;
+        let currentLayer = null;
+        const tileLayers = {};
+
+        // Real Phone GPS Tracking
+        let currentPos = null;
+        let currentSpeedKmh = 0;
+        let currentBearing = 0;
+        let currentAccuracy = 0;
+
+        // Navigation State
+        let selectedDestination = null;
+        let calculatedSteps = [];
+        let isNavigating = false;
+        let searchDebounce = null;
+
+        // BLE State
+        let bleState = 'DISCONNECTED';
+        let bleRssi = -60;
+        let lastPingTime = 0;
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active-page'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+            const targetBtn = document.getElementById('btn-tab-' + tabId);
+            if (targetBtn) targetBtn.classList.add('active');
+
+            const pageNav = document.getElementById('page-nav');
+            const navHud = document.querySelector('.nav-hud');
+            const gmapsPanel = document.getElementById('gmaps-overlay-panel');
+
+            if (tabId === 'nav') {
+                pageNav.classList.add('active-page');
+                if (navHud) navHud.style.display = 'flex';
+                if (gmapsPanel) gmapsPanel.style.display = 'none';
+                if (map) setTimeout(() => map.invalidateSize(), 100);
+            } else if (tabId === 'gmaps') {
+                // Keep the live map visible while showing Google Maps Sync controls!
+                pageNav.classList.add('active-page');
+                if (navHud) navHud.style.display = 'none';
+                if (gmapsPanel) gmapsPanel.style.display = 'flex';
+                checkGmapsPermissionStatus();
+                if (map) setTimeout(() => map.invalidateSize(), 100);
+            } else {
+                const targetPage = document.getElementById('page-' + tabId);
+                if (targetPage) targetPage.classList.add('active-page');
+            }
+        }
+
+        // Header Action Button (PAIR / STOP / DISCONNECT)
+        function onHeaderButtonClick() {
+            if (bleState === 'SCANNING' || bleState === 'CONNECTING') {
+                // STOP FUNCTIONAL
+                if (window.AndroidBleBridge && window.AndroidBleBridge.stopScan) {
+                    window.AndroidBleBridge.stopScan();
+                } else if (window.AndroidBleBridge && window.AndroidBleBridge.disconnect) {
+                    window.AndroidBleBridge.disconnect();
+                }
+                onBleStatus('DISCONNECTED', '', 0);
+                log('INFO', 'Scan stopped by user.');
+            } else if (bleState === 'CONNECTED') {
+                if (window.AndroidBleBridge) window.AndroidBleBridge.disconnect();
+                log('INFO', 'Disconnect requested.');
+            } else {
+                if (window.AndroidBleBridge) window.AndroidBleBridge.connect();
+                onBleStatus('SCANNING', '', 0);
+                log('INFO', 'Scanning for RPMLOOP display...');
+            }
+        }
+
+        // Native BLE Callback
+        window.onBleStatus = function(status, deviceName, rssi) {
+            bleState = status;
+            const pill = document.getElementById('ble-status-pill');
+            const lbl = document.getElementById('ble-status-label');
+            const btn = document.getElementById('btn-ble-connect');
+
+            if (status === 'CONNECTED') {
+                pill.className = 'status-pill connected';
+                lbl.innerText = 'RPMLOOP Connected';
+                btn.className = 'btn-header-action btn-disconnect';
+                btn.innerText = 'DISCONNECT';
+            } else if (status === 'SCANNING' || status === 'CONNECTING') {
+                pill.className = 'status-pill scanning';
+                lbl.innerText = 'Searching RPMLOOP...';
+                btn.className = 'btn-header-action btn-stop-scan';
+                btn.innerText = 'STOP';
+            } else {
+                pill.className = 'status-pill offline';
+                lbl.innerText = 'ESP32 Offline';
+                btn.className = 'btn-header-action btn-pair';
+                btn.innerText = 'PAIR';
+            }
+        };
+
+        window.onBleRssi = function(rssi) {
+            bleRssi = rssi;
+            document.getElementById('ble-rssi-val').innerText = `${rssi} dBm`;
+        };
+
+        window.onBleAck = function(payload) {
+            const rtt = Date.now() - lastPingTime;
+            log('INFO', `ESP32 ACK: ${payload} (${rtt}ms)`);
+        };
+
+        // Initialize Map
+        function initMap() {
+            if (window.AndroidBleBridge && window.AndroidBleBridge.getInitialLocationJson) {
+                try {
+                    const loc = JSON.parse(AndroidBleBridge.getInitialLocationJson());
+                    if (loc && loc.lat && loc.lng) {
+                        currentPos = [loc.lat, loc.lng];
+                        currentSpeedKmh = Math.round(loc.speed || 0);
+                        currentAccuracy = Math.round(loc.accuracy || 5);
+                    }
+                } catch (e) {}
+            }
+
+            const initialView = currentPos || [20.5937, 78.9629];
+            const initialZoom = currentPos ? 16 : 5;
+
+            map = L.map('map-container', {
+                zoomControl: false,
+                attributionControl: false
+            }).setView(initialView, initialZoom);
+
+            // High-contrast clean street layer
+            tileLayers['osm'] = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                subdomains: 'abcd'
+            });
+
+            tileLayers['google'] = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                maxZoom: 20
+            });
+
+            tileLayers['satellite'] = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                maxZoom: 20
+            });
+
+            currentLayer = tileLayers['osm'];
+            currentLayer.addTo(map);
+
+            if (currentPos) {
+                createOrUpdateCarMarker(currentPos, currentBearing);
+                onGpsLockAcquired(currentPos[0], currentPos[1], currentAccuracy, currentSpeedKmh);
+            }
+
+            initIndexedDB();
+        }
+
+        function createOrUpdateCarMarker(pos, bearing) {
+            if (!carMarker && map) {
+                const carDivIcon = L.divIcon({
+                    className: 'car-marker-container',
+                    html: `
+                        <div id="car-marker-dot" style="width:26px; height:26px; background:#0066FF; border:3px solid #FFFFFF; border-radius:50%; box-shadow:0 2px 10px rgba(0,102,255,0.5); display:flex; align-items:center; justify-content:center; transform: rotate(${bearing}deg); transition: transform 0.3s ease;">
+                            <svg style="width:14px; height:14px; fill:#FFFFFF;" viewBox="0 0 24 24"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg>
+                        </div>
+                    `,
+                    iconSize: [26, 26],
+                    iconAnchor: [13, 13]
+                });
+                carMarker = L.marker(pos, { icon: carDivIcon }).addTo(map);
+            } else if (carMarker) {
+                carMarker.setLatLng(pos);
+                const dot = document.getElementById('car-marker-dot');
+                if (dot) dot.style.transform = `rotate(${bearing}deg)`;
+            }
+        }
+
+        let hasInitialGpsCenter = false;
+        // Real Location Callback from Native Java
+        window.onLocationUpdate = function(lat, lng, accuracy, speedKmh, bearing, altitude) {
+            currentPos = [lat, lng];
+            currentSpeedKmh = Math.round(speedKmh || 0);
+            currentAccuracy = Math.round(accuracy || 5);
+            currentBearing = Math.round(bearing || 0);
+
+            createOrUpdateCarMarker(currentPos, currentBearing);
+            onGpsLockAcquired(lat, lng, currentAccuracy, currentSpeedKmh);
+
+            if (!hasInitialGpsCenter && map) {
+                hasInitialGpsCenter = true;
+                map.setView(currentPos, 16);
+            }
+        };
+
+        function onGpsLockAcquired(lat, lng, accuracy, speed) {
+            const splash = document.getElementById('splash-screen');
+            if (splash && !splash.classList.contains('fade-out')) {
+                splash.classList.add('fade-out');
+            }
+
+            document.getElementById('hud-speed').innerText = speed;
+            document.getElementById('hud-gps-acc').innerText = `GPS Active ± ${accuracy}m`;
+            document.getElementById('hud-coords').innerText = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        }
+
+        function recenterToMyLocation() {
+            if (currentPos && map) {
+                map.setView(currentPos, 16, { animate: true });
+                log('INFO', 'Centered map on real GPS coordinates.');
+            } else {
+                log('WARN', 'Acquiring GPS fix... Please ensure phone GPS is ON.');
+            }
+        }
+
+        function setMapLayer(name) {
+            document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+            const activeBtn = document.getElementById('btn-layer-' + (name === 'google' ? 'gmap' : (name === 'satellite' ? 'sat' : 'osm')));
+            if (activeBtn) activeBtn.classList.add('active');
+
+            if (currentLayer && map) map.removeLayer(currentLayer);
+            currentLayer = tileLayers[name] || tileLayers['osm'];
+            currentLayer.addTo(map);
+            log('INFO', 'Map layer changed to: ' + name);
+        }
+
+        // Autocomplete Search
+        function onSearchInput(query) {
+            const clearBtn = document.getElementById('btn-clear-search');
+            clearBtn.style.display = query.length > 0 ? 'block' : 'none';
+
+            clearTimeout(searchDebounce);
+            if (query.trim().length < 2) {
+                document.getElementById('search-dropdown').style.display = 'none';
+                return;
+            }
+
+            searchDebounce = setTimeout(() => {
+                let url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`;
+                if (currentPos) {
+                    url += `&lat=${currentPos[0]}&lon=${currentPos[1]}`;
+                }
+
+                fetch(url)
+                    .then(r => r.json())
+                    .then(data => {
+                        const dropdown = document.getElementById('search-dropdown');
+                        dropdown.innerHTML = '';
+                        if (!data.features || data.features.length === 0) {
+                            dropdown.style.display = 'none';
+                            return;
+                        }
+
+                        data.features.forEach(f => {
+                            const p = f.properties;
+                            const coords = f.geometry.coordinates;
+                            const name = p.name || p.street || 'Destination';
+                            const desc = [p.district, p.city, p.state, p.country].filter(Boolean).join(', ');
+
+                            const item = document.createElement('div');
+                            item.className = 'search-result-item';
+                            item.innerHTML = `
+                                <div class="res-name">${escapeHtml(name)}</div>
+                                <div class="res-desc">${escapeHtml(desc)}</div>
+                            `;
+                            item.onclick = () => selectDestination(coords[1], coords[0], name);
+                            dropdown.appendChild(item);
+                        });
+                        dropdown.style.display = 'flex';
+                    })
+                    .catch(() => {});
+            }, 350);
+        }
+
+        function executeSearchAndRoute() {
+            const input = document.getElementById('destination-input');
+            const query = input.value.trim();
+            if (!query) {
+                log('WARN', 'Please enter a search destination.');
+                return;
+            }
+
+            document.getElementById('search-dropdown').style.display = 'none';
+            log('INFO', 'Searching destination: ' + query);
+
+            let url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=1`;
+            if (currentPos) {
+                url += `&lat=${currentPos[0]}&lon=${currentPos[1]}`;
+            }
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.features && data.features.length > 0) {
+                        const f = data.features[0];
+                        const p = f.properties;
+                        const coords = f.geometry.coordinates;
+                        const name = p.name || p.street || query;
+                        selectDestination(coords[1], coords[0], name);
+                    } else {
+                        // Fallback to OpenStreetMap Nominatim
+                        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`)
+                            .then(r => r.json())
+                            .then(nom => {
+                                if (nom && nom.length > 0) {
+                                    selectDestination(parseFloat(nom[0].lat), parseFloat(nom[0].lon), nom[0].display_name.split(',')[0]);
+                                } else {
+                                    log('ERR', 'No location found for: ' + query);
+                                }
+                            })
+                            .catch(e => log('ERR', 'Search fallback failed: ' + e.message));
+                    }
+                })
+                .catch(err => {
+                    log('ERR', 'Search request failed: ' + err.message);
+                });
+        }
+
+        function clearSearchInput() {
+            const input = document.getElementById('destination-input');
+            input.value = '';
+            document.getElementById('btn-clear-search').style.display = 'none';
+            document.getElementById('search-dropdown').style.display = 'none';
+        }
+
+        function selectDestination(lat, lon, label) {
+            document.getElementById('search-dropdown').style.display = 'none';
+            document.getElementById('destination-input').value = label;
+            selectedDestination = { lat, lon, label };
+
+            if (destMarker && map) map.removeLayer(destMarker);
+            destMarker = L.marker([lat, lon]).addTo(map).bindPopup(`<strong>${escapeHtml(label)}</strong>`).openPopup();
+
+            if (!currentPos) {
+                log('WARN', 'Waiting for current GPS location before calculating route...');
+                return;
+            }
+
+            calculateRoute(currentPos[0], currentPos[1], lat, lon, label);
+        }
+
+        function calculateRoute(startLat, startLon, destLat, destLon, label) {
+            log('INFO', `Calculating route to ${label}...`);
+            const url = `https://router.project-osrm.org/route/v1/driving/${startLon},${startLat};${destLon},${destLat}?overview=full&geometries=geojson&steps=true`;
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.routes || data.routes.length === 0) {
+                        log('ERR', 'No driving route found to destination.');
+                        return;
+                    }
+
+                    const route = data.routes[0];
+                    const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+
+                    if (routePolyline && map) map.removeLayer(routePolyline);
+                    routePolyline = L.polyline(coords, {
+                        color: '#0066FF',
+                        weight: 5,
+                        opacity: 0.9,
+                        lineCap: 'round'
+                    }).addTo(map);
+
+                    map.fitBounds(routePolyline.getBounds(), { padding: [50, 50] });
+
+                    const distKm = (route.distance / 1000).toFixed(1);
+                    const durMin = Math.round(route.duration / 60);
+
+                    document.getElementById('summary-dest-title').innerText = label;
+                    document.getElementById('summary-dist').innerText = `${distKm} km`;
+                    document.getElementById('summary-duration').innerText = `${durMin} min`;
+                    document.getElementById('route-summary').style.display = 'flex';
+
+                    calculatedSteps = [];
+                    route.legs.forEach(leg => {
+                        leg.steps.forEach(step => {
+                            calculatedSteps.push({
+                                maneuver: mapOsrmManeuver(step.maneuver),
+                                distance: Math.round(step.distance),
+                                road: step.name || 'Street'
+                            });
+                        });
+                    });
+
+                    if (calculatedSteps.length > 0) {
+                        const firstStep = calculatedSteps[0];
+                        updateHudManeuver(firstStep.maneuver, firstStep.distance, firstStep.road);
+                    }
+                })
+                .catch(err => {
+                    log('ERR', 'Route calculation failed: ' + err.message);
+                });
+        }
+
+        function startInAppNavigation() {
+            if (!calculatedSteps || calculatedSteps.length === 0) return;
+            isNavigating = true;
+            document.getElementById('route-summary').style.display = 'none';
+            document.getElementById('btn-stop-nav').style.display = 'block';
+
+            const step = calculatedSteps[0];
+            sendNavPacket(step.maneuver, step.distance, step.road, currentSpeedKmh);
+            log('INFO', 'Navigation started! Forwarded to RPMLOOP hardware.');
+        }
+
+        function launchInGoogleMaps() {
+            let dest = '';
+            if (selectedDestination) {
+                dest = `${selectedDestination.lat},${selectedDestination.lon}`;
+            } else {
+                dest = document.getElementById('destination-input').value.trim();
+            }
+
+            if (!dest) {
+                log('WARN', 'Enter a destination first.');
+                return;
+            }
+
+            if (window.AndroidBleBridge && window.AndroidBleBridge.launchGoogleMaps) {
+                window.AndroidBleBridge.launchGoogleMaps(dest);
+                log('INFO', 'Launching Google Maps navigation...');
+            }
+        }
+
+        // Fully Functional Route Cancel / Stop
+        function cancelRoute() {
+            document.getElementById('route-summary').style.display = 'none';
+            document.getElementById('btn-stop-nav').style.display = 'none';
+            if (routePolyline && map) map.removeLayer(routePolyline);
+            if (destMarker && map) map.removeLayer(destMarker);
+            routePolyline = null;
+            destMarker = null;
+            selectedDestination = null;
+            isNavigating = false;
+            updateHudManeuver('NONE', 0, 'Navigation Stopped');
+
+            if (window.AndroidBleBridge && window.AndroidBleBridge.sendCommand) {
+                window.AndroidBleBridge.sendCommand(JSON.stringify({
+                    v: 1,
+                    type: 'NAV_STOP',
+                    seq: Math.floor(Date.now() / 100) % 100000,
+                    sid: 'android_m31'
+                }));
+            }
+            log('INFO', 'Navigation stopped.');
+        }
+
+        function mapOsrmManeuver(m) {
+            if (!m) return 'STRAIGHT';
+            const type = m.type || '';
+            const mod = m.modifier || '';
+
+            if (type.includes('turn')) {
+                if (mod.includes('right')) return 'TURN_RIGHT';
+                if (mod.includes('left')) return 'TURN_LEFT';
+                if (mod.includes('uturn')) return 'UTURN';
+            }
+            if (type.includes('roundabout')) return 'ROUNDABOUT';
+            if (type.includes('arrive')) return 'DESTINATION';
+            return 'STRAIGHT';
+        }
+
+        function updateHudManeuver(maneuver, distMeters, road) {
+            document.getElementById('hud-dist').innerText = `${distMeters} m`;
+            document.getElementById('hud-road').innerText = road || 'Road Ahead';
+
+            const svgWrap = document.getElementById('hud-icon-wrap');
+            let iconSvg = '';
+
+            switch (maneuver) {
+                case 'TURN_RIGHT':
+                case 'SLIGHT_RIGHT':
+                    iconSvg = '<svg viewBox="0 0 24 24"><path d="M5 19h7a4 4 0 0 0 4-4V5"/><polyline points="10 9 16 3 22 9"/></svg>';
+                    break;
+                case 'TURN_LEFT':
+                case 'SLIGHT_LEFT':
+                    iconSvg = '<svg viewBox="0 0 24 24"><path d="M19 19h-7a4 4 0 0 1-4-4V5"/><polyline points="14 9 8 3 2 9"/></svg>';
+                    break;
+                case 'UTURN':
+                    iconSvg = '<svg viewBox="0 0 24 24"><path d="M18 19V9a6 6 0 0 0-12 0v10"/><polyline points="10 15 6 19 2 15"/></svg>';
+                    break;
+                case 'ROUNDABOUT':
+                    iconSvg = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v4"/><path d="M22 12h-4"/><path d="M12 22v-4"/><path d="M2 12h4"/></svg>';
+                    break;
+                case 'DESTINATION':
+                    iconSvg = '<svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>';
+                    break;
+                default:
+                    iconSvg = '<svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>';
+            }
+            svgWrap.innerHTML = iconSvg;
+        }
+
+        // Google Maps Interceptor
+        window.onGoogleMapsNav = function(title, text, maneuver, distMeters, road) {
+            document.getElementById('gmaps-last-maneuver').innerText = maneuver;
+            document.getElementById('gmaps-last-dist').innerText = `${distMeters} m`;
+            document.getElementById('gmaps-last-road').innerText = text || road || title;
+
+            const overlayText = document.getElementById('gmaps-overlay-text');
+            if (overlayText) {
+                overlayText.innerText = `${maneuver}: ${distMeters}m on ${road || text || title}`;
+                overlayText.style.color = '#1A73E8';
+            }
+
+            updateHudManeuver(maneuver, distMeters, road || text);
+            sendNavPacket(maneuver, distMeters, road || text, currentSpeedKmh);
+        };
+
+        function checkGmapsPermissionStatus() {
+            if (window.AndroidBleBridge && window.AndroidBleBridge.isNotificationAccessGranted) {
+                const granted = AndroidBleBridge.isNotificationAccessGranted();
+                const badge = document.getElementById('gmaps-sync-badge');
+                const badgeOverlay = document.getElementById('gmaps-sync-badge-overlay');
+                const btn = document.getElementById('btn-request-notif');
+                if (granted) {
+                    if (badge) { badge.className = 'gmaps-tag active'; badge.innerText = 'SYNC ACTIVE'; }
+                    if (badgeOverlay) { badgeOverlay.className = 'gmaps-tag active'; badgeOverlay.innerText = 'ACTIVE'; }
+                    if (btn) btn.style.display = 'none';
+                } else {
+                    if (badge) { badge.className = 'gmaps-tag inactive'; badge.innerText = 'PERMISSION NEEDED'; }
+                    if (badgeOverlay) { badgeOverlay.className = 'gmaps-tag inactive'; badgeOverlay.innerText = 'NEED PERMISSION'; }
+                    if (btn) btn.style.display = 'block';
+                }
+            }
+        }
+
+        function openNotificationSettings() {
+            if (window.AndroidBleBridge && window.AndroidBleBridge.openNotificationSettings) {
+                AndroidBleBridge.openNotificationSettings();
+            }
+        }
+
+        // BLE Send Command (compatible with firmware & browser simulator)
+        function sendNavPacket(maneuver, distMeters, road, speed) {
+            const lat = currentPos ? currentPos[0] : 0;
+            const lon = currentPos ? currentPos[1] : 0;
+            const packet = {
+                v: 1,
+                type: 'NAV_UPDATE',
+                seq: Math.floor(Date.now() / 100) % 100000,
+                sid: 'android_m31',
+                payload: {
+                    maneuver: maneuver || 'STRAIGHT',
+                    dist_m: distMeters || 0,
+                    distance_m: distMeters || 0,
+                    road: (road || 'Road').substring(0, 32),
+                    road_name: (road || 'Road').substring(0, 32),
+                    speed_kmh: speed || 0,
+                    spd_mps: (speed || 0) / 3.6,
+                    rem_dist_m: distMeters || 0,
+                    rem_time_s: 180,
+                    progress_pct: 10,
+                    lat: lat,
+                    lon: lon,
+                    head_deg: currentBearing || 0,
+                    gps_acc_m: currentAccuracy || 2.5
+                }
+            };
+            if (window.AndroidBleBridge && window.AndroidBleBridge.sendCommand) {
+                window.AndroidBleBridge.sendCommand(JSON.stringify(packet));
+            }
+        }
+
+        // Real Phone Continuous GPS Telemetry Loop (every 2 seconds)
+        setInterval(() => {
+            if (currentPos && window.AndroidBleBridge && window.AndroidBleBridge.sendCommand) {
+                const lat = currentPos[0];
+                const lon = currentPos[1];
+                if (Math.abs(lat) > 0.0001 && Math.abs(lon) > 0.0001) {
+                    const gpsPacket = {
+                        v: 1,
+                        type: 'NAV_UPDATE',
+                        seq: Math.floor(Date.now() / 100) % 100000,
+                        sid: 'android_m31',
+                        payload: {
+                            maneuver: isNavigating && calculatedSteps.length > 0 ? calculatedSteps[0].maneuver : 'NONE',
+                            dist_m: isNavigating && calculatedSteps.length > 0 ? calculatedSteps[0].distance : 0,
+                            road: isNavigating && calculatedSteps.length > 0 ? calculatedSteps[0].road : 'Idle / GPS Tracking',
+                            speed_kmh: currentSpeedKmh,
+                            spd_mps: currentSpeedKmh / 3.6,
+                            lat: lat,
+                            lon: lon,
+                            head_deg: currentBearing || 0,
+                            gps_acc_m: currentAccuracy || 2.5,
+                            rem_dist_m: 0,
+                            rem_time_s: 0,
+                            progress_pct: 0
+                        }
+                    };
+                    window.AndroidBleBridge.sendCommand(JSON.stringify(gpsPacket));
+                }
+            }
+        }, 2000);
+
+        function reconnectBle() {
+            if (window.AndroidBleBridge) {
+                window.AndroidBleBridge.disconnect();
+                setTimeout(() => window.AndroidBleBridge.connect(), 600);
+            }
+        }
+
+        function pingEsp32() {
+            lastPingTime = Date.now();
+            if (window.AndroidBleBridge) window.AndroidBleBridge.ping();
+        }
+
+        function onBrightnessChanged(val) {
+            document.getElementById('brightness-pct').innerText = `${val}%`;
+            if (window.AndroidBleBridge && window.AndroidBleBridge.setBrightness) {
+                window.AndroidBleBridge.setBrightness(parseInt(val));
+            }
+        }
+
+        // IndexedDB Offline Map Caching
+        let db = null;
+        function initIndexedDB() {
+            const req = indexedDB.open('RPMLoopOfflineTiles', 1);
+            req.onupgradeneeded = e => {
+                const d = e.target.result;
+                if (!d.objectStoreNames.contains('tiles')) {
+                    d.createObjectStore('tiles', { keyPath: 'key' });
+                }
+            };
+            req.onsuccess = e => { db = e.target.result; };
+        }
+
+        function cacheVisibleRegion() {
+            if (!map || !db) return;
+            const bounds = map.getBounds();
+            const zoom = map.getZoom();
+            log('INFO', `Downloading offline tiles around current view at zoom ${zoom}...`);
+
+            const minZ = Math.max(13, zoom);
+            const maxZ = Math.min(16, zoom + 1);
+
+            for (let z = minZ; z <= maxZ; z++) {
+                const minTile = latLonToTile(bounds.getNorth(), bounds.getWest(), z);
+                const maxTile = latLonToTile(bounds.getSouth(), bounds.getEast(), z);
+
+                for (let x = Math.min(minTile.x, maxTile.x); x <= Math.max(minTile.x, maxTile.x); x++) {
+                    for (let y = Math.min(minTile.y, maxTile.y); y <= Math.max(minTile.y, maxTile.y); y++) {
+                        const url = `https://a.basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}.png`;
+                        const key = `${z}/${x}/${y}`;
+                        fetch(url)
+                            .then(r => r.blob())
+                            .then(blob => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                    const tx = db.transaction('tiles', 'readwrite');
+                                    tx.objectStore('tiles').put({ key, data: reader.result });
+                                };
+                                reader.readAsDataURL(blob);
+                            })
+                            .catch(() => {});
+                    }
+                }
+            }
+            log('INFO', 'Offline tile caching completed in background.');
+        }
+
+        function latLonToTile(lat, lon, zoom) {
+            const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
+            const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+            return { x, y };
+        }
+
+        // Telemetry Logs
+        let logEventsCount = 0;
+        function log(level, message) {
+            logEventsCount++;
+            document.getElementById('log-count').innerText = `${logEventsCount} events`;
+            const container = document.getElementById('logs-container');
+            const d = new Date();
+            const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="log-t">[${timeStr}]</span> <span class="log-lvl-${level}">[${level}]</span> <span>${escapeHtml(message)}</span>`;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        window.onBleLog = function(level, msg) { log(level, msg); };
+
+        function copyAllLogs() {
+            const text = document.getElementById('logs-container').innerText;
+            if (window.AndroidBleBridge && window.AndroidBleBridge.copyToClipboard) {
+                window.AndroidBleBridge.copyToClipboard(text);
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        // Window Load Bootstrapper
+        window.onload = function() {
+            initMap();
+            checkGmapsPermissionStatus();
+            log('INFO', 'RPMLoop Light Production Engine Initialized.');
+
+            if (window.AndroidBleBridge && window.AndroidBleBridge.isBleConnected && window.AndroidBleBridge.isBleConnected()) {
+                onBleStatus('CONNECTED', 'RPMLOOP', -60);
+                log('INFO', 'RPMLOOP is already connected and active.');
+            } else {
+                setTimeout(() => {
+                    if (window.AndroidBleBridge) window.AndroidBleBridge.connect();
+                }, 1000);
+            }
+
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                if (splash && !splash.classList.contains('fade-out')) {
+                    splash.classList.add('fade-out');
+                }
+            }, 5000);
+        };
+    </script>
+</body>
+</html>

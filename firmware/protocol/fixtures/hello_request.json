@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "type": "HELLO",
+  "seq": 1,
+  "sid": "sess_init_001",
+  "payload": {
+    "client": "RPMLopp-iOS",
+    "version": "1.0.0",
+    "preferred_mtu": 256
+  },
+  "crc": 1234
+}

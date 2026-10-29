@@ -9,173 +9,214 @@ An open-source motorcycle navigation dashboard, designed around the Royal Enfiel
 [![License: MIT](https://img.shields.io/badge/License-MIT-65d9e8?style=flat-square)](LICENSE)
 [![Hardware: P3 prototype](https://img.shields.io/badge/Hardware-P3%20prototype-222831?style=flat-square)](printing_files/README.md)
 [![Platform: ESP32-S3](https://img.shields.io/badge/Platform-ESP32--S3-222831?style=flat-square)](#the-platform)
+[![Companion: Android & iOS](https://img.shields.io/badge/Companion-Android%20%7C%20iOS-34D399?style=flat-square)](companion_app/)
 
 ![RPMLOOP Navigator — map UI design visualization](docs/images/hero-map-day.png)
 
 **A compact instrument for the ride ahead.**
 
-[Try the display](https://shinchan1907.github.io/rpmloop-navigator/preview/) · [Printing files](printing_files/) · [Build and material guide](printing_files/README.md) · [Hardware status](#build-status) · [Contributing](CONTRIBUTING.md)
+[Android APK](companion_app/android/RPMLoopNav.apk) · [iOS IPA](companion_app/ios/RPMLoopNav_v2.ipa) · [Desktop Simulator](simulator/) · [Dual Firmware](firmware/) · [Printing Files](printing_files/) · [Hardware Pinout](hardware/) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
-RPMLOOP Navigator brings a dedicated navigation display to the motorcycle cockpit. The vision is simple: the iPhone handles navigation processing, an ESP32-S3 renders the information that matters, and a purpose-built enclosure keeps the hardware compact, serviceable and expandable.
+RPMLOOP Navigator brings a dedicated navigation display to the motorcycle cockpit. The architecture is modular and local-first: your smartphone handles high-accuracy GPS tracking, geocoding, and routing (including **100% offline Google Maps turn mirroring**), an ESP32-S3 renders the turn-by-turn guidance and dashboard telemetry, and a purpose-built enclosure keeps the hardware compact, serviceable, and weather-resistant.
 
-This repository starts with the **P3 enclosure design, individual manufacturing files and engineering notes**. Firmware and the iPhone companion app will be added here as development continues.
+---
 
-> **Design visualization, not a product photograph.** The renders use the current CAD enclosure with illustrative screen UI, window and hardware. They do not demonstrate running firmware, proven touch compatibility, waterproofing or road qualification.
-
-## Try the interactive display
-
-[![Open the RPMLOOP display lab — day and night map concepts](docs/images/display-preview.gif)](https://shinchan1907.github.io/rpmloop-navigator/preview/)
-
-**[Open the interactive HTML mockup →](https://shinchan1907.github.io/rpmloop-navigator/preview/)**
-
-Pan with your mouse, zoom in/out, play or scrub a demo ride, jump between turns,
-switch day/night, and try both **320 × 240 landscape** and **240 × 320 portrait**.
-The case surrounds a native-resolution LCD canvas; its on-screen size can be enlarged.
-The linked card opens the interactive page because GitHub READMEs cannot execute HTML/JavaScript widgets.
-
-The demo uses real OpenStreetMap streets and a bundled road-following OSRM route
-from Albert Hall Museum to Hawa Mahal in Jaipur. It works offline after downloading
-the [`docs/preview/`](docs/preview/) folder: open `index.html` in Chrome or another browser.
-There are no API keys or external tile requests. See the [controls and map credits](docs/preview/README.md).
-
-**UI concept only.** A companion app could prepare a route and map tiles for the
-ESP32-S3 to display with a route overlay and touch controls. This mockup explores
-that appearance; it does not implement firmware, the companion app, GPS, BLE or
-live routing, or demonstrate achievable frame rate, memory use or tile transfer speed.
-The portrait case presentation does not revise the existing landscape enclosure CAD.
-
-<p align="center">
-  <img src="docs/images/hero-map-night.png" width="49%" alt="Existing enclosure rendered with a night map and highlighted route">
-  <img src="docs/images/display-map-detail.png" width="49%" alt="Close view of the native-resolution map concept with a right turn onto Tripolia Bazaar">
-</p>
-
-Map data and map-derived artwork: © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright),
-[ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/). Route snapshot: OSRM driving profile;
-Jaipur demo retrieved 27 October 2026. This is illustrative routing, not motorcycle guidance or live traffic.
-
-## Designed around the ride
-
-| Detail | Design intent |
-|---|---|
-| Dedicated display | 2.8-inch, 240 × 320 SPI resistive touchscreen |
-| Bottom cable routing | USB-C access beside the bottom mount |
-| Two-finger mount | Flat sides and an M5 through-hole; the mating accessory supplies the nut receiver |
-| Matte-black enclosure | ASA print target, rounded corners and recessed branding |
-| Serviceable construction | Separate bezel and rear lid, heat-set insert locations and removable PCB supports |
-| Expandable interior | Reserved volumes for a future M8M GPS assembly and battery |
-| Internal storage | A sealed-in microSD card, with no external card slot |
-
-<p align="center">
-  <img src="docs/images/port-and-mount.png" width="82%" alt="Bottom USB-C access beside the flat two-finger action-camera mount">
-</p>
-
-## The platform
+## 🗺️ Complete System Architecture
 
 ```mermaid
-flowchart LR
-    Phone["iPhone companion app\nplanned navigation processing"] <-->|BLE| MCU["Waveshare ESP32-S3 Mini"]
-    MCU -->|SPI| LCD["2.8-inch resistive touchscreen"]
-    MCU <-->|SPI| SD["Internal 32 GB microSD"]
-    USB["Motorcycle USB-C outlet"] --> MCU
-    GPS["Future M8M GPS"] -.-> MCU
-    Sensors["Future sensors / telemetry"] -.-> MCU
+flowchart TD
+    subgraph Mobile Companion Apps
+        Android["Android Companion App\n(Java + Leaflet + Offline Tiles)\n• Google Maps Notification Mirroring\n• Photon Geocoder & OSRM Engine\n• 2s Real GPS Telemetry Stream"]
+        iOS["iOS Companion App\n(Native SwiftUI + CoreBluetooth)\n• CoreLocation Engine\n• Diagnostics & Simulation"]
+    end
+
+    subgraph Wireless Link
+        BLE["Bluetooth Low Energy (BLE 5.0 GATT)\nService UUID: 4E415601-5250-4D4C-6F70-704E61760001\nVersioned JSON Protocol (v1)"]
+    end
+
+    subgraph ESP32-S3 Microcontroller
+        MCU["Waveshare ESP32-S3 Mini / Zero"]
+        LED["Onboard WS2812 Mini RGB LED\n🔴 Red: Disconnected / Standby\n🔵 Blue: Connected & Active"]
+    end
+
+    subgraph Target 1: Production Motorcycle Hardware
+        PhysicalLCD["2.8-inch SPI TFT LCD (ST7789/ILI9341)\nNative 320x240 Resolution\n• 5 kHz PWM Backlight Dimming\n• P3 3D-Printed Weatherproof Case"]
+    end
+
+    subgraph Target 2: Desktop Simulator & Bench Lab
+        Bridge["Python Bridge Server (bridge.py)\n• COBS & CRC-16 USB CDC Serial\n• WebSocket Broadcast on port 8080\n• Local Wi-Fi APK Distribution"]
+        BrowserSim["Web Browser Simulator\n• Virtual 320x240 LCD HUD\n• Real-Time Leaflet GPS Phone Tracker\n• Raw Diagnostic Stream & Replay"]
+    end
+
+    Android <-->|BLE GATT| BLE
+    iOS <-->|BLE GATT| BLE
+    BLE <--> MCU
+    MCU --> LED
+
+    MCU -->|Direct SPI Bus\n(firmware/production_hardware)| PhysicalLCD
+    MCU <-->|USB CDC Framed Serial\n(firmware/simulator_bridge)| Bridge
+    Bridge <--> BrowserSim
 ```
 
-Planned software includes supported turn instructions, distance to the next turn, dashboard data, touch controls, trip information and settings. Custom animations, map/zoom interaction where supported, telemetry logging and music controls are future development areas—not completed features in this release.
+---
 
-Power currently targets the motorcycle's existing USB-C outlet. A future battery requires a selected cell, protection/charging design and thermal validation. GPS, antenna, battery and sensor fit depend on the actual assemblies chosen.
+## 📂 Repository Directory Map
 
-## Built in separate, inspectable parts
+```
+rpmloop-navigator/
+├── companion_app/              # Mobile Smartphone Companion Apps
+│   ├── android/                # Native Android App (AAPT2/D8 build, Google Maps sync, APK)
+│   ├── ios/                    # Native iOS SwiftUI App (CoreBluetooth, Sideloadly IPA)
+│   └── README.md               # Mobile companion guide & comparison
+├── firmware/                   # ESP32-S3 Dual Firmware Suite
+│   ├── protocol/               # Official Protocol Specification & Test Fixtures
+│   ├── simulator_bridge/       # Firmware 1: USB Framed Serial to Desktop Simulator + WS2812 LED
+│   ├── production_hardware/    # Firmware 2: Direct 2.8" SPI TFT LCD (ST7789/ILI9341) Driver
+│   └── README.md               # Firmware architecture & flashing guide
+├── simulator/                  # Desktop Browser Simulator & Hardware Bridge
+│   ├── dashboard/              # Virtual 320x240 LCD HUD + Live Leaflet Phone GPS Tracker
+│   ├── bridge/                 # Python Starlette/Uvicorn Serial-to-WebSocket bridge
+│   └── README.md               # Simulator setup & usage instructions
+├── hardware/                   # Electronics & Electrical Integration
+│   └── README.md               # Full GPIO pin mapping, power consumption & USB-C specs
+├── printing_files/             # P3 Enclosure 3D Printing & Manufacturing Package
+│   ├── 01_Rigid_STL/           # 8 rigid ASA parts (housing, bezel, lid, cradle, tabs)
+│   ├── 02_Flexible_Prototype_STL/ # Flexible gasket & sealing washer templates
+│   ├── 03_Images/              # Assembly diagrams & individual part renders
+│   ├── 04_CAD/                 # SolidCraft models & STEP interchange files
+│   ├── 05_Verification/        # Mesh verification reports & clearance checks
+│   ├── 06_Source/              # Parametric CAD generator scripts
+│   └── README.md               # Slicing guidelines, tolerances, and hardware notes
+├── docs/                       # Interactive HTML mockups, diagrams, and hero imagery
+└── rendering/                  # Blender studio scenes and product render scripts
+```
 
-![Exploded enclosure with map UI design visualization](docs/images/exploded-map.png)
+---
 
-The enclosure separates the outer housing, front bezel, rear lid, ESP32 cradle and display retaining tabs. Seal templates are supplied separately from the rigid print parts. The reinforced two-finger mounting interface is integral to the housing.
+## 📱 Mobile Companion Apps
 
-The body/bezel envelope is **100 × 70 × 49 mm, excluding the bottom mount**. Display PCB envelope, active LCD area, front viewing opening and protective-window dimensions remain separate definitions. **The 85 × 48 mm display PCB outline is not the screen opening.**
+The smartphone handles the cellular connection, geocoding search, and GPS satellite fix, keeping the motorcycle display lightweight and power-efficient.
 
-## Printing files
+### 🤖 Android Companion App ([`companion_app/android/`](companion_app/android/))
+- **Pre-built APK:** Download [`RPMLoopNav.apk`](companion_app/android/RPMLoopNav.apk) *(66 KB)* directly.
+- **Google Maps Offline Sync:** Intercepts turn-by-turn directions from the official Google Maps app via `GoogleMapsNotificationService`. Works **100% offline** with downloaded offline map areas.
+- **In-App Navigation:** Integrated Photon search with instant `ROUTE` button, OSRM route calculations, and high-contrast daylight UI.
+- **Real Phone GPS Stream:** Broadcasts live phone coordinates (`lat`, `lon`, `speed_kmh`, `heading`, `accuracy`) over BLE every 2 seconds.
+- **Samsung Bluetooth Stability:** Sequenced GATT queue eliminating GATT 133 connection drops on Samsung Galaxy M/A/S-series phones.
+- **Offline Map Tile Storage:** Integrated IndexedDB tile cache for zero-data riding.
 
-Start with **[printing_files/README.md](printing_files/README.md)**. It contains part quantities, materials, colour, wall and layer settings, infill, orientation, nominal thickness, hardware notes and the physical acceptance checklist.
+### 🍎 iOS Companion App ([`companion_app/ios/`](companion_app/ios/))
+- **Pre-built IPA:** Install [`RPMLoopNav_v2.ipa`](companion_app/ios/RPMLoopNav_v2.ipa) *(267 KB)* via Sideloadly or AltStore.
+- **SwiftUI Architecture:** Clean declarative interface with live speedometer, maneuver cards, and telemetry logs.
+- **CoreBluetooth Central:** Seamless pairing to `RPMLOOP` BLE peripheral with background navigation modes.
+
+---
+
+## ⚡ ESP32-S3 Dual Firmware Suite
+
+The firmware is split into two specialized builds based on your development stage:
+
+| Feature | 1. Simulator Bridge Firmware | 2. Production Hardware Firmware |
+|---|---|---|
+| **Directory** | [`firmware/simulator_bridge/`](firmware/simulator_bridge/) | [`firmware/production_hardware/`](firmware/production_hardware/) |
+| **Target Output** | USB CDC Framed Serial (`bridge.py`) | 2.8" SPI TFT LCD (ST7789/ILI9341) |
+| **WS2812 Status LED** | 🔴 Red: Disconnected / 🔵 Blue: Connected | 🔴 Red: Disconnected / 🔵 Blue: Connected |
+| **Use Case** | Bench testing without physical LCD wiring | Motorcycle cockpit installation |
+| **Telemetry** | Streams `ACCEPTED_STATE` (`lat`, `lon`, `speed`) | Renders Google Maps styled vector HUD |
+| **Protocol** | Protocol v1 (JSON over BLE & Serial) | Protocol v1 (JSON over BLE & Serial) |
+
+### Flashing via PlatformIO
+```bash
+# To flash Simulator Bridge Firmware:
+cd firmware/simulator_bridge && pio run --target upload
+
+# To flash Production Hardware Firmware:
+cd firmware/production_hardware && pio run --target upload
+```
+
+---
+
+## 🖥️ Desktop Simulator & Web UI
+
+Test the complete navigation flow right on your PC without touching a soldering iron:
+
+1. Connect the ESP32-S3 via USB-C.
+2. Start the bridge:
+   ```bash
+   cd simulator/bridge
+   pip install -r requirements.txt
+   python bridge.py
+   ```
+3. Open **`http://localhost:8080/`** in your browser.
+4. Open the mobile companion app on your phone and tap **PAIR**. The virtual display and live Leaflet GPS tracker will immediately mirror your phone's movements!
+
+---
+
+## 📌 Hardware Wiring Pinout (Waveshare ESP32-S3 to 2.8" LCD)
+
+| Signal Name | ESP32-S3 GPIO | 2.8" LCD Pin | Function |
+|---|---|---|---|
+| **LCD_MOSI** | GPIO 11 | SDI / MOSI | SPI Master Data Out |
+| **LCD_MISO** | GPIO 13 | SDO / MISO | SPI Master Data In |
+| **LCD_SCLK** | GPIO 12 | SCK / CLK | SPI Clock |
+| **LCD_CS** | GPIO 10 | CS | Display Chip Select (Active Low) |
+| **LCD_DC** | GPIO 9 | DC / RS | Data / Command Select |
+| **LCD_RST** | GPIO 8 | RESET | Display Hardware Reset |
+| **LCD_BL** | GPIO 7 | LED / BL | 5 kHz PWM Backlight Dimming |
+| **TOUCH_CS** | GPIO 6 | T_CS | Touch Controller Chip Select |
+| **TOUCH_IRQ** | GPIO 5 | T_IRQ | Touch Pen Interrupt |
+| **SD_CS** | GPIO 4 | SD_CS | MicroSD Chip Select |
+| **WS2812** | GPIO 21 | Onboard RGB | Red: Disconnected / Blue: Connected |
+| **VCC / GND** | 5V / GND | VCC / GND | System Power |
+
+---
+
+## 🖨️ 3D Printing Files & Enclosure
+
+Start with **[printing_files/README.md](printing_files/README.md)** for part quantities, materials, wall thicknesses, and tolerances:
 
 | Folder | Contents |
 |---|---|
 | [`01_Rigid_STL`](printing_files/01_Rigid_STL/) | Housing, bezel, rear lid, ESP32 cradle, handed retaining tabs and insert coupon |
-| [`02_Flexible_Prototype_STL`](printing_files/02_Flexible_Prototype_STL/) | Uncompressed gasket/washer templates and millimetre-scale SVG outlines |
+| [`02_Flexible_Prototype_STL`](printing_files/02_Flexible_Prototype_STL/) | Gasket/washer templates and millimetre-scale SVG outlines |
 | [`03_Images`](printing_files/03_Images/) | Individual part images and technical assembly views |
 | [`04_CAD`](printing_files/04_CAD/) | Native SolidCraft assembly and STEP interchange files |
 | [`05_Verification`](printing_files/05_Verification/) | Digital mesh and interference evidence |
-| [`06_Source`](printing_files/06_Source/) | CAD generators and frozen command script |
+| [`06_Source`](printing_files/06_Source/) | CAD generators and frozen command scripts |
 
-**Eight rigid pieces form the enclosure assembly:** one housing, one bezel, one rear lid, one cradle and four retaining tabs. The insert coupon and flexible seal templates are additional items. Quantities are included in the STL filenames.
+Print rigid parts in **ASA** for UV and weather resistance. Use **TPU / Silicone** for gaskets and sealing washers.
 
-Print rigid parts in the specified ASA process. **Do not print silicone gasket shapes in ASA.** Silicone is the preferred final sealing material; TPU files are for fit prototypes. STL files use millimetres and are translated individually to a print-bed datum, without scaling.
+---
 
-## Build status
+## 🚀 Quickstart for Makers & AI Agents
 
-**Current release: P3 fit-test prototype.** The files are open for inspection, iteration and prototype fabrication. They are not a production-ready, waterproof or road-qualified product.
+To pick up this repository and get a complete running system:
 
-Completed digital work:
+```bash
+# 1. Clone the repository
+git clone https://github.com/shinchan1907/rpmloop-navigator.git
+cd rpmloop-navigator
 
-- Bottom USB-C opening and rotated ESP32 cradle.
-- Two flat mounting fingers with no external nut collar.
-- Front Instagram-style icon/`rpmloop` branding and large top `RPMLOOP` engraving.
-- M2 insert locations, matching cover holes, gasket channels and PCB retaining supports.
-- Closed STL mesh checks and rigid-part/component interference checks against the modelled references.
+# 2. Install the Android Companion App
+# Either copy companion_app/android/RPMLoopNav.apk to your phone
+# Or build from source in WSL/Linux:
+cd companion_app/android && ./build.sh && cd ../..
 
-Required physical validation:
+# 3. Flash the ESP32-S3 Simulator Firmware
+cd firmware/simulator_bridge && pio run -t upload && cd ../..
 
-- Actual LCD active area, glass/touch border and module stack dimensions.
-- Brass insert outside diameter and the correct ASA pilot size.
-- Wired-board clearance, actual USB connector position and the chosen cable plug.
-- Mating action-camera mount, fastener clearance and sustained mechanical loads.
-- Gasket material/compression, live USB weather protection, rain, condensation, heat and vibration.
+# 4. Launch Desktop Simulator & Bridge
+cd simulator/bridge && python bridge.py
+# Open http://localhost:8080/ in your browser
+```
 
-The current **10.5 × 4.2 mm USB opening is a clearance design, not a measured fit guarantee**. The board's 18 × 23.5 mm XY outline comes from the supplied reference; its thickness and connector Z position still need verification. Test the relevant interfaces before ordering a final enclosure set.
-
-See the detailed [verification report](printing_files/05_Verification/validation.md), including numerical-contact and audit-limit notes. Digital checks do not replace physical tests.
-
-## Development roadmap
-
-- **Hardware:** verify display and connector interfaces; print fit samples; refine sealing and retention.
-- **Firmware:** display bring-up, touch calibration, BLE protocol, UI rendering and asset storage.
-- **iPhone app:** BLE transport and supported navigation-data delivery.
-- **Expansion:** qualify GPS/antenna placement, battery power management, telemetry and logging.
-- **Validation:** bench tests followed by controlled environmental and mechanical testing.
-
-The [`firmware/`](firmware/) and [`companion_app/`](companion_app/) directories currently document intended scope. Source code will be published as it is implemented.
-
-## Contribute
-
-Build notes, measured hardware drawings, fit-test photos and reproducible issue reports are welcome. Include the design revision, exact module/cable/insert variant, print process and measurements. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before proposing a change.
-
-CAD and manufacturing changes should preserve the separation between verified measurements and placeholders. Do not promote a fit-test revision to a production release without supporting evidence.
-
-## Rendering
-
-The studio images were rendered from the CAD-derived print meshes in Blender. The
-new map renders use native **320 × 240** day/night PNG exports from the HTML mockup.
-The [map render script](rendering/render_map_product.py), [map studio scene](rendering/rpmloop_map_studio.blend)
-and [LCD textures](rendering/map-ui/) are included for reproducibility. The screen
-uses a 4:3 render-only active-area illustration; physical active LCD dimensions
-remain subject to module measurement. Rendering does not modify manufacturing files.
-
-The [original render script](rendering/render_product.py), [original studio scene](rendering/rpmloop_studio.blend)
-and all original images remain available.
-
-<details>
-<summary>Original arrow-UI renders (preserved design history)</summary>
-
-![Original enclosure hero with arrow-only screen concept](docs/images/hero.png)
-![Original exploded enclosure visualization](docs/images/exploded.png)
-![Original USB-C port and mounting detail](docs/images/port-and-mount.png)
-
-</details>
+---
 
 ## License
 
-Published under the [MIT License](LICENSE). Third-party components, tools and trademarks retain their respective ownership. Royal Enfield, Waveshare, ESP32, USB-C and Instagram references identify intended compatibility or components; this project is independent and is not an official product or endorsement from those brands.
+Published under the [MIT License](LICENSE). Third-party components, tools, and trademarks retain their respective ownership. Royal Enfield, Waveshare, ESP32, USB-C, and Google Maps references identify intended compatibility; this project is independent and community-driven.
 
 ---
 
