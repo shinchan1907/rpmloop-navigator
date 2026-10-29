@@ -13,7 +13,7 @@
 #include "ui/screens.h"
 
 // ==============================================================================
-// RPMLOOP production firmware 2.1.0
+// RPMLOOP production firmware 2.2.0
 //   BLE peripheral (protocol v1, JSON)  +  LVGL UI on the physical panel.
 // Data flow: phone packets -> NavigationState -> bike_state_apply_nav() ->
 // BikeState -> LVGL screens. With no phone, MockProvider animates BikeState
@@ -270,12 +270,6 @@ void loop() {
 
     mock_provider_update(now);       // demo data (yields nav fields to live BLE)
     bike_state_check_stale(now);     // live feed silent > 5 s -> STALE pill
-    if (lvgl_port_home_pressed() && ui_current() != UI_HOME && ui_current() != UI_BOOT) {
-        ui_show(UI_HOME);
-    }
-    if (lvgl_port_play_pressed()) {
-        ui_on_play_button();
-    }
-    lv_timer_handler();
+    lv_timer_handler();              // LVGL: renders + polls the touchscreen
     delay(5);
 }

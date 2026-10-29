@@ -2,9 +2,9 @@
 #define UI_SCREENS_H
 
 // Screen manager for the embedded LVGL UI. Screens are built lazily, kept
-// alive, and only READ BikeState (refreshed on a 250 ms timer). Navigation:
-// HOME button (polled in main) -> Home from anywhere; BACK (ESC key) -> Home;
-// PLAY button -> ui_on_play_button() (context action per screen).
+// alive, and only READ BikeState (refreshed on a 250 ms timer). Navigation
+// is touch-only: Home tiles go out to each screen, and every sub-screen
+// carries its own Home button to come back.
 
 enum UiScreen {
     UI_BOOT = 0, UI_HOME, UI_NAV, UI_MAPS,
@@ -14,6 +14,5 @@ enum UiScreen {
 void ui_init(void);
 void ui_show(UiScreen s);
 UiScreen ui_current(void);
-void ui_on_play_button(void);
 
 #endif // UI_SCREENS_H

@@ -6,13 +6,19 @@
 // Target: ESP32-S3 (dev: ESP32-S3 Mini) + generic red 2.8" SPI TFT module
 //         (ILI9341, 240x320 native, used landscape 320x240).
 //
-// This REPLACES the previous Waveshare-Zero pinout (MOSI 11 / SCLK 12 / CS 10 /
-// DC 9 / RST 8 / BL-PWM 7 / touch on 5-6). That map was never wired to real
-// hardware; the map below is the one physically tested on the bench and it
-// matches the bike-nav custom-PCB project pin map (SYSTEM_DESIGN.md), so the
-// same firmware runs on the dev board today and the custom PCB tomorrow.
-// CONFLICT NOTE: on the old map GPIO9 was DC and GPIO10 was CS — on the bench
-// hardware GPIO9 is CS and GPIO10 is DC. Do not mix the two maps.
+// PRODUCT SCOPE (owner decision, FINAL): the device is ONLY the ESP32-S3 and
+// this display module. The module's HR2046 resistive touchscreen is the ONLY
+// input. There is NO GPS module, NO encoder/joystick/buttons and NO SD card
+// in this product — all navigation data arrives from the phone companion
+// apps over BLE. (An earlier standalone design carried those peripherals;
+// their pin defines were removed so the firmware cannot quietly grow them
+// back. The module's own microSD slot on its back is likewise unused.)
+//
+// This map is the one physically tested on the bench; the same firmware
+// runs on the dev board today and the custom PCB (ESP32-S3-WROOM-1-N16R8)
+// tomorrow.
+// CONFLICT NOTE: an older Waveshare map had GPIO9 = DC / GPIO10 = CS — on
+// the bench hardware GPIO9 is CS and GPIO10 is DC. Do not mix the two maps.
 // ==============================================================================
 
 // ---- Display SPI interface (SPI2 / FSPI) ----
@@ -41,33 +47,31 @@
 #define TFT_LCD_W           320   // landscape width  (after rotation)
 #define TFT_LCD_H           240   // landscape height (after rotation)
 
-// ---- Human input: EC11 encoder + PSP joystick + 3 buttons (NO touch) ----
-// The module's HR2046 resistive touch is present but intentionally UNUSED —
-// the product design is glove-friendly physical controls only.
-#define ENC_CLK          12   // EC11 channel A
-#define ENC_DT           13   // EC11 channel B
-#define ENC_SW           4    // EC11 push = SELECT / ENTER
-#define JOY_X            5    // Joystick X axis (ADC1_CH4)
-#define JOY_Y            1    // Joystick Y axis (ADC1_CH0)
-#define JOY_SW           2    // Joystick push
-#define BTN_BACK         41   // BACK button
-#define BTN_PLAY         42   // PLAY / PAUSE button
-#define BTN_HOME         47   // HOME button
-#define STATUS_LED       48   // Plain status LED (custom PCB)
+// ---- Touchscreen: HR2046 on the display module (XPT2046-compatible) -------
+// The ONLY input device in the product. T_CLK / T_DIN / T_DO share the
+// display SPI bus — wire T_CLK -> TFT_SCLK (GPIO 6), T_DIN -> TFT_MOSI
+// (GPIO 7), T_DO -> TFT_MISO (GPIO 8). Only CS and IRQ get their own GPIOs.
+#define TOUCH_CS         12   // T_CS (chip select, active low)
+#define TOUCH_IRQ        13   // T_IRQ / PENIRQ (LOW while the panel is pressed)
+#define TOUCH_SPI_FREQ   2500000  // XPT2046-class ADCs top out around 2.5 MHz
 
-// ---- Reserved for later milestones (routed on the custom PCB, unused here) -
-#define SD_SCLK          14   // microSD slot on the display module's back:
-#define SD_MOSI          15   // SD_SCK / SD_MOSI / SD_MISO / SD_CS pads.
-#define SD_MISO          16   // (SD is out of scope for the UI milestone.)
-#define SD_CS            17
-#define GPS_RXD          18   // NEO-M8N UART1: S3 RX <- module TX
-#define GPS_TXD          21   // NEO-M8N UART1: S3 TX -> module RX
+// Touch calibration: RAW ADC ranges that map to the panel's corners
+// (consumed by the LGFX class in lgfx_config.h via Touch_XPT2046 config).
+// !!! UNVERIFIED PRESETS — typical XPT2046 starting values, NOT measured on
+// this module. Calibrate on the real hardware before trusting taps: run
+// LovyanGFX calibrateTouch() once, or log the raw values at the four
+// corners, then update these four numbers. If taps land mirrored/swapped
+// versus the picture, the fix is the touch offset_rotation in
+// lgfx_config.h, not these ranges.
+#define TOUCH_CAL_X_MIN  200
+#define TOUCH_CAL_X_MAX  3900
+#define TOUCH_CAL_Y_MIN  200
+#define TOUCH_CAL_Y_MAX  3900
 
-// ---- Onboard WS2812 status LED (original Waveshare Zero target only) -------
-// NOTE: GPIO21 is GPS_TXD in the pin map above. The BLE status LED code only
-// matters on the Waveshare board that physically has the WS2812; on the bench
-// S3 Mini there is no such LED and the writes are harmless no-ops. If GPS is
-// ever enabled on a board with the WS2812 fitted, move one of the two.
+// ---- Onboard WS2812 status LED (original Waveshare Zero target only) ------
+// The BLE status LED code only matters on the Waveshare board that
+// physically has the WS2812; on the bench S3 Mini there is no such LED and
+// the writes are harmless no-ops.
 #ifndef RGB_BUILTIN
 #define RGB_BUILTIN      21
 #endif

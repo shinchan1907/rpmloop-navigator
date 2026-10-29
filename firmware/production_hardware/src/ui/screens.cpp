@@ -12,17 +12,15 @@
 //  * A screen's widgets are created once (lazy build) and only refreshed.
 //  * Refresh functions READ g_bike_state; user actions go through the
 //    bike_control_*() seam — screens never write state fields directly.
-//  * Input: encoder rotates focus (LVGL group), encoder push / joystick push
-//    = ENTER, joystick directions arrive as UI_KEY_JOY_* custom keys and are
-//    dispatched to the active screen's onKey handler, BACK = LV_KEY_ESC.
+//  * Input: touchscreen only (LVGL pointer indev from lvgl_port). Buttons,
+//    tiles and sliders are tapped/dragged directly; the map pans by drag
+//    (inside MapView) and zooms via on-screen +/- buttons; every sub-screen
+//    carries a Home button (touch replacement for the old HOME key).
 // ==============================================================================
 
 struct ScrDef {
     lv_obj_t* root;
-    lv_obj_t* focus[10];
-    int focusN;
     void (*refresh)(void);
-    void (*onKey)(uint32_t key);
 };
 
 static ScrDef S[UI_COUNT];
@@ -31,21 +29,6 @@ static lv_obj_t* s_dimOverlay = nullptr;
 
 static void show_cb(lv_event_t* e) {
     ui_show((UiScreen)(intptr_t)lv_event_get_user_data(e));
-}
-
-static void key_dispatch_cb(lv_event_t* e) {
-    if (lv_event_get_code(e) != LV_EVENT_KEY) return;
-    uint32_t key = lv_event_get_key(e);
-    if (key == LV_KEY_ESC) {
-        if (s_cur != UI_HOME && s_cur != UI_BOOT) ui_show(UI_HOME);
-        return;
-    }
-    if (S[s_cur].onKey) S[s_cur].onKey(key);
-}
-
-static void add_focus(UiScreen id, lv_obj_t* obj) {
-    if (S[id].focusN < 10) S[id].focus[S[id].focusN++] = obj;
-    lv_obj_add_event_cb(obj, key_dispatch_cb, LV_EVENT_KEY, nullptr);
 }
 
 static lv_obj_t* make_root(UiScreen id, uint32_t bgHex) {
@@ -61,19 +44,45 @@ static lv_obj_t* make_root(UiScreen id, uint32_t bgHex) {
     return r;
 }
 
-// Invisible key-catcher object used by the map screens: it holds group focus
-// so encoder rotation (LV_KEY_LEFT/RIGHT) and joystick keys reach onKey.
-static lv_obj_t* make_keys_obj(lv_obj_t* parent, int x, int y, int w, int h) {
-    lv_obj_t* o = lv_obj_create(parent);
-    lv_obj_set_pos(o, x, y);
-    lv_obj_set_size(o, w, h);
-    lv_obj_set_style_bg_opa(o, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_bg_opa(o, LV_OPA_TRANSP, LV_STATE_FOCUSED);
-    lv_obj_set_style_border_width(o, 0, 0);
-    lv_obj_set_style_border_width(o, 0, LV_STATE_FOCUSED);
-    lv_obj_clear_flag(o, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_clear_flag(o, LV_OBJ_FLAG_CLICKABLE);
-    return o;
+// Home button carried by every sub-screen: dark translucent circle.
+// (Touch replacement for the removed physical HOME button.)
+static lv_obj_t* make_home_btn(lv_obj_t* parent, int x, int y) {
+    lv_obj_t* b = lv_btn_create(parent);
+    lv_obj_set_pos(b, x, y);
+    lv_obj_set_size(b, 30, 30);
+    lv_obj_set_style_radius(b, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(b, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_bg_opa(b, LV_OPA_60, 0);
+    lv_obj_set_style_border_width(b, 0, 0);
+    lv_obj_set_style_shadow_width(b, 0, 0);
+    lv_obj_t* l = lv_label_create(b);
+    lv_label_set_text(l, LV_SYMBOL_HOME);
+    lv_obj_set_style_text_font(l, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(l, lv_color_hex(COL_TEXT), 0);
+    lv_obj_center(l);
+    lv_obj_add_event_cb(b, show_cb, LV_EVENT_CLICKED, (void*)(intptr_t)UI_HOME);
+    return b;
+}
+
+// Round white zoom button for the map screens (+ / -), recentre-button style.
+static lv_obj_t* make_zoom_btn(lv_obj_t* parent, const char* label, int x, int y, lv_event_cb_t cb) {
+    lv_obj_t* b = lv_btn_create(parent);
+    lv_obj_set_pos(b, x, y);
+    lv_obj_set_size(b, 30, 30);
+    lv_obj_set_style_radius(b, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(b, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(b, 0, 0);
+    lv_obj_set_style_shadow_width(b, 6, 0);
+    lv_obj_set_style_shadow_color(b, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_shadow_opa(b, LV_OPA_50, 0);
+    lv_obj_t* l = lv_label_create(b);
+    lv_label_set_text(l, label);
+    lv_obj_set_style_text_font(l, &lv_font_montserrat_16, 0);
+    lv_obj_set_style_text_color(l, lv_color_hex(COL_BLUE), 0);
+    lv_obj_center(l);
+    lv_obj_add_event_cb(b, cb, LV_EVENT_CLICKED, nullptr);
+    return b;
 }
 
 static lv_obj_t* make_recentre_btn(lv_obj_t* parent) {
@@ -173,18 +182,15 @@ static void build_home(void) {
         lv_obj_set_pos(b, kTiles[i].x, kTiles[i].y);
         lv_obj_set_size(b, 140, 70);
         lv_obj_add_event_cb(b, show_cb, LV_EVENT_CLICKED, (void*)(intptr_t)kTiles[i].target);
-        add_focus(UI_HOME, b);
     }
     lv_obj_t* nav = ui_button(r, LV_SYMBOL_GPS "  NAVIGATE", &lv_font_montserrat_14);
     lv_obj_set_pos(nav, 10, 190);
     lv_obj_set_size(nav, 190, 42);
     lv_obj_add_event_cb(nav, show_cb, LV_EVENT_CLICKED, (void*)(intptr_t)UI_NAV);
-    add_focus(UI_HOME, nav);
     lv_obj_t* set = ui_button(r, LV_SYMBOL_SETTINGS "  SETTINGS", &lv_font_montserrat_14);
     lv_obj_set_pos(set, 208, 190);
     lv_obj_set_size(set, 102, 42);
     lv_obj_add_event_cb(set, show_cb, LV_EVENT_CLICKED, (void*)(intptr_t)UI_SETTINGS);
-    add_focus(UI_HOME, set);
 }
 
 static void refresh_home(void) {
@@ -210,33 +216,21 @@ static void nav_recentre(void) {
     g_bike_state.zoomLevel = navMap.zoom();
 }
 
-static void nav_onkey(uint32_t key) {
-    switch (key) {
-        case UI_KEY_JOY_LEFT:  navMap.setPan(-24, 0); g_bike_state.mapLocked = false; break;
-        case UI_KEY_JOY_RIGHT: navMap.setPan(24, 0);  g_bike_state.mapLocked = false; break;
-        case UI_KEY_JOY_UP:    navMap.setPan(0, -24); g_bike_state.mapLocked = false; break;
-        case UI_KEY_JOY_DOWN:  navMap.setPan(0, 24);  g_bike_state.mapLocked = false; break;
-        case LV_KEY_ENTER:     nav_recentre(); break;
-        case LV_KEY_LEFT:      // encoder CCW = zoom out
-            navMap.setZoom(navMap.zoom() - 1);
-            g_bike_state.zoomLevel = navMap.zoom();
-            navZoomChipUntil = lv_tick_get() + 1200;
-            break;
-        case LV_KEY_RIGHT:     // encoder CW = zoom in
-            navMap.setZoom(navMap.zoom() + 1);
-            g_bike_state.zoomLevel = navMap.zoom();
-            navZoomChipUntil = lv_tick_get() + 1200;
-            break;
-        default: break;
-    }
+static void nav_recentre_cb(lv_event_t* e) { (void)e; nav_recentre(); }
+static void nav_zoom_in_cb(lv_event_t* e) {
+    (void)e;
+    navMap.setZoom(navMap.zoom() + 1);
+    navZoomChipUntil = lv_tick_get() + 1200;
+}
+static void nav_zoom_out_cb(lv_event_t* e) {
+    (void)e;
+    navMap.setZoom(navMap.zoom() - 1);
+    navZoomChipUntil = lv_tick_get() + 1200;
 }
 
 static void build_nav(void) {
     lv_obj_t* r = make_root(UI_NAV, COL_MAP_BG);
     navMap.create(r, 104, 0, 216, 240);
-
-    lv_obj_t* keys = make_keys_obj(r, 104, 0, 216, 240);
-    add_focus(UI_NAV, keys);
 
     // Left panel: 104 px, full height, dark navy (mandatory geometry).
     lv_obj_t* p = lv_obj_create(r);
@@ -300,10 +294,18 @@ static void build_nav(void) {
     lv_obj_add_flag(navZoomChip, LV_OBJ_FLAG_HIDDEN);
     navRecentre = make_recentre_btn(r);
     lv_obj_add_flag(navRecentre, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_event_cb(navRecentre, nav_recentre_cb, LV_EVENT_CLICKED, nullptr);
+    make_zoom_btn(r, "+", 275, 96, nav_zoom_in_cb);
+    make_zoom_btn(r, "-", 275, 134, nav_zoom_out_cb);
+    make_home_btn(r, 110, 204);
 }
 
 static void refresh_nav(void) {
     BikeState& b = g_bike_state;
+    // Touch drags pan inside MapView; mirror its lock/zoom into BikeState
+    // (the recentre button's visibility keys off mapLocked).
+    b.mapLocked = navMap.locked();
+    b.zoomLevel = navMap.zoom();
     // Pill: status + colour.
     const char* pill = b.offRoute ? "OFF ROUTE" : b.navStale ? "STALE" :
                        b.navigating ? "NAVIGATING" : "IDLE";
@@ -360,38 +362,29 @@ static void refresh_nav(void) {
 
 // ============================================================ MAPS ==========
 static MapView mapsMap;
-static lv_obj_t *mapsRecentre, *mapsZoomChip, *mapsZoomLbl, *mapsFlash;
-static uint32_t mapsZoomChipUntil = 0, mapsFlashUntil = 0;
+static lv_obj_t *mapsRecentre, *mapsZoomChip, *mapsZoomLbl;
+static uint32_t mapsZoomChipUntil = 0;
 
-static void maps_onkey(uint32_t key) {
-    switch (key) {
-        case UI_KEY_JOY_LEFT:  mapsMap.setPan(-24, 0); g_bike_state.mapLocked = false; break;
-        case UI_KEY_JOY_RIGHT: mapsMap.setPan(24, 0);  g_bike_state.mapLocked = false; break;
-        case UI_KEY_JOY_UP:    mapsMap.setPan(0, -24); g_bike_state.mapLocked = false; break;
-        case UI_KEY_JOY_DOWN:  mapsMap.setPan(0, 24);  g_bike_state.mapLocked = false; break;
-        case LV_KEY_ENTER:
-            if (!mapsMap.locked()) { mapsMap.setLocked(true); g_bike_state.mapLocked = true; }
-            else mapsFlashUntil = lv_tick_get() + 1000;   // "use this point" flash
-            break;
-        case LV_KEY_LEFT:
-            mapsMap.setZoom(mapsMap.zoom() - 1);
-            g_bike_state.zoomLevel = mapsMap.zoom();
-            mapsZoomChipUntil = lv_tick_get() + 1200;
-            break;
-        case LV_KEY_RIGHT:
-            mapsMap.setZoom(mapsMap.zoom() + 1);
-            g_bike_state.zoomLevel = mapsMap.zoom();
-            mapsZoomChipUntil = lv_tick_get() + 1200;
-            break;
-        default: break;
-    }
+static void maps_recentre_cb(lv_event_t* e) {
+    (void)e;
+    mapsMap.setLocked(true);
+    g_bike_state.mapLocked = true;
+    g_bike_state.zoomLevel = mapsMap.zoom();
+}
+static void maps_zoom_in_cb(lv_event_t* e) {
+    (void)e;
+    mapsMap.setZoom(mapsMap.zoom() + 1);
+    mapsZoomChipUntil = lv_tick_get() + 1200;
+}
+static void maps_zoom_out_cb(lv_event_t* e) {
+    (void)e;
+    mapsMap.setZoom(mapsMap.zoom() - 1);
+    mapsZoomChipUntil = lv_tick_get() + 1200;
 }
 
 static void build_maps(void) {
     lv_obj_t* r = make_root(UI_MAPS, COL_MAP_BG);
     mapsMap.create(r, 0, 0, 320, 240);
-    lv_obj_t* keys = make_keys_obj(r, 0, 0, 320, 240);
-    add_focus(UI_MAPS, keys);
 
     lv_obj_t* chip = make_chip(r, 6, 6, 56);
     lv_obj_t* l = ui_label(chip, "MAPS", &lv_font_montserrat_10, COL_TEXT);
@@ -400,15 +393,17 @@ static void build_maps(void) {
     mapsZoomLbl = ui_label(mapsZoomChip, "Z16", &lv_font_montserrat_10, COL_TEXT);
     lv_obj_center(mapsZoomLbl);
     lv_obj_add_flag(mapsZoomChip, LV_OBJ_FLAG_HIDDEN);
-    mapsFlash = make_chip(r, 96, 108, 128);
-    lv_obj_t* fl = ui_label(mapsFlash, "Point selected", &lv_font_montserrat_10, COL_TEXT);
-    lv_obj_center(fl);
-    lv_obj_add_flag(mapsFlash, LV_OBJ_FLAG_HIDDEN);
     mapsRecentre = make_recentre_btn(r);
     lv_obj_add_flag(mapsRecentre, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_event_cb(mapsRecentre, maps_recentre_cb, LV_EVENT_CLICKED, nullptr);
+    make_zoom_btn(r, "+", 275, 96, maps_zoom_in_cb);
+    make_zoom_btn(r, "-", 275, 134, maps_zoom_out_cb);
+    make_home_btn(r, 6, 204);
 }
 
 static void refresh_maps(void) {
+    g_bike_state.mapLocked = mapsMap.locked();
+    g_bike_state.zoomLevel = mapsMap.zoom();
     if (mapsMap.locked()) lv_obj_add_flag(mapsRecentre, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_clear_flag(mapsRecentre, LV_OBJ_FLAG_HIDDEN);
     if ((int32_t)(mapsZoomChipUntil - lv_tick_get()) > 0) {
@@ -417,8 +412,6 @@ static void refresh_maps(void) {
         lv_label_set_text(mapsZoomLbl, z);
         lv_obj_clear_flag(mapsZoomChip, LV_OBJ_FLAG_HIDDEN);
     } else lv_obj_add_flag(mapsZoomChip, LV_OBJ_FLAG_HIDDEN);
-    if ((int32_t)(mapsFlashUntil - lv_tick_get()) > 0) lv_obj_clear_flag(mapsFlash, LV_OBJ_FLAG_HIDDEN);
-    else lv_obj_add_flag(mapsFlash, LV_OBJ_FLAG_HIDDEN);
 }
 
 // ============================================================ MUSIC =========
@@ -428,11 +421,6 @@ static char musLastTitle[48] = "";
 static void music_play_cb(lv_event_t* e) { (void)e; bike_control_toggle_play(); }
 static void music_next_cb(lv_event_t* e) { (void)e; bike_control_next_track(); }
 static void music_prev_cb(lv_event_t* e) { (void)e; bike_control_prev_track(); }
-
-static void music_onkey(uint32_t key) {
-    if (key == UI_KEY_JOY_LEFT) bike_control_prev_track();
-    else if (key == UI_KEY_JOY_RIGHT) bike_control_next_track();
-}
 
 static void build_music(void) {
     lv_obj_t* r = make_root(UI_MUSIC, COL_PANEL_BG);
@@ -473,21 +461,19 @@ static void build_music(void) {
     lv_obj_set_pos(prev, 40, 198);
     lv_obj_set_size(prev, 64, 36);
     lv_obj_add_event_cb(prev, music_prev_cb, LV_EVENT_CLICKED, nullptr);
-    add_focus(UI_MUSIC, prev);
     lv_obj_t* play = ui_button(r, LV_SYMBOL_PLAY, &lv_font_montserrat_16);
     lv_obj_set_pos(play, 118, 196);
     lv_obj_set_size(play, 84, 40);
     musPlayLbl = lv_obj_get_child(play, 0);
     lv_obj_add_event_cb(play, music_play_cb, LV_EVENT_CLICKED, nullptr);
-    add_focus(UI_MUSIC, play);
     lv_obj_t* next = ui_button(r, LV_SYMBOL_NEXT, &lv_font_montserrat_16);
     lv_obj_set_pos(next, 216, 198);
     lv_obj_set_size(next, 64, 36);
     lv_obj_add_event_cb(next, music_next_cb, LV_EVENT_CLICKED, nullptr);
-    add_focus(UI_MUSIC, next);
 
     musHeadset = ui_label(r, "", &lv_font_montserrat_10, COL_TEXT_DIM);
     lv_obj_set_pos(musHeadset, 196, 180);
+    make_home_btn(r, 284, 6);
 }
 
 static void refresh_music(void) {
@@ -542,7 +528,7 @@ static void build_headset(void) {
     lv_obj_set_size(btn, 130, 38);
     hsBtnLbl = lv_obj_get_child(btn, 0);
     lv_obj_add_event_cb(btn, headset_toggle_cb, LV_EVENT_CLICKED, nullptr);
-    add_focus(UI_HEADSET, btn);
+    make_home_btn(r, 284, 6);
 
     lv_obj_t* logBox = lv_obj_create(r);
     lv_obj_set_pos(logBox, 10, 202);
@@ -620,12 +606,11 @@ static void build_tracking(void) {
     lv_obj_set_size(toggle, 145, 42);
     trkBtnLbl = lv_obj_get_child(toggle, 0);
     lv_obj_add_event_cb(toggle, tracking_toggle_cb, LV_EVENT_CLICKED, nullptr);
-    add_focus(UI_TRACKING, toggle);
     lv_obj_t* reset = ui_button(r, LV_SYMBOL_REFRESH " RESET", &lv_font_montserrat_14);
     lv_obj_set_pos(reset, 165, 186);
     lv_obj_set_size(reset, 145, 42);
     lv_obj_add_event_cb(reset, tracking_reset_cb, LV_EVENT_CLICKED, nullptr);
-    add_focus(UI_TRACKING, reset);
+    make_home_btn(r, 145, 4);
 }
 
 static void refresh_tracking(void) {
@@ -665,23 +650,6 @@ static lv_obj_t* settings_slider(lv_obj_t* parent, int y, int vmin, int vmax, in
     return s;
 }
 
-static void settings_onkey(uint32_t key) {
-    if (key != UI_KEY_JOY_LEFT && key != UI_KEY_JOY_RIGHT) return;
-    lv_obj_t* f = lv_group_get_focused(lvgl_port_group());
-    int d = (key == UI_KEY_JOY_RIGHT) ? 5 : -5;
-    if (f == setBright) {
-        int v = (int)lv_slider_get_value(f) + d;
-        if (v < 40) v = 40; if (v > 100) v = 100;
-        lv_slider_set_value(f, v, LV_ANIM_OFF);
-        bike_control_set_brightness(v);
-    } else if (f == setVol) {
-        int v = (int)lv_slider_get_value(f) + d;
-        if (v < 0) v = 0; if (v > 100) v = 100;
-        lv_slider_set_value(f, v, LV_ANIM_OFF);
-        bike_control_set_volume(v);
-    }
-}
-
 static void build_settings(void) {
     lv_obj_t* r = make_root(UI_SETTINGS, COL_PANEL_BG);
     lv_obj_t* t = ui_label(r, "SETTINGS", &lv_font_montserrat_14, COL_TEXT_SECOND);
@@ -690,12 +658,10 @@ static void build_settings(void) {
     lv_obj_t* l1 = ui_label(r, "Brightness", &lv_font_montserrat_14, COL_TEXT);
     lv_obj_set_pos(l1, 10, 44);
     setBright = settings_slider(r, 48, 40, 100, g_bike_state.brightnessPct, bright_changed_cb);
-    add_focus(UI_SETTINGS, setBright);
 
     lv_obj_t* l2 = ui_label(r, "Volume", &lv_font_montserrat_14, COL_TEXT);
     lv_obj_set_pos(l2, 10, 84);
     setVol = settings_slider(r, 88, 0, 100, g_bike_state.volumePct, vol_changed_cb);
-    add_focus(UI_SETTINGS, setVol);
 
     lv_obj_t* l3 = ui_label(r, "Units", &lv_font_montserrat_14, COL_TEXT);
     lv_obj_set_pos(l3, 10, 124);
@@ -708,8 +674,9 @@ static void build_settings(void) {
     snprintf(buf, sizeof(buf), "RPMLOOP FW %s · LVGL 8.3 · ILI9341", RPMLOPP_FIRMWARE_VERSION);
     lv_obj_t* l4v = ui_label(r, buf, &lv_font_montserrat_10, COL_TEXT_DIM);
     lv_obj_set_pos(l4v, 10, 188);
-    lv_obj_t* l5v = ui_label(r, "Mock data — GPS/BT drivers plug into BikeState", &lv_font_montserrat_10, COL_TEXT_DIM);
+    lv_obj_t* l5v = ui_label(r, "Mock data — phone nav feeds BikeState over BLE", &lv_font_montserrat_10, COL_TEXT_DIM);
     lv_obj_set_pos(l5v, 10, 206);
+    make_home_btn(r, 284, 6);
 }
 
 // ============================================================ MANAGER =======
@@ -718,12 +685,12 @@ static void build_screen(UiScreen id) {
     switch (id) {
         case UI_BOOT:     build_boot();     S[id].refresh = refresh_boot; break;
         case UI_HOME:     build_home();     S[id].refresh = refresh_home; break;
-        case UI_NAV:      build_nav();      S[id].refresh = refresh_nav; S[id].onKey = nav_onkey; break;
-        case UI_MAPS:     build_maps();     S[id].refresh = refresh_maps; S[id].onKey = maps_onkey; break;
-        case UI_MUSIC:    build_music();    S[id].refresh = refresh_music; S[id].onKey = music_onkey; break;
+        case UI_NAV:      build_nav();      S[id].refresh = refresh_nav; break;
+        case UI_MAPS:     build_maps();     S[id].refresh = refresh_maps; break;
+        case UI_MUSIC:    build_music();    S[id].refresh = refresh_music; break;
         case UI_HEADSET:  build_headset();  S[id].refresh = refresh_headset; break;
         case UI_TRACKING: build_tracking(); S[id].refresh = refresh_tracking; break;
-        case UI_SETTINGS: build_settings(); S[id].refresh = nullptr; S[id].onKey = settings_onkey; break;
+        case UI_SETTINGS: build_settings(); S[id].refresh = nullptr; break;
         default: break;
     }
 }
@@ -765,16 +732,7 @@ void ui_show(UiScreen id) {
     build_screen(id);
     s_cur = id;
     lv_scr_load(S[id].root);
-    lv_group_t* g = lvgl_port_group();
-    lv_group_remove_all_objs(g);
-    for (int i = 0; i < S[id].focusN; i++) lv_group_add_obj(g, S[id].focus[i]);
-    if (S[id].focusN > 0) lv_group_focus_obj(S[id].focus[0]);
     if (S[id].refresh) S[id].refresh();
 }
 
 UiScreen ui_current(void) { return s_cur; }
-
-void ui_on_play_button(void) {
-    if (s_cur == UI_MUSIC) bike_control_toggle_play();
-    else if (s_cur == UI_TRACKING) bike_control_toggle_tracking();
-}

@@ -21,7 +21,8 @@ static const int kWater[][2] = {{0, 520}, {150, 540}, {190, 640}, {90, 720}, {0,
 
 MapView::MapView()
     : _canvas(nullptr), _buf(nullptr), _w(0), _h(0),
-      _panX(0), _panY(0), _zoom(16), _locked(true) {}
+      _panX(0), _panY(0), _zoom(16), _locked(true),
+      _dragLastX(0), _dragLastY(0), _dragging(false) {}
 
 MapView::~MapView() { if (_buf) free(_buf); }
 
@@ -33,8 +34,38 @@ void MapView::create(lv_obj_t* parent, int x, int y, int w, int h) {
     _canvas = lv_canvas_create(parent);
     lv_canvas_set_buffer(_canvas, _buf, w, h, LV_IMG_CF_TRUE_COLOR);
     lv_obj_set_pos(_canvas, x, y);
-    lv_obj_clear_flag(_canvas, LV_OBJ_FLAG_CLICKABLE);
+    // Touch drag pans the map (see drag_event_cb); the canvas must be
+    // clickable for the pointer indev to deliver press events to it.
+    lv_obj_add_flag(_canvas, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_clear_flag(_canvas, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_add_event_cb(_canvas, drag_event_cb, LV_EVENT_ALL, this);
     render();
+}
+
+// Finger content-follow panning: sx()/sy() subtract the pan from the world
+// centre, so moving the content WITH the finger means pan -= finger delta.
+void MapView::drag_event_cb(lv_event_t* e) {
+    MapView* self = (MapView*)lv_event_get_user_data(e);
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code != LV_EVENT_PRESSED && code != LV_EVENT_PRESSING &&
+        code != LV_EVENT_RELEASED && code != LV_EVENT_PRESS_LOST) return;
+    lv_indev_t* indev = lv_indev_get_act();
+    if (!indev) return;
+    lv_point_t p;
+    lv_indev_get_point(indev, &p);
+    if (code == LV_EVENT_PRESSED) {
+        self->_dragging = true;
+        self->_dragLastX = p.x;
+        self->_dragLastY = p.y;
+    } else if (code == LV_EVENT_PRESSING && self->_dragging) {
+        int dx = p.x - self->_dragLastX;
+        int dy = p.y - self->_dragLastY;
+        self->_dragLastX = p.x;
+        self->_dragLastY = p.y;
+        if (dx != 0 || dy != 0) self->setPan(-dx, -dy);
+    } else {  // RELEASED / PRESS_LOST
+        self->_dragging = false;
+    }
 }
 
 float MapView::scale() const {

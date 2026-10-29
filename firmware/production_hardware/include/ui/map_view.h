@@ -8,9 +8,11 @@
 // Draws a Google-Maps-like light map on an LVGL canvas: road grid with
 // casing, park/water blobs, street labels, the route polyline (white casing
 // + #1A73E8 line) and the position arrow.
-// SEAM: all drawing happens inside render() from a tiny world model. A
-// future TileStore (SD-card OSM tiles) can replace render()'s body without
-// changing the screens — they only use create/setPan/setZoom/setLocked.
+// Touch: the canvas itself handles drag-to-pan (finger content-follow);
+// screens only add zoom +/- and recentre buttons around it.
+// SEAM: all drawing happens inside render() from a tiny world model; a
+// different world renderer can replace render()'s body without changing
+// the screens — they only use create/setPan/setZoom/setLocked.
 // The canvas buffer lives in PSRAM (153 KB at 320x240).
 // ==============================================================================
 class MapView {
@@ -33,7 +35,10 @@ private:
     int _panX, _panY;
     int _zoom;
     bool _locked;
+    int _dragLastX, _dragLastY;
+    bool _dragging;
 
+    static void drag_event_cb(lv_event_t* e);
     float scale() const;
     int sx(int worldX) const;
     int sy(int worldY) const;
