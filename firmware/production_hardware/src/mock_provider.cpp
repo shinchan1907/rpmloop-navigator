@@ -59,6 +59,7 @@ void mock_provider_update(uint32_t nowMs) {
     if (!bike_state_nav_live(nowMs)) {
         b.navigating = true;
         b.navStale = false;
+        b.speedLimitKmh = 50;             // demo limit (speed cluster ring)
         b.gpsAccuracy_m = 2.4f + 1.1f * (0.5f + 0.5f * sinf(phase * 0.7f));  // 2.4..3.5 m
         b.distToTurn_m -= distStep_m;
         b.remainKm -= distStep_m / 1000.0f;
@@ -67,6 +68,12 @@ void mock_provider_update(uint32_t nowMs) {
             s_streetIdx = (s_streetIdx + 1) % kStreetCount;
             b.turnDir = (s_turnCount % 3 == 0) ? TURN_DIR_STRAIGHT
                         : (s_turnCount % 2 == 0) ? TURN_DIR_LEFT : TURN_DIR_RIGHT;
+            // "Then" segment: preview of the maneuver after the new one —
+            // the opposite flavour of the current turn, straight every 4th.
+            b.nextTurnDir = (s_turnCount % 4 == 3) ? TURN_DIR_STRAIGHT
+                            : (b.turnDir == TURN_DIR_LEFT) ? TURN_DIR_RIGHT
+                            : (b.turnDir == TURN_DIR_RIGHT) ? TURN_DIR_LEFT
+                            : TURN_DIR_RIGHT;
             strncpy(b.streetName, kStreets[s_streetIdx], sizeof(b.streetName) - 1);
             b.streetName[sizeof(b.streetName) - 1] = '\0';
             snprintf(b.instruction, sizeof(b.instruction), "%s onto %s",

@@ -19,6 +19,25 @@ static const int kPark1[][2] = {{110, 120}, {250, 100}, {290, 190}, {200, 250}, 
 static const int kPark2[][2] = {{700, 500}, {820, 480}, {860, 560}, {760, 610}, {690, 570}};
 static const int kWater[][2] = {{0, 520}, {150, 540}, {190, 640}, {90, 720}, {0, 700}};
 
+// River: a wide band sweeping diagonally across the whole city (drawn as a
+// fat polyline, casing pass + core pass, like the reference nav view where
+// the river cuts through the middle of the map).
+static const int kRiver[][2] = {
+    {120, 0}, {260, 140}, {330, 300}, {300, 470}, {400, 720},
+};
+static const int kRiverN = sizeof(kRiver) / sizeof(kRiver[0]);
+
+// City building blocks: {worldX, worldY, w, h, shade} axis-aligned rects in
+// world coords, clustered along the road grid for the built-up feel.
+struct Building { int x, y, w, h, shade; };
+static const Building kBuildings[] = {
+    {330, 150, 70, 52, 0}, {420, 130, 56, 44, 1}, {545, 165, 66, 50, 0},
+    {640, 120, 52, 66, 1}, {180, 320, 62, 48, 1}, {330, 345, 50, 40, 0},
+    {700, 300, 72, 54, 0}, {790, 370, 54, 44, 1}, {150, 470, 58, 46, 0},
+    {245, 585, 68, 50, 1}, {560, 560, 52, 64, 0}, {835, 195, 60, 48, 0},
+};
+static const int kBuildingN = sizeof(kBuildings) / sizeof(kBuildings[0]);
+
 MapView::MapView()
     : _canvas(nullptr), _buf(nullptr), _w(0), _h(0),
       _panX(0), _panY(0), _zoom(16), _locked(true),
@@ -107,6 +126,37 @@ void MapView::drawPoly(const int pts[][2], int count, uint32_t colorHex) {
     lv_canvas_draw_polygon(_canvas, poly, count, &dsc);
 }
 
+void MapView::drawRiver() {
+    // Fat polyline: slightly deeper edge pass, then the water core.
+    for (int pass = 0; pass < 2; pass++) {
+        uint32_t col = pass == 0 ? 0x9CC8DC : COL_WATER;
+        int width = (int)((pass == 0 ? 104 : 92) * scale());
+        if (width < 12) width = 12;
+        for (int i = 0; i + 1 < kRiverN; i++)
+            drawLine(sx(kRiver[i][0]), sy(kRiver[i][1]),
+                     sx(kRiver[i + 1][0]), sy(kRiver[i + 1][1]), col, width);
+    }
+}
+
+void MapView::drawBuildings() {
+    lv_draw_rect_dsc_t dsc;
+    lv_draw_rect_dsc_init(&dsc);
+    dsc.bg_opa = LV_OPA_COVER;
+    float sc = scale();
+    for (int i = 0; i < kBuildingN; i++) {
+        const Building& bl = kBuildings[i];
+        int x0 = sx(bl.x), y0 = sy(bl.y + bl.h);   // sy() grows downward
+        lv_area_t a;
+        a.x1 = (lv_coord_t)x0;
+        a.y1 = (lv_coord_t)y0;
+        a.x2 = (lv_coord_t)(x0 + (int)(bl.w * sc));
+        a.y2 = (lv_coord_t)(y0 + (int)(bl.h * sc));
+        if (a.x2 < 0 || a.x1 >= _w || a.y2 < 0 || a.y1 >= _h) continue;
+        dsc.bg_color = lv_color_hex(bl.shade ? COL_BUILDING_2 : COL_BUILDING);
+        lv_canvas_draw_rect(_canvas, a.x1, a.y1, a.x2 - a.x1, a.y2 - a.y1, &dsc);
+    }
+}
+
 void MapView::drawRoute() {
     // White casing first, then the Google-blue core line.
     for (int pass = 0; pass < 2; pass++) {
@@ -121,10 +171,13 @@ void MapView::drawRoute() {
 }
 
 void MapView::drawArrow() {
+    // TomTom-style navigation chevron: larger two-tone arrow — white
+    // outline triangle with a light-blue core. Anchor = bottom-centre of
+    // the view, sitting on the route when locked.
     int ax = _w / 2;
     int ay = _h - 35;
-    const int whiteTri[3][2] = {{ax, ay - 15}, {ax - 10, ay + 11}, {ax + 10, ay + 11}};
-    const int blueTri[3][2]  = {{ax, ay - 10}, {ax - 6, ay + 8},  {ax + 6, ay + 8}};
+    const int whiteTri[3][2] = {{ax, ay - 24}, {ax - 15, ay + 16}, {ax + 15, ay + 16}};
+    const int blueTri[3][2]  = {{ax, ay - 17}, {ax - 10, ay + 12}, {ax + 10, ay + 12}};
     lv_draw_rect_dsc_t dsc;
     lv_draw_rect_dsc_init(&dsc);
     dsc.bg_opa = LV_OPA_COVER;
@@ -133,7 +186,7 @@ void MapView::drawArrow() {
     dsc.bg_color = lv_color_hex(COL_ROAD);
     lv_canvas_draw_polygon(_canvas, pts, 3, &dsc);
     for (int i = 0; i < 3; i++) { pts[i].x = (lv_coord_t)blueTri[i][0]; pts[i].y = (lv_coord_t)blueTri[i][1]; }
-    dsc.bg_color = lv_color_hex(COL_ROUTE);
+    dsc.bg_color = lv_color_hex(COL_CHEVRON);
     lv_canvas_draw_polygon(_canvas, pts, 3, &dsc);
 }
 
@@ -144,6 +197,8 @@ void MapView::render() {
     drawPoly(kPark1, 5, COL_PARK);
     drawPoly(kPark2, 5, COL_PARK);
     drawPoly(kWater, 5, COL_WATER);
+    drawRiver();        // wide river band across the city
+    drawBuildings();    // pale-grey blocks (under the road network)
 
     // Road grid (world coords), casing pass then surface pass.
     float sc = scale();

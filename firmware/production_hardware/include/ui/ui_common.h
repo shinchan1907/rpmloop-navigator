@@ -13,6 +13,9 @@
 #define COL_ROAD_EDGE    0xD9D9D9
 #define COL_PARK         0xC6E4BA
 #define COL_WATER        0xAAD3DF
+#define COL_BUILDING     0xD8D8D8   // pale-grey city blocks on the nav map
+#define COL_BUILDING_2   0xCFCFCF   // second building shade (depth)
+#define COL_CHEVRON      0x4FC3F7   // light-blue position chevron fill
 #define COL_ROUTE        0x1A73E8
 #define COL_MAP_LABEL    0x6E6E6E
 

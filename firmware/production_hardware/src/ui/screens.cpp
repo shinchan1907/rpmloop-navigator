@@ -202,13 +202,41 @@ static void refresh_home(void) {
     lv_label_set_text(homeClock, buf);
 }
 
+// White circular map-control button (36 px) for the NAV screen's left
+// rail — recentre / zoom + / zoom -, Google-Maps control style.
+static lv_obj_t* make_map_ctrl_btn(lv_obj_t* parent, const char* symbol, int x, int y,
+                                   lv_event_cb_t cb, lv_obj_t** labelOut) {
+    lv_obj_t* b = lv_btn_create(parent);
+    lv_obj_set_pos(b, x, y);
+    lv_obj_set_size(b, 36, 36);
+    lv_obj_set_style_radius(b, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(b, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(b, 0, 0);
+    lv_obj_set_style_shadow_width(b, 6, 0);
+    lv_obj_set_style_shadow_color(b, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_shadow_opa(b, LV_OPA_40, 0);
+    lv_obj_t* l = lv_label_create(b);
+    lv_label_set_text(l, symbol);
+    lv_obj_set_style_text_font(l, &lv_font_montserrat_16, 0);
+    lv_obj_set_style_text_color(l, lv_color_hex(COL_BLUE), 0);
+    lv_obj_center(l);
+    if (labelOut) *labelOut = l;
+    if (cb) lv_obj_add_event_cb(b, cb, LV_EVENT_CLICKED, nullptr);
+    return b;
+}
+
 // ============================================================ NAV ===========
+// TomTom/Google-style full-bleed 2D nav (owner reference, 2026-10-29):
+// the map fills all 320x240; over it sit a two-segment instruction banner
+// (main maneuver/distance/street + a "Then" preview segment), a left rail
+// of round map controls, a speed cluster at bottom-centre and a
+// remaining/ETA pill bottom-right. Everything reads BikeState.
 static MapView navMap;
-static lv_obj_t *navPill, *navPillLbl, *navArrow, *navDist, *navUnit, *navStreet,
-                *navInstr, *navSpeed, *navRem, *navEta, *navGpsLbl, *navZoomChip,
-                *navZoomLbl, *navRecentre;
-static uint32_t navZoomChipUntil = 0;
-static int navLastDist = -1, navLastSpeed = -1;
+static lv_obj_t *navArrow, *navDist, *navUnit, *navStreet, *navThenArrow,
+                *navSpdLimit, *navSpdNow, *navRemLbl, *navStalePill,
+                *navRecentre, *navRecentreLbl;
+static int navLastDist = -1, navLastSpeed = -1, navLastLimit = -1;
 
 static void nav_recentre(void) {
     navMap.setLocked(true);
@@ -217,147 +245,163 @@ static void nav_recentre(void) {
 }
 
 static void nav_recentre_cb(lv_event_t* e) { (void)e; nav_recentre(); }
-static void nav_zoom_in_cb(lv_event_t* e) {
-    (void)e;
-    navMap.setZoom(navMap.zoom() + 1);
-    navZoomChipUntil = lv_tick_get() + 1200;
-}
-static void nav_zoom_out_cb(lv_event_t* e) {
-    (void)e;
-    navMap.setZoom(navMap.zoom() - 1);
-    navZoomChipUntil = lv_tick_get() + 1200;
+static void nav_zoom_in_cb(lv_event_t* e)  { (void)e; navMap.setZoom(navMap.zoom() + 1); }
+static void nav_zoom_out_cb(lv_event_t* e) { (void)e; navMap.setZoom(navMap.zoom() - 1); }
+
+static lv_obj_t* nav_banner_seg(lv_obj_t* parent, int x, int w) {
+    lv_obj_t* s = lv_obj_create(parent);
+    lv_obj_set_pos(s, x, 0);
+    lv_obj_set_size(s, w, 46);
+    lv_obj_set_style_bg_color(s, lv_color_hex(COL_ROUTE), 0);
+    lv_obj_set_style_bg_opa(s, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(s, 0, 0);
+    lv_obj_set_style_radius(s, 0, 0);
+    lv_obj_set_style_pad_all(s, 0, 0);
+    lv_obj_clear_flag(s, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(s, LV_OBJ_FLAG_CLICKABLE);
+    return s;
 }
 
 static void build_nav(void) {
     lv_obj_t* r = make_root(UI_NAV, COL_MAP_BG);
-    navMap.create(r, 104, 0, 216, 240);
+    navMap.create(r, 0, 0, 320, 240);           // full-bleed map
 
-    // Left panel: 104 px, full height, dark navy (mandatory geometry).
-    lv_obj_t* p = lv_obj_create(r);
-    lv_obj_set_pos(p, 0, 0);
-    lv_obj_set_size(p, 104, 240);
-    lv_obj_set_style_bg_color(p, lv_color_hex(COL_PANEL_BG), 0);
-    lv_obj_set_style_bg_opa(p, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_width(p, 0, 0);
-    lv_obj_set_style_radius(p, 0, 0);
-    lv_obj_set_style_pad_all(p, 0, 0);
-    lv_obj_clear_flag(p, LV_OBJ_FLAG_SCROLLABLE);
+    // ---- two-segment banner: main (0..226) + 2 px gap + Then (228..320) --
+    lv_obj_t* mainSeg = nav_banner_seg(r, 0, 226);
+    navArrow = ui_label(mainSeg, LV_SYMBOL_UP, &lv_font_montserrat_28, COL_TEXT);
+    lv_obj_set_pos(navArrow, 10, 9);
+    navDist = ui_label(mainSeg, "150", &lv_font_montserrat_32, COL_TEXT);
+    lv_obj_set_pos(navDist, 46, 6);
+    navUnit = ui_label(mainSeg, "m", &lv_font_montserrat_12, COL_TEXT);
+    lv_obj_set_pos(navUnit, 100, 26);           // nudged next to number in refresh
+    navStreet = ui_label(mainSeg, "", &lv_font_montserrat_12, COL_TEXT);
+    lv_obj_set_pos(navStreet, 128, 8);          // nudged in refresh (dist width)
+    lv_obj_set_width(navStreet, 94);
+    lv_label_set_long_mode(navStreet, LV_LABEL_LONG_DOT);
 
-    navPill = lv_obj_create(p);
-    lv_obj_set_pos(navPill, 8, 8);
-    lv_obj_set_size(navPill, 76, 16);
-    lv_obj_set_style_bg_color(navPill, lv_color_hex(COL_GREEN), 0);
-    lv_obj_set_style_radius(navPill, 8, 0);
-    lv_obj_set_style_border_width(navPill, 0, 0);
-    lv_obj_set_style_pad_all(navPill, 0, 0);
-    lv_obj_clear_flag(navPill, LV_OBJ_FLAG_SCROLLABLE);
-    navPillLbl = ui_label(navPill, "NAVIGATING", &lv_font_montserrat_8, COL_TEXT);
-    lv_obj_center(navPillLbl);
+    lv_obj_t* thenSeg = nav_banner_seg(r, 228, 92);
+    lv_obj_t* thenCap = ui_label(thenSeg, "Then", &lv_font_montserrat_10, COL_TEXT);
+    lv_obj_set_pos(thenCap, 10, 3);
+    navThenArrow = ui_label(thenSeg, LV_SYMBOL_RIGHT, &lv_font_montserrat_24, COL_TEXT);
+    lv_obj_set_pos(navThenArrow, 12, 17);
 
-    navArrow = ui_label(p, LV_SYMBOL_RIGHT, &lv_font_montserrat_28, COL_TEXT);
-    lv_obj_set_pos(navArrow, 8, 30);
-    navDist = ui_label(p, "150", &lv_font_montserrat_28, COL_TEXT);
-    lv_obj_set_pos(navDist, 8, 62);
-    navUnit = ui_label(p, "METERS", &lv_font_montserrat_8, COL_TEXT_SECOND);
-    lv_obj_set_pos(navUnit, 8, 94);
-    navStreet = ui_label(p, "Grand Promenade", &lv_font_montserrat_14, COL_TEXT);
-    lv_obj_set_pos(navStreet, 8, 108);
-    lv_obj_set_width(navStreet, 88);
-    lv_label_set_long_mode(navStreet, LV_LABEL_LONG_WRAP);
-    navInstr = ui_label(p, "", &lv_font_montserrat_10, COL_TEXT_DIM);
-    lv_obj_set_pos(navInstr, 8, 146);
-    lv_obj_set_width(navInstr, 88);
-    lv_label_set_long_mode(navInstr, LV_LABEL_LONG_WRAP);
+    // ---- STALE pill (top-right under the banner; only while feed stale) --
+    navStalePill = lv_obj_create(r);
+    lv_obj_set_pos(navStalePill, 250, 52);
+    lv_obj_set_size(navStalePill, 64, 20);
+    lv_obj_set_style_bg_color(navStalePill, lv_color_hex(COL_RED), 0);
+    lv_obj_set_style_bg_opa(navStalePill, LV_OPA_80, 0);
+    lv_obj_set_style_radius(navStalePill, 10, 0);
+    lv_obj_set_style_border_width(navStalePill, 0, 0);
+    lv_obj_set_style_pad_all(navStalePill, 0, 0);
+    lv_obj_clear_flag(navStalePill, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(navStalePill, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_t* staleLbl = ui_label(navStalePill, "STALE", &lv_font_montserrat_10, COL_TEXT);
+    lv_obj_center(staleLbl);
+    lv_obj_add_flag(navStalePill, LV_OBJ_FLAG_HIDDEN);
 
-    lv_obj_t* div = lv_obj_create(p);
-    lv_obj_set_pos(div, 8, 186);
-    lv_obj_set_size(div, 88, 1);
-    lv_obj_set_style_bg_color(div, lv_color_hex(COL_PANEL_DIV), 0);
-    lv_obj_set_style_border_width(div, 0, 0);
+    // ---- left rail: recentre / + / - (vertically centred) ----
+    navRecentre = make_map_ctrl_btn(r, LV_SYMBOL_GPS,   6, 66,  nav_recentre_cb, &navRecentreLbl);
+    make_map_ctrl_btn(r, LV_SYMBOL_PLUS,  6, 108, nav_zoom_in_cb, nullptr);
+    make_map_ctrl_btn(r, LV_SYMBOL_MINUS, 6, 150, nav_zoom_out_cb, nullptr);
 
-    navSpeed = ui_label(p, "48", &lv_font_montserrat_24, COL_TEXT);
-    lv_obj_set_pos(navSpeed, 8, 192);
-    lv_obj_t* kmh = ui_label(p, "KM/H", &lv_font_montserrat_8, COL_TEXT_SECOND);
-    lv_obj_set_pos(kmh, 52, 202);
-    navRem = ui_label(p, "Rem: 2.4 km", &lv_font_montserrat_10, COL_TEXT);
-    lv_obj_set_pos(navRem, 8, 218);
-    navEta = ui_label(p, "ETA: 3 min", &lv_font_montserrat_8, COL_TEXT_SECOND);
-    lv_obj_set_pos(navEta, 8, 230);
+    // ---- speed cluster (bottom-centre): limit disc + current speed ----
+    lv_obj_t* disc = lv_obj_create(r);
+    lv_obj_set_pos(disc, 118, 190);
+    lv_obj_set_size(disc, 44, 44);
+    lv_obj_set_style_radius(disc, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(disc, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_set_style_bg_opa(disc, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_color(disc, lv_color_hex(COL_RED), 0);
+    lv_obj_set_style_border_width(disc, 5, 0);
+    lv_obj_set_style_pad_all(disc, 0, 0);
+    lv_obj_clear_flag(disc, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(disc, LV_OBJ_FLAG_CLICKABLE);
+    navSpdLimit = ui_label(disc, "50", &lv_font_montserrat_20, 0x111111);
+    lv_obj_center(navSpdLimit);
+    navSpdNow = ui_label(r, "48", &lv_font_montserrat_32, 0x111111);
+    lv_obj_set_pos(navSpdNow, 168, 194);
+    lv_obj_t* kmh = ui_label(r, "km/h", &lv_font_montserrat_10, COL_MAP_LABEL);
+    lv_obj_set_pos(kmh, 170, 224);
 
-    // GPS chip (top-right over map) + zoom chip + recentre button.
-    lv_obj_t* chip = make_chip(r, 220, 6, 94);
-    navGpsLbl = ui_label(chip, "GPS: ±2.4m", &lv_font_montserrat_10, COL_TEXT);
-    lv_obj_center(navGpsLbl);
-    navZoomChip = make_chip(r, 110, 6, 44);
-    navZoomLbl = ui_label(navZoomChip, "Z16", &lv_font_montserrat_10, COL_TEXT);
-    lv_obj_center(navZoomLbl);
-    lv_obj_add_flag(navZoomChip, LV_OBJ_FLAG_HIDDEN);
-    navRecentre = make_recentre_btn(r);
-    lv_obj_add_flag(navRecentre, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_event_cb(navRecentre, nav_recentre_cb, LV_EVENT_CLICKED, nullptr);
-    make_zoom_btn(r, "+", 275, 96, nav_zoom_in_cb);
-    make_zoom_btn(r, "-", 275, 134, nav_zoom_out_cb);
-    make_home_btn(r, 110, 204);
+    // ---- remaining pill (bottom-right, dark translucent) ----
+    lv_obj_t* pill = lv_obj_create(r);
+    lv_obj_set_pos(pill, 220, 212);
+    lv_obj_set_size(pill, 94, 21);
+    lv_obj_set_style_bg_color(pill, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_bg_opa(pill, LV_OPA_60, 0);
+    lv_obj_set_style_radius(pill, 10, 0);
+    lv_obj_set_style_border_width(pill, 0, 0);
+    lv_obj_set_style_pad_all(pill, 0, 0);
+    lv_obj_clear_flag(pill, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_clear_flag(pill, LV_OBJ_FLAG_CLICKABLE);
+    navRemLbl = ui_label(pill, "", &lv_font_montserrat_10, COL_TEXT);
+    lv_obj_center(navRemLbl);
 }
 
 static void refresh_nav(void) {
     BikeState& b = g_bike_state;
     // Touch drags pan inside MapView; mirror its lock/zoom into BikeState
-    // (the recentre button's visibility keys off mapLocked).
+    // (the recentre button's dimming keys off mapLocked).
     b.mapLocked = navMap.locked();
     b.zoomLevel = navMap.zoom();
-    // Pill: status + colour.
-    const char* pill = b.offRoute ? "OFF ROUTE" : b.navStale ? "STALE" :
-                       b.navigating ? "NAVIGATING" : "IDLE";
-    uint32_t pillCol = (b.offRoute || b.navStale) ? COL_RED : b.navigating ? COL_GREEN : COL_PANEL_DIV;
-    lv_label_set_text(navPillLbl, pill);
-    lv_obj_set_style_bg_color(navPill, lv_color_hex(pillCol), 0);
 
+    // Banner main segment: maneuver arrow + distance + street.
     lv_label_set_text(navArrow, ui_turn_symbol(b.turnDir));
-
     int dist = (int)(b.distToTurn_m + 0.5f);
     if (dist != navLastDist) {
         navLastDist = dist;
-        char buf[24];
+        char buf[16];
         if (dist >= 1000) {
             snprintf(buf, sizeof(buf), "%.1f", dist / 1000.0);
-            lv_label_set_text(navUnit, "KM");
+            lv_label_set_text(navUnit, "km");
         } else {
             snprintf(buf, sizeof(buf), "%d", dist);
-            lv_label_set_text(navUnit, "METERS");
+            lv_label_set_text(navUnit, "m");
         }
         lv_label_set_text(navDist, buf);
+        // Sit the unit right after the number, the street right after that.
+        lv_point_t sz;
+        lv_txt_get_size(&sz, buf, &lv_font_montserrat_32, 0, 0, LV_COORD_MAX, 0);
+        lv_obj_set_pos(navUnit, 48 + sz.x + 3, 26);
+        int streetX = 48 + sz.x + 24;
+        lv_obj_set_pos(navStreet, streetX, 8);
+        lv_obj_set_width(navStreet, 226 - streetX - 4);
     }
     lv_label_set_text(navStreet, b.streetName);
-    lv_label_set_text(navInstr, b.instruction);
 
+    // "Then" segment: next maneuver preview (BikeState.nextTurnDir).
+    lv_label_set_text(navThenArrow, ui_turn_symbol(b.nextTurnDir));
+
+    // STALE pill: visible only while the live feed is stale.
+    if (b.navStale) lv_obj_clear_flag(navStalePill, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(navStalePill, LV_OBJ_FLAG_HIDDEN);
+
+    // Speed cluster: limit disc + current speed.
+    if ((int)b.speedLimitKmh != navLastLimit) {
+        navLastLimit = (int)b.speedLimitKmh;
+        char buf[8];
+        snprintf(buf, sizeof(buf), "%d", (int)b.speedLimitKmh);
+        lv_label_set_text(navSpdLimit, buf);
+    }
     int spd = (int)(b.speedKmh + 0.5f);
     if (spd != navLastSpeed) {
         navLastSpeed = spd;
         char buf[8];
         snprintf(buf, sizeof(buf), "%d", spd);
-        lv_label_set_text(navSpeed, buf);
+        lv_label_set_text(navSpdNow, buf);
     }
-    char buf[40];
-    snprintf(buf, sizeof(buf), "Rem: %.1f km", (double)b.remainKm);
-    lv_label_set_text(navRem, buf);
-    snprintf(buf, sizeof(buf), "ETA: %d min", b.etaMin);
-    lv_label_set_text(navEta, buf);
-    snprintf(buf, sizeof(buf), "GPS: ±%.1fm", (double)b.gpsAccuracy_m);
-    lv_label_set_text(navGpsLbl, buf);
 
-    // Recentre button: visible ONLY while the map is unlocked (panned).
-    if (b.mapLocked) lv_obj_add_flag(navRecentre, LV_OBJ_FLAG_HIDDEN);
-    else lv_obj_clear_flag(navRecentre, LV_OBJ_FLAG_HIDDEN);
+    // Remaining pill: "2.4 km • 3 min".
+    char rbuf[32];
+    snprintf(rbuf, sizeof(rbuf), "%.1f km \xE2\x80\xA2 %d min",
+             (double)b.remainKm, b.etaMin);
+    lv_label_set_text(navRemLbl, rbuf);
 
-    if ((int32_t)(navZoomChipUntil - lv_tick_get()) > 0) {
-        char z[8];
-        snprintf(z, sizeof(z), "Z%d", navMap.zoom());
-        lv_label_set_text(navZoomLbl, z);
-        lv_obj_clear_flag(navZoomChip, LV_OBJ_FLAG_HIDDEN);
-    } else {
-        lv_obj_add_flag(navZoomChip, LV_OBJ_FLAG_HIDDEN);
-    }
+    // Recentre: dimmed while locked (following position), full while panned.
+    lv_obj_set_style_bg_opa(navRecentre, b.mapLocked ? LV_OPA_60 : LV_OPA_COVER, 0);
+    lv_obj_set_style_text_color(navRecentreLbl,
+        lv_color_hex(b.mapLocked ? COL_TEXT_SECOND : COL_BLUE), 0);
 }
 
 // ============================================================ MAPS ==========
@@ -671,7 +715,7 @@ static void build_settings(void) {
     lv_obj_t* l4 = ui_label(r, "About", &lv_font_montserrat_14, COL_TEXT);
     lv_obj_set_pos(l4, 10, 164);
     char buf[64];
-    snprintf(buf, sizeof(buf), "RPMLOOP FW %s · LVGL 8.3 · ILI9341", RPMLOPP_FIRMWARE_VERSION);
+    snprintf(buf, sizeof(buf), "RPMLOOP FW %s · LVGL 8.3 · ST7789V", RPMLOPP_FIRMWARE_VERSION);
     lv_obj_t* l4v = ui_label(r, buf, &lv_font_montserrat_10, COL_TEXT_DIM);
     lv_obj_set_pos(l4v, 10, 188);
     lv_obj_t* l5v = ui_label(r, "Mock data — phone nav feeds BikeState over BLE", &lv_font_montserrat_10, COL_TEXT_DIM);

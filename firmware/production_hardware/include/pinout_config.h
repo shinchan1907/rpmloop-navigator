@@ -3,8 +3,15 @@
 
 // ==============================================================================
 // RPMLOOP NAVIGATOR — HARDWARE PIN MAPPING (BENCH-VERIFIED 2026-10-29)
-// Target: ESP32-S3 (dev: ESP32-S3 Mini) + generic red 2.8" SPI TFT module
-//         (ILI9341, 240x320 native, used landscape 320x240).
+// Target: ESP32-S3 Mini (4 MB flash) + generic red 2.8" SPI TFT module
+//         (ST7789V controller — chip ID probed on hardware: 0x85 0x85 0x52;
+//         240x320 native, used landscape 320x240).
+//
+// NOTE: this module was long misdiagnosed as ILI9341 (the two controllers
+// share most of their command set, so ILI9341 init produced a readable but
+// wrong picture — inverted colours, mirrored text, garbled full-screen
+// draws). The ID probe settled it: the panel is ST7789V, driven via
+// LovyanGFX Panel_ST7789 with invert=false and rotation=1 below.
 //
 // PRODUCT SCOPE (owner decision, FINAL): the device is ONLY the ESP32-S3 and
 // this display module. The module's HR2046 resistive touchscreen is the ONLY
@@ -14,9 +21,8 @@
 // their pin defines were removed so the firmware cannot quietly grow them
 // back. The module's own microSD slot on its back is likewise unused.)
 //
-// This map is the one physically tested on the bench; the same firmware
-// runs on the dev board today and the custom PCB (ESP32-S3-WROOM-1-N16R8)
-// tomorrow.
+// This map is the one physically tested on the bench (ESP32-S3 Mini,
+// 4 MB flash — the product's only target).
 // CONFLICT NOTE: an older Waveshare map had GPIO9 = DC / GPIO10 = CS — on
 // the bench hardware GPIO9 is CS and GPIO10 is DC. Do not mix the two maps.
 // ==============================================================================
@@ -33,17 +39,18 @@
 // dimming on this hardware — brightness is done in software (LVGL dim
 // overlay), see BikeState.brightnessPct.
 
-// ---- Bench-proven panel configuration (DO NOT "fix" without re-testing) ----
+// ---- Panel configuration (ST7789V; ID-probed 2026-10-29) ----
 // SPI write clock: 16 MHz is stable on bench jumper wires; 40 MHz garbles
-// pixels (long loose Dupont leads). A soldered PCB build with short traces
-// can raise this back toward 40 MHz.
+// pixels (long loose Dupont leads).
 #define TFT_SPI_FREQ_WRITE  16000000
 #define TFT_SPI_FREQ_READ   8000000
-// This clone ILI9341 panel shows INVERTED colours unless panel invert is on.
-#define TFT_PANEL_INVERT    true
-// Landscape needs the mirror-corrected LovyanGFX rotation on this panel
-// (plain rotation 1 renders mirrored text). ONE place to change it:
-#define TFT_ROTATION        5
+// ST7789V shows true colours with invert OFF. (invert=true was an ILI9341
+// misdiagnosis artefact — with it on, this panel's colours invert.)
+#define TFT_PANEL_INVERT    false
+// Plain landscape rotation on ST7789V. (Rotation 5 was the ILI9341
+// mirror-correction workaround; on this panel it mirrors the picture.)
+// ONE place to change it:
+#define TFT_ROTATION        1
 #define TFT_LCD_W           320   // landscape width  (after rotation)
 #define TFT_LCD_H           240   // landscape height (after rotation)
 

@@ -14,10 +14,12 @@ encoder/buttons/joystick and no SD card in this product.
 
 ## 🖥️ Hardware (bench-verified 2026-10-29)
 
-- **Microcontroller:** ESP32-S3 (dev: ESP32-S3 Mini; production target:
-  ESP32-S3-WROOM-1-N16R8 custom PCB — same pin map)
-- **Display Module:** generic red 2.8" SPI TFT, **ILI9341**, 240×320 native,
-  used landscape **320×240**
+- **Microcontroller:** ESP32-S3 Mini (4 MB flash) — the product's only
+  target (the 16 MB custom-PCB target was dropped by owner decision)
+- **Display Module:** generic red 2.8" SPI TFT, **ST7789V** (chip ID probed
+  on hardware: 0x85 0x85 0x52 — long misdiagnosed as ILI9341; the command
+  sets overlap, so ILI9341 init produced a readable but wrong picture),
+  240×320 native, used landscape **320×240**
 - **Touch:** HR2046 resistive (XPT2046-compatible) on the module — the
   product's **only input**, driven via LovyanGFX `Touch_XPT2046` on its
   own SPI pins (SPI3 peripheral, polled — T_IRQ not wired)
@@ -29,9 +31,11 @@ encoder/buttons/joystick and no SD card in this product.
 
 | Quirk | Setting |
 |---|---|
-| Clone panel shows inverted colours | LovyanGFX panel `invert = true` |
-| 40 MHz SPI garbles pixels on jumper wires | SPI write clock **16 MHz** (raise on soldered PCB) |
-| Plain landscape rotation renders mirrored text | LovyanGFX rotation **5** (`TFT_ROTATION`) |
+| Panel is ST7789V (ID-probed), not ILI9341 | LovyanGFX `Panel_ST7789` |
+| ST7789V shows true colours with invert OFF (invert=true inverts them) | panel `invert = false` |
+| 40 MHz SPI garbles pixels on jumper wires | SPI write clock **16 MHz** |
+| Landscape orientation | LovyanGFX rotation **1** (`TFT_ROTATION`) |
+| Picture shifted on some ST7789 batches | panel `offset_x`/`offset_y` (0 on this module — the knob if a batch shifts) |
 | Backlight LED pin wired straight to 3V3 | No BL GPIO/PWM — brightness = LVGL dim overlay |
 
 ### Touch calibration ⚠️
@@ -67,22 +71,26 @@ been measured on this module yet. Before trusting taps:
 ## 🧩 Embedded UI (LVGL 8.3 + LovyanGFX)
 
 - **Screens:** Boot → Home · Nav · Maps · Music · Headset · Tracking · Settings
-- **Nav screen:** 104 px dark left panel (turn arrow, distance, street,
-  instruction, speed, remaining/ETA), Google-style light map, GPS chip
-  top-right, circular recentre button that appears when the map is panned.
-- **Map:** procedural `MapView` component (road grid, park/water, route
-  polyline #1A73E8 with white casing, position arrow) with pan/zoom/lock —
-  rendering lives inside `MapView::render()`, so screens never change if
-  the world renderer does.
+- **Nav screen (2.2.2):** TomTom/Google-style full-bleed 2D nav — the map
+  fills all 320×240 (river band, building blocks, route). Over it: a
+  two-segment blue instruction banner (maneuver arrow + big distance +
+  street, and a "Then" preview of the next maneuver), a left rail of
+  round recentre/+/- buttons, a bottom-centre speed cluster (red-ring
+  speed-limit disc + current speed) and a remaining-distance/ETA pill.
+- **Map:** procedural `MapView` component (road grid, river, buildings,
+  park/water, route polyline #1A73E8 with white casing, two-tone position
+  chevron) with drag-pan/zoom/lock — rendering lives inside
+  `MapView::render()`, so screens never change if the world renderer does.
 - **Data seam:** screens only READ `BikeState` (`include/bike_state.h`).
   Providers write it: `MockProvider` today (animated demo data) and the BLE
   handler (`bike_state_apply_nav`) when the phone is navigating — no UI
   changes needed either way. Actions go through the `bike_control_*()` seam.
 - **Controls (touch only):** tap Home tiles / buttons to navigate, every
-  sub-screen has a Home button (top corner); drag the map to pan, tap the
-  on-screen **+ / −** buttons to zoom, tap the recentre button to re-lock
-  on position; Music prev/play/next and Tracking start/reset are tap
-  buttons; Settings sliders are dragged directly.
+  sub-screen has a Home button (top corner); on Nav/Maps drag the map to
+  pan and use the on-screen **+ / −** round buttons to zoom, tap the
+  recentre button to re-lock on position; Music prev/play/next and
+  Tracking start/reset are tap buttons; Settings sliders are dragged
+  directly.
 
 ## ⚡ Build & Flash
 

@@ -5,9 +5,10 @@
 
 // ==============================================================================
 // MapView — reusable procedural map component (NAV + MAPS screens).
-// Draws a Google-Maps-like light map on an LVGL canvas: road grid with
-// casing, park/water blobs, street labels, the route polyline (white casing
-// + #1A73E8 line) and the position arrow.
+// Draws a Google/TomTom-like light 2D map on an LVGL canvas: road grid with
+// casing, a wide river band, pale-grey building blocks, park/water blobs,
+// street labels, the route polyline (white casing + #1A73E8 line) and a
+// two-tone position chevron anchored at the bottom-centre.
 // Touch: the canvas itself handles drag-to-pan (finger content-follow);
 // screens only add zoom +/- and recentre buttons around it.
 // SEAM: all drawing happens inside render() from a tiny world model; a
@@ -44,6 +45,8 @@ private:
     int sy(int worldY) const;
     void drawLine(int x0, int y0, int x1, int y1, uint32_t colorHex, int width);
     void drawPoly(const int pts[][2], int count, uint32_t colorHex);
+    void drawRiver();
+    void drawBuildings();
     void drawRoute();
     void drawArrow();
 };

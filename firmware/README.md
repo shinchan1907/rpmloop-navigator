@@ -16,7 +16,7 @@ flowchart TD
     Proto --> Fw2["2. Production Hardware Firmware\n(firmware/production_hardware/)"]
 
     Fw1 -->|USB CDC Serial 115200| PC["PC Desktop Browser Simulator\nVirtual 320x240 LCD + Live Leaflet GPS Tracker"]
-    Fw2 -->|SPI Direct Bus| LCD["Physical 2.8-inch TFT LCD\nST7789 / ILI9341 in P3 3D Printed Enclosure"]
+    Fw2 -->|SPI Direct Bus| LCD["Physical 2.8-inch TFT LCD\nST7789V in P3 3D Printed Enclosure"]
 ```
 
 ---
@@ -29,7 +29,7 @@ flowchart TD
 
 ### 2. [Production Hardware Firmware](production_hardware/)
 - **Use Case:** Real-world motorcycle installation inside the 3D-printed enclosure.
-- **Hardware Output:** Direct SPI signals to the physical 2.8" 320 × 240 TFT LCD (ILI9341, bench-verified pinout), full embedded LVGL UI (8 screens, HR2046 resistive TOUCH input — the only input; product hardware is the ESP32-S3 + this display module, nothing else), brightness via software dim overlay (backlight is wired to 3V3).
+- **Hardware Output:** Direct SPI signals to the physical 2.8" 320 × 240 TFT LCD (ST7789V, bench-verified pinout), full embedded LVGL UI (8 screens, HR2046 resistive TOUCH input — the only input; product hardware is the ESP32-S3 + this display module, nothing else), brightness via software dim overlay (backlight is wired to 3V3).
 - **Status LED:** Onboard WS2812 mini RGB LED (`SOLID RED` = Disconnected, `SOLID BLUE` = Connected).
 - **Directory:** [`firmware/production_hardware/`](production_hardware/)
 

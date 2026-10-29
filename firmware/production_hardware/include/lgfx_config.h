@@ -5,15 +5,23 @@
 #include "pinout_config.h"
 
 // ==============================================================================
-// LovyanGFX device for the bench-verified panel:
-//   generic red 2.8" SPI TFT module, ILI9341, 240x320 native, used 320x240,
-//   with its HR2046 (XPT2046-compatible) resistive touch wired to its own
-//   SPI pins on SPI3 — the touchscreen is the product's ONLY input.
-// BENCH-PROVEN QUIRKS (2026-10-29, do not remove without re-testing):
-//   * pcfg.invert = true  — this clone panel shows inverted colours otherwise
+// LovyanGFX device for the bench panel:
+//   generic red 2.8" SPI TFT module, ST7789V (chip ID probed on hardware:
+//   0x85 0x85 0x52), 240x320 native, used 320x240, with its HR2046
+//   (XPT2046-compatible) resistive touch wired to its own SPI pins on
+//   SPI3 — the touchscreen is the product's ONLY input.
+// PANEL FACTS (2026-10-29, do not remove without re-testing):
+//   * the panel is ST7789V, NOT ILI9341 — it was misdiagnosed for a day
+//     because the command sets overlap (ILI9341 init gave readable but
+//     wrong output: inverted colours, mirrored text, garbled full draws)
+//   * pcfg.invert = false — ST7789V shows true colours with invert OFF
 //   * SPI write = 16 MHz  — 40 MHz garbles pixels on jumper wires
-//     (TFT_SPI_FREQ_WRITE in pinout_config.h; raise on the soldered PCB)
-//   * rotation = TFT_ROTATION (5) — plain landscape (1) renders mirrored text
+//     (TFT_SPI_FREQ_WRITE in pinout_config.h)
+//   * rotation = TFT_ROTATION (1) — plain landscape on ST7789V
+//   * pcfg.offset_x / offset_y are 0 (LovyanGFX Panel_ST7789 defaults).
+//     If the picture ever lands shifted on a panel batch, THOSE two are
+//     the adjustment knob — ST7789 GRAM is 240x320 and some modules need
+//     a small offset; this bench module has not shown a shift yet.
 // TOUCH NOTE: the touch calibration ranges (TOUCH_CAL_* in pinout_config.h)
 // are UNVERIFIED presets — calibrate on the real module. LovyanGFX converts
 // raw touch points through the panel rotation (getTouch), using the touch
@@ -22,7 +30,7 @@
 // If a different panel batch is ever fitted, change ONLY this class.
 // ==============================================================================
 class LGFX : public lgfx::LGFX_Device {
-    lgfx::Panel_ILI9341  _panel;
+    lgfx::Panel_ST7789   _panel;
     lgfx::Bus_SPI        _bus;
     lgfx::Touch_XPT2046  _touch;
 
@@ -55,7 +63,7 @@ public:
         pcfg.offset_y         = 0;
         pcfg.offset_rotation  = 0;
         pcfg.readable         = true;
-        pcfg.invert           = TFT_PANEL_INVERT;   // clone panel: REQUIRED
+        pcfg.invert           = TFT_PANEL_INVERT;   // ST7789V: false (see header)
         pcfg.rgb_order        = false;
         pcfg.dlen_16bit       = false;
         pcfg.bus_shared       = false;

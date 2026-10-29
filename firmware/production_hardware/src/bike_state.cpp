@@ -13,6 +13,8 @@ void bike_state_init(void) {
     BikeState& b = g_bike_state;
     b.navigating = true;                 // mock demo route is active at boot
     b.turnDir = TURN_DIR_RIGHT;
+    b.nextTurnDir = TURN_DIR_LEFT;
+    b.speedLimitKmh = 50;
     strncpy(b.streetName, "Grand Promenade", sizeof(b.streetName) - 1);
     strncpy(b.instruction, "Turn right onto Grand Promenade", sizeof(b.instruction) - 1);
     b.distToTurn_m = 150.0f;

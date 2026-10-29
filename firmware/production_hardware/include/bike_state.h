@@ -38,7 +38,10 @@ struct BikeState {
     bool   navStale;          // live feed silent > RPMLOPP_STALE_TIMEOUT_MS
     bool   offRoute;
     float  distToTurn_m;      // distance to next maneuver
-    int    turnDir;           // TurnDir enum
+    int    turnDir;           // TurnDir enum (current maneuver)
+    int    nextTurnDir;       // TurnDir enum (the maneuver AFTER this one,
+                              // shown in the Nav banner's "Then" segment)
+    uint8_t speedLimitKmh;    // posted speed limit (speed cluster ring)
     char   streetName[40];    // road after the turn
     char   instruction[96];   // full instruction line
     float  remainKm;          // remaining route distance
