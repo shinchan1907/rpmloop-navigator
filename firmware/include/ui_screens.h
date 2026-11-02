@@ -42,3 +42,11 @@ void ui_set_brightness(uint8_t level);
 // Set Home screen active page (0, 1, 2)
 void ui_home_set_page(int page);
 
+// Bike Documents helpers
+void ui_docs_show_rc();
+void ui_docs_show_aadhar();
+void ui_docs_show_dl();
+void ui_docs_flip();
+void ui_docs_enter_fullscreen();
+void ui_docs_exit_fullscreen();
+

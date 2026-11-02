@@ -8,6 +8,9 @@ Thumbs.db
 *.blend1
 *.blend2
 *.log
+*.bmp
+temp_*.txt
+*.zip
 build/
 .pio/
 .venv/

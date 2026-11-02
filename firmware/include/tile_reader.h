@@ -26,6 +26,7 @@ public:
     bool init();
 
     // Format the SD card as FAT32
+    bool formatCard();
 
     // Check if SD card is mounted and readable
     bool isReady() const;
@@ -46,6 +47,9 @@ public:
 
     // Load and decode a document JPEG from /docs/<name>.jpg or built-in flash fallback
     bool loadDocJpeg(const char* docName, uint16_t* outPixels, int targetW, int targetH);
+
+    // Low-level SD card SPI hardware diagnostic
+    void testRawSD();
 
     // Get SD card info
     uint64_t cardSizeBytes() const;

@@ -10,6 +10,14 @@
 #include "ui_screens.h"
 
 void setup() {
+    // Deselect all SPI devices immediately on boot so high-speed display init doesn't corrupt SD card
+    pinMode(13, OUTPUT);
+    digitalWrite(13, HIGH); // SD CS HIGH
+    pinMode(9, OUTPUT);
+    digitalWrite(9, HIGH);  // TFT CS HIGH
+    pinMode(5, OUTPUT);
+    digitalWrite(5, HIGH);  // Touch CS HIGH
+
     Serial.begin(115200);
     delay(500);
     Serial.println("========================================");
@@ -23,17 +31,16 @@ void setup() {
         Serial.println("WARNING: No PSRAM detected!");
     }
 
-    // 1. Initialize SD Card & TileReader (SPI2_HOST, CS=GPIO13)
-    // Hardware bus must be initialized before display to avoid register contention
-    if (tileReader.init()) {
-        Serial.println("[1/4] SD Card & TileReader initialized successfully");
-    } else {
-        Serial.println("[1/4] TileReader init: SD card not detected (maps will show placeholder)");
-    }
-
-    // 2. Initialize display + LVGL (shared SPI2_HOST with bus_shared=true)
+    // 1. Initialize display + LVGL (shared SPI2_HOST with bus_shared=true)
     lvgl_port_init();
-    Serial.println("[2/4] Display & LVGL initialized");
+    Serial.println("[1/4] Display & LVGL initialized");
+
+    // 2. Initialize SD Card & TileReader (SPI2_HOST, CS=GPIO13)
+    if (tileReader.init()) {
+        Serial.println("[2/4] SD Card & TileReader initialized successfully");
+    } else {
+        Serial.println("[2/4] TileReader init: SD card not detected (maps will show placeholder)");
+    }
 
     // 3. Initialize BLE Server & start advertising as "RPMLOOP"
     rpmBle.init();
@@ -84,6 +91,25 @@ void loop() {
             ui_navigate(Screen::SETTINGS);
         } else if (cmd == "CMD:NAV:DOCS") {
             ui_navigate(Screen::DOCS);
+        } else if (cmd == "CMD:DOCS:RC") {
+            ui_navigate(Screen::DOCS);
+            ui_docs_show_rc();
+        } else if (cmd == "CMD:DOCS:AADHAAR") {
+            ui_navigate(Screen::DOCS);
+            ui_docs_show_aadhar();
+        } else if (cmd == "CMD:DOCS:DL") {
+            ui_navigate(Screen::DOCS);
+            ui_docs_show_dl();
+        } else if (cmd == "CMD:DOCS:FLIP") {
+            ui_docs_flip();
+        } else if (cmd == "CMD:DOCS:FS_ENTER") {
+            ui_docs_enter_fullscreen();
+        } else if (cmd == "CMD:DOCS:FS_EXIT") {
+            ui_docs_exit_fullscreen();
+        } else if (cmd == "CMD:SD_RAW") {
+            tileReader.testRawSD();
+        } else if (cmd == "CMD:SD_FORMAT") {
+            tileReader.formatCard();
         }
     }
 

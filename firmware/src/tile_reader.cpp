@@ -3,19 +3,22 @@
 
 #include "tile_reader.h"
 #include "lgfx_config.h"
+#include "docs_data.h"
 #include <Arduino.h>
 #include <SD.h>
 #include <SPI.h>
 #include "ff.h"
+#include "esp_rom_gpio.h"
+#include "soc/gpio_sig_map.h"
 
 // JPEG decoder — LovyanGFX bundled TJpgDec
 #include <lgfx/utility/lgfx_tjpgd.h>
 #include "lv_conf.h"
 
-// SD card CS pin & dedicated SPIClass for SPI2_HOST
+// SD card CS pin & SPI bus (SPI2_HOST / FSPI)
 // Hardware: SCK=GPIO6, MISO=GPIO8, MOSI=GPIO7, CS=GPIO13 (shared with ST7789 display)
 static const int SD_CS_PIN = 13;
-static SPIClass sd_spi(FSPI);
+#define sd_spi SPI
 
 // Global instance
 TileReader tileReader;
@@ -95,50 +98,36 @@ bool TileReader::init() {
 
     Serial.println("\n[SD] Initializing SD Card (SCK=6, MISO=8, MOSI=7, CS=13)...");
 
-    // Ensure display CS (GPIO9) and SD CS (GPIO13) are deselected HIGH
+    // Ensure display CS (GPIO9), touch CS (GPIO5) and SD CS (GPIO13) are deselected HIGH
     pinMode(9, OUTPUT);
     digitalWrite(9, HIGH);
+    pinMode(5, OUTPUT);
+    digitalWrite(5, HIGH);
     pinMode(SD_CS_PIN, OUTPUT);
     digitalWrite(SD_CS_PIN, HIGH);
 
-    // Hardware Bus Recovery: Clock SCK with CS HIGH to release MISO (DO)
-    pinMode(7, OUTPUT);
-    digitalWrite(7, HIGH); // MOSI HIGH
-    pinMode(6, OUTPUT);
     pinMode(8, INPUT_PULLUP);
     gpio_set_pull_mode(GPIO_NUM_8, GPIO_PULLUP_ONLY);
 
-    for (int i = 0; i < 200; i++) {
-        digitalWrite(6, LOW);
-        delayMicroseconds(2);
-        digitalWrite(6, HIGH);
-        delayMicroseconds(2);
-    }
-
     // Initialize dedicated SPIClass for SD card on SPI2_HOST
+    sd_spi.end();
     sd_spi.begin(6, 8, 7, SD_CS_PIN);
     gpio_set_pull_mode(GPIO_NUM_8, GPIO_PULLUP_ONLY);
 
-    // Send at least 80 clocks with CS HIGH to enter SPI mode cleanly
+    // Send at least 160 clocks with CS HIGH to enter SPI mode cleanly
     digitalWrite(SD_CS_PIN, HIGH);
     sd_spi.beginTransaction(SPISettings(400000, MSBFIRST, SPI_MODE0));
-    for (int i = 0; i < 20; i++) sd_spi.transfer(0xFF);
+    for (int i = 0; i < 30; i++) sd_spi.transfer(0xFF);
     sd_spi.endTransaction();
+    digitalWrite(SD_CS_PIN, HIGH);
     gpio_set_pull_mode(GPIO_NUM_8, GPIO_PULLUP_ONLY);
     Serial.printf("[SD] Pre-mount MISO pin level: %d (expected 1)\n", digitalRead(8));
 
-    // Attempt mount at 4MHz first
-    if (!SD.begin(SD_CS_PIN, sd_spi, 4000000, "/sd", 5, false)) {
-        Serial.println("[SD] 4MHz mount failed, trying 400kHz fallback...");
-        SD.end();
-        delay(50);
-        digitalWrite(SD_CS_PIN, HIGH);
-        for (int i = 0; i < 20; i++) sd_spi.transfer(0xFF);
-        if (!SD.begin(SD_CS_PIN, sd_spi, 400000, "/sd", 5, false)) {
-            Serial.println("[SD] SD.begin failed at 400kHz as well.");
-            _mounted = false;
-            return false;
-        }
+    // Attempt mount at 400kHz (format_if_empty = false so boot is fast and never corrupts)
+    if (!SD.begin(SD_CS_PIN, sd_spi, 400000, "/sd", 5, false)) {
+        Serial.println("[SD] SD.begin mount failed (card may need formatting).");
+        _mounted = false;
+        return false;
     }
 
     uint8_t ct = SD.cardType();
@@ -153,6 +142,106 @@ bool TileReader::init() {
         SD.cardSize() / (1024 * 1024), (SD.cardSize() / (1024 * 1024) + 512) / 1024);
 
     _mounted = true;
+    return true;
+}
+
+bool TileReader::formatCard() {
+    Serial.println("\n========================================");
+    Serial.println("   RPMLOOP SD Card FAT32 Format Tool   ");
+    Serial.println("========================================");
+
+    // If not already mounted or initialized, try to initialize
+    if (!_mounted) {
+        Serial.println("[SD Format] Card not mounted, attempting initialization...");
+        if (!init()) {
+            Serial.println("[SD Format] Card initialization failed. SD card may not be connected or has wiring issue.");
+            return false;
+        }
+    }
+
+    Serial.printf("[SD Format] Target Card Size: %llu MB (%llu sectors)\n",
+                  SD.cardSize() / (1024 * 1024), (uint64_t)SD.numSectors());
+
+    Serial.println("[SD Format] Formatting volume to FAT32 with f_mkfs...");
+
+    BYTE *work = (BYTE *)malloc(4096);
+    UINT work_size = work ? 4096 : 512;
+    if (!work) {
+        work = (BYTE *)malloc(512);
+        work_size = 512;
+    }
+
+    if (!work) {
+        Serial.println("[SD Format] Memory allocation failed for format buffer!");
+        return false;
+    }
+
+    // FatFs MKFS parameter for FAT32
+    MKFS_PARM opt;
+    memset(&opt, 0, sizeof(opt));
+    opt.fmt = FM_FAT32;  // Request FAT32
+    opt.n_fat = 1;       // 1 FAT table
+    opt.align = 0;       // Auto align
+    opt.n_root = 0;      // Auto
+    opt.au_size = 0;     // Auto cluster size
+
+    FRESULT res = f_mkfs("0:", &opt, work, work_size);
+    if (res != FR_OK) {
+        Serial.printf("[SD Format] FM_FAT32 returned %d, retrying with FM_ANY...\n", (int)res);
+        opt.fmt = FM_ANY;
+        opt.n_fat = 0;
+        res = f_mkfs("0:", &opt, work, work_size);
+    }
+
+    free(work);
+
+    if (res != FR_OK) {
+        Serial.printf("[SD Format] ERROR: f_mkfs failed with code %d\n", (int)res);
+        return false;
+    }
+
+    Serial.println("[SD Format] Format completed successfully! Remounting SD...");
+    SD.end();
+    delay(100);
+
+    if (!SD.begin(SD_CS_PIN, sd_spi, 4000000, "/sd", 5, false)) {
+        Serial.println("[SD Format] ERROR: Remount failed after format!");
+        _mounted = false;
+        return false;
+    }
+
+    _mounted = true;
+    Serial.printf("[SD Format] Mounted! Total space: %llu MB, Used: %llu KB\n",
+                  SD.totalBytes() / (1024 * 1024), SD.usedBytes() / 1024);
+
+    // Create /tiles directory
+    if (!SD.exists("/tiles")) {
+        if (SD.mkdir("/tiles")) {
+            Serial.println("[SD Format] Created '/tiles' directory successfully!");
+        } else {
+            Serial.println("[SD Format] Warning: Could not create '/tiles'");
+        }
+    } else {
+        Serial.println("[SD Format] '/tiles' directory exists.");
+    }
+
+    // Write verification test file
+    File f = SD.open("/tiles/format_test.txt", FILE_WRITE);
+    if (f) {
+        f.println("RPMLOOP FAT32 FORMAT SUCCESS");
+        f.close();
+        Serial.println("[SD Format] Created test file '/tiles/format_test.txt'");
+
+        // Read back to verify
+        File r = SD.open("/tiles/format_test.txt", FILE_READ);
+        if (r) {
+            String content = r.readStringUntil('\n');
+            r.close();
+            Serial.printf("[SD Format] Verification read back: '%s'\n", content.c_str());
+        }
+    }
+
+    Serial.println("[SD Format] *** FAT32 FORMAT COMPLETE & VERIFIED ***\n");
     return true;
 }
 
@@ -484,7 +573,189 @@ bool TileReader::loadDocJpeg(const char* docName, uint16_t* outPixels, int targe
         }
     }
 
-    // SD-only by design: no documents are embedded in the
-    // firmware binary. Docs live on the card under /docs/.
+    // 2. Built-in Flash fallback for Sunny's Documents (RC & Aadhaar)
+    if (strcmp(docName, "rc") == 0) {
+        return decodeJpegBuffer(RC_FRONT_JPG, RC_FRONT_JPG_LEN, outPixels, targetW, targetH);
+    } else if (strcmp(docName, "rc_back") == 0) {
+        return decodeJpegBuffer(RC_BACK_JPG, RC_BACK_JPG_LEN, outPixels, targetW, targetH);
+    } else if (strcmp(docName, "aadhar") == 0) {
+        return decodeJpegBuffer(AADHAAR_FRONT_JPG, AADHAAR_FRONT_JPG_LEN, outPixels, targetW, targetH);
+    } else if (strcmp(docName, "aadhar_back") == 0) {
+        return decodeJpegBuffer(AADHAAR_BACK_JPG, AADHAAR_BACK_JPG_LEN, outPixels, targetW, targetH);
+    }
+
     return false;
 }
+
+void TileReader::testRawSD() {
+    Serial.println("\n========== RAW SD HARDWARE DIAGNOSTIC ==========");
+    tft.waitDisplay();
+
+    pinMode(9, OUTPUT);
+    digitalWrite(9, HIGH); // TFT CS HIGH
+    pinMode(5, OUTPUT);
+    digitalWrite(5, HIGH); // TOUCH CS HIGH
+    pinMode(13, OUTPUT);
+    digitalWrite(13, HIGH); // SD CS HIGH
+
+    sd_spi.end();
+    sd_spi.begin(6, 8, 7, SD_CS_PIN);
+    gpio_set_pull_mode(GPIO_NUM_8, GPIO_PULLUP_ONLY);
+
+    Serial.printf("[RAW_SD] SPI PINS: SCK=%d, MISO=%d, MOSI=%d, SS=%d\n",
+                  sd_spi.pinSck(), sd_spi.pinMiso(), sd_spi.pinMosi(), sd_spi.pinSS());
+
+    Serial.printf("[RAW_SD] CS=HIGH MISO (GPIO 8) level: %d\n", digitalRead(8));
+    digitalWrite(13, LOW);
+    delayMicroseconds(10);
+    Serial.printf("[RAW_SD] CS=LOW MISO (GPIO 8) level: %d\n", digitalRead(8));
+    digitalWrite(13, HIGH);
+    delayMicroseconds(10);
+    Serial.printf("[RAW_SD] Back to CS=HIGH MISO level: %d\n", digitalRead(8));
+
+    // Send 160 clock cycles with CS HIGH
+    sd_spi.beginTransaction(SPISettings(400000, MSBFIRST, SPI_MODE0));
+    Serial.print("[RAW_SD] 10 bytes from transfer(0xFF) with CS=HIGH: ");
+    for (int i = 0; i < 10; i++) Serial.printf("%02X ", sd_spi.transfer(0xFF));
+    Serial.println();
+
+    for (int i = 0; i < 30; i++) sd_spi.transfer(0xFF);
+
+    // Continuous clocking with CS=LOW to clear any internal busy/latch state
+    digitalWrite(13, LOW);
+    Serial.println("[RAW_SD] Clocking with CS=LOW to check/clear busy state...");
+    uint32_t t_busy_start = millis();
+    int busy_count = 0;
+    uint8_t busy_b = 0x00;
+    while ((millis() - t_busy_start) < 2000) {
+        busy_b = sd_spi.transfer(0xFF);
+        busy_count++;
+        if (busy_b == 0xFF) break;
+    }
+    Serial.printf("[RAW_SD] Busy wait finished in %lu ms (%d clock bytes). Response byte: 0x%02X\n",
+                  millis() - t_busy_start, busy_count, busy_b);
+    digitalWrite(13, HIGH);
+    sd_spi.transfer(0xFF);
+
+    auto rawCmd = [&](uint8_t cmd, uint32_t arg, uint8_t crc, uint32_t* resp32 = nullptr) -> uint8_t {
+        digitalWrite(13, LOW);
+        sd_spi.transfer(0xFF);
+        sd_spi.transfer(cmd | 0x40);
+        sd_spi.transfer((arg >> 24) & 0xFF);
+        sd_spi.transfer((arg >> 16) & 0xFF);
+        sd_spi.transfer((arg >> 8) & 0xFF);
+        sd_spi.transfer(arg & 0xFF);
+        sd_spi.transfer(crc);
+
+        uint8_t r = 0xFF;
+        uint8_t raw[16];
+        for (int i = 0; i < 16; i++) {
+            raw[i] = sd_spi.transfer(0xFF);
+        }
+        for (int i = 0; i < 16; i++) {
+            if (raw[i] != 0xFF) {
+                r = raw[i];
+                break;
+            }
+        }
+        Serial.printf("[CMD%d raw: ", cmd);
+        for (int i = 0; i < 16; i++) Serial.printf("%02X ", raw[i]);
+        Serial.print("] ");
+
+        if (resp32) {
+            uint32_t val = 0;
+            for (int i = 0; i < 4; i++) {
+                val = (val << 8) | sd_spi.transfer(0xFF);
+            }
+            *resp32 = val;
+        }
+        return r;
+    };
+
+    auto deselectCard = [&]() {
+        digitalWrite(13, HIGH);
+        sd_spi.transfer(0xFF);
+    };
+
+    // 1. CMD0 (GO_IDLE_STATE)
+    uint8_t r0 = rawCmd(0, 0, 0x95);
+    deselectCard();
+    Serial.printf("[RAW_SD] CMD0 response: 0x%02X (expected 0x01)\n", r0);
+
+    // 2. CMD8 (SEND_IF_COND)
+    uint32_t resp8 = 0;
+    uint8_t r8 = rawCmd(8, 0x1AA, 0x87, &resp8);
+    deselectCard();
+    Serial.printf("[RAW_SD] CMD8 response: 0x%02X, data: 0x%08lX (expected 0x01, 0x000001AA)\n", r8, (unsigned long)resp8);
+
+    // 3. CMD59 (CRC_ON_OFF, arg=0 to disable CRC checking in card)
+    uint8_t r59 = rawCmd(59, 0, 0x91);
+    deselectCard();
+    Serial.printf("[RAW_SD] CMD59 (CRC OFF) response: 0x%02X (expected 0x01 or 0x00)\n", r59);
+
+    // 4. ACMD41 loop
+    uint32_t t_start = millis();
+    uint8_t r41 = 0xFF;
+    int attempts = 0;
+    while ((millis() - t_start) < 2000) {
+        attempts++;
+        uint8_t r55 = rawCmd(55, 0, 0x65);
+        deselectCard();
+        if (r55 <= 1) {
+            r41 = rawCmd(41, 0x40000000, 0x77);
+            deselectCard();
+            if (r41 == 0) break; // Card is ready!
+        }
+        delay(10);
+    }
+    Serial.printf("[RAW_SD] ACMD41 ready: 0x%02X in %d attempts (%lu ms)\n", r41, attempts, millis() - t_start);
+
+    // 5. CMD58 (READ_OCR)
+    uint32_t ocr = 0;
+    uint8_t r58 = rawCmd(58, 0, 0xFD, &ocr);
+    deselectCard();
+    bool is_sdhc = (ocr & (1UL << 30)) != 0;
+    Serial.printf("[RAW_SD] CMD58 OCR: 0x%02X, OCR val: 0x%08lX (SDHC/CCS bit 30: %d)\n", r58, (unsigned long)ocr, is_sdhc ? 1 : 0);
+
+    // 6. CMD16 (SET_BLOCKLEN 512)
+    uint8_t r16 = rawCmd(16, 512, 0xFF);
+    deselectCard();
+    Serial.printf("[RAW_SD] CMD16 (SET_BLOCKLEN 512): 0x%02X\n", r16);
+
+    // 7. CMD17 (READ_SINGLE_BLOCK, sector 0)
+    uint32_t sector_arg = is_sdhc ? 0 : 0;
+    uint8_t r17 = rawCmd(17, sector_arg, 0xFF);
+    Serial.printf("[RAW_SD] CMD17 (Sector 0) R1: 0x%02X\n", r17);
+
+    if (r17 == 0x00) {
+        // Wait for data start token (0xFE)
+        uint8_t token = 0xFF;
+        uint32_t t0 = millis();
+        while ((millis() - t0) < 1500) {
+            token = sd_spi.transfer(0xFF);
+            if (token != 0xFF) break;
+        }
+        Serial.printf("[RAW_SD] Sector 0 Data Token: 0x%02X in %lu ms (expected 0xFE)\n", token, millis() - t0);
+        if (token == 0xFE) {
+            uint8_t buf[512];
+            for (int i = 0; i < 512; i++) buf[i] = sd_spi.transfer(0xFF);
+            uint16_t crc = (sd_spi.transfer(0xFF) << 8) | sd_spi.transfer(0xFF);
+            deselectCard();
+            Serial.printf("[RAW_SD] Successfully read 512 bytes! CRC: 0x%04X\n", crc);
+            Serial.printf("[RAW_SD] Boot signature (bytes 510-511): 0x%02X 0x%02X (expected 0x55 0xAA)\n", buf[510], buf[511]);
+            Serial.print("[RAW_SD] First 16 bytes: ");
+            for (int i = 0; i < 16; i++) Serial.printf("%02X ", buf[i]);
+            Serial.println();
+        } else {
+            deselectCard();
+        }
+    } else {
+        deselectCard();
+    }
+
+    sd_spi.endTransaction();
+    Serial.println("================================================\n");
+}
+
+
+
