@@ -1,0 +1,10 @@
+{
+  "type": "nav",
+  "active": true,
+  "maneuver": "turn_right",
+  "distance_m": 150,
+  "street": "GT Road",
+  "next_street": "Model Town Rd",
+  "eta_min": 12,
+  "remaining_km": 5.3
+}

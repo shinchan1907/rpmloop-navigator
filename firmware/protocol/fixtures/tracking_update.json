@@ -1,0 +1,9 @@
+{
+  "type": "track",
+  "active": true,
+  "distance_km": 12.4,
+  "elapsed_s": 1200,
+  "avg_speed_kmh": 37.2,
+  "max_speed_kmh": 68.0,
+  "current_speed_kmh": 42.5
+}

@@ -1,0 +1,140 @@
+{
+  "protocol": "RPMLOOP BLE Protocol",
+  "version": "3.0.0",
+  "description": "Communication protocol between RPMLOOP Navigator device and companion app over BLE",
+  "ble": {
+    "device_name": "RPMLOOP",
+    "service_uuid": "4fafc201-1fb5-459e-8fcc-c5c9c331914b",
+    "characteristics": {
+      "handshake": {
+        "uuid": "beb5483e-36e1-4688-b7f5-ea07361b26a8",
+        "description": "Session handshake — app writes hello, device responds with ack",
+        "direction": "bidirectional",
+        "format": "json",
+        "max_mtu": 512
+      },
+      "position": {
+        "uuid": "beb5483e-36e1-4688-b7f5-ea07361b26a9",
+        "description": "GPS position, speed, heading from app (~1 Hz)",
+        "direction": "app_to_device",
+        "format": "json"
+      },
+      "nav_state": {
+        "uuid": "beb5483e-36e1-4688-b7f5-ea07361b26aa",
+        "description": "Navigation maneuver, distance to turn, street name, ETA",
+        "direction": "app_to_device",
+        "format": "json"
+      },
+      "polyline": {
+        "uuid": "beb5483e-36e1-4688-b7f5-ea07361b26ab",
+        "description": "Route polyline points (chunked, sequenced)",
+        "direction": "app_to_device",
+        "format": "json"
+      },
+      "media_state": {
+        "uuid": "beb5483e-36e1-4688-b7f5-ea07361b26ac",
+        "description": "Now-playing info (title, artist, album art ref) from app; play/pause/next/prev commands from device",
+        "direction": "bidirectional",
+        "format": "json"
+      },
+      "media_art": {
+        "uuid": "beb5483e-36e1-4688-b7f5-ea07361b26ad",
+        "description": "Album art image data (max 120x120 JPEG, chunked transfer)",
+        "direction": "app_to_device",
+        "format": "binary"
+      },
+      "tracking": {
+        "uuid": "beb5483e-36e1-4688-b7f5-ea07361b26ae",
+        "description": "Trip tracking state (start/stop, live stats: distance, time, avg speed, max speed)",
+        "direction": "app_to_device",
+        "format": "json"
+      },
+      "device_cmd": {
+        "uuid": "beb5483e-36e1-4688-b7f5-ea07361b26af",
+        "description": "Device-to-app commands (media control, brightness ack)",
+        "direction": "device_to_app",
+        "format": "json"
+      }
+    }
+  },
+  "messages": {
+    "hello_request": {
+      "type": "hello",
+      "version": "3.0.0",
+      "app_name": "RPMLOOP Companion",
+      "platform": "android",
+      "capabilities": ["gps", "nav", "media", "tracking"]
+    },
+    "hello_response": {
+      "type": "hello_ack",
+      "version": "3.0.0",
+      "device_name": "RPMLOOP",
+      "fw_version": "3.0.0",
+      "has_sd": true,
+      "display": { "width": 320, "height": 240 }
+    },
+    "position_update": {
+      "type": "pos",
+      "lat": 31.326,
+      "lon": 75.576,
+      "speed_kmh": 42.5,
+      "heading": 185.2,
+      "accuracy_m": 4.2,
+      "ts": 1730500000
+    },
+    "nav_state_update": {
+      "type": "nav",
+      "active": true,
+      "maneuver": "turn_right",
+      "distance_m": 150,
+      "street": "GT Road",
+      "next_street": "Model Town Rd",
+      "eta_min": 12,
+      "remaining_km": 5.3
+    },
+    "polyline_chunk": {
+      "type": "poly",
+      "route_id": "r001",
+      "seq": 0,
+      "total": 3,
+      "points": [
+        [31.326, 75.576],
+        [31.327, 75.577],
+        [31.328, 75.578]
+      ]
+    },
+    "media_state_update": {
+      "type": "media",
+      "playing": true,
+      "title": "Blinding Lights",
+      "artist": "The Weeknd",
+      "album": "After Hours",
+      "duration_s": 200,
+      "position_s": 45,
+      "has_art": true
+    },
+    "media_command": {
+      "type": "media_cmd",
+      "action": "next"
+    },
+    "tracking_update": {
+      "type": "track",
+      "active": true,
+      "distance_km": 12.4,
+      "elapsed_s": 1200,
+      "avg_speed_kmh": 37.2,
+      "max_speed_kmh": 68.0,
+      "current_speed_kmh": 42.5
+    },
+    "brightness_command": {
+      "type": "brightness",
+      "level": 180
+    }
+  },
+  "maneuver_types": [
+    "straight", "turn_left", "turn_right", "slight_left", "slight_right",
+    "sharp_left", "sharp_right", "u_turn_left", "u_turn_right",
+    "roundabout_left", "roundabout_right", "merge", "fork_left", "fork_right",
+    "ramp_left", "ramp_right", "destination", "destination_left", "destination_right"
+  ]
+}
