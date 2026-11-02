@@ -30,7 +30,15 @@ recoverable from this repo's git history (last old-code commit `8398831`).
 | Touch T_DO | 3 |
 | Touch T_IRQ | 4 |
 | Touch T_CS | 5 |
+| SD SCK | 6 (shared with display) |
+| SD MOSI | 7 (shared with display) |
+| SD MISO | 8 (shared with display) |
+| SD CS | 13 |
 
 Display VCC/LED → 3V3 (backlight hardwired, no PWM — brightness is done in
-software). **No SD card and no SD module in this build.** Touch IRQ (GPIO4)
-must be used by the new firmware (interrupt-driven touch).
+software). Touch IRQ (GPIO4) must be used by the new firmware
+(interrupt-driven touch). **SD:** a separate SPI microSD module is wired
+in (pins above; module VCC → 5V — it has its own 3.3V regulator). It is
+the tile store for the SD-preload map architecture: map tiles live on
+the card (FAT32) in `tiles/{z}/{x}/{y}.jpg` layout and the device renders
+them directly; the companion app sends only GPS/nav/media data.
