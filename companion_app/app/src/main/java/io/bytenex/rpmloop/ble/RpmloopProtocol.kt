@@ -33,6 +33,13 @@ object RpmloopProtocol {
     val TRACKING_UUID: UUID = UUID.fromString("beb5483e-36e1-4688-b7f5-ea07361b26ae")
     val DEVICE_CMD_UUID: UUID = UUID.fromString("beb5483e-36e1-4688-b7f5-ea07361b26af")
 
+    // ---- Protocol v3.1 extension: file transfer (offline tiles) -------------
+    // Two extra characteristics on the SAME service, used only to push tile
+    // files from the phone to the device's SD card. The v3.0.0 session
+    // (hello/hello_ack above) is unchanged; v3.1 transfer runs inside it.
+    val FILE_DATA_UUID: UUID = UUID.fromString("beb5483e-36e1-4688-b7f5-ea07361b26b0")
+    val FILE_CTRL_UUID: UUID = UUID.fromString("beb5483e-36e1-4688-b7f5-ea07361b26b1")
+
     /** Client Characteristic Configuration descriptor (for enabling notifications). */
     val CCCD_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
 
@@ -103,4 +110,76 @@ object RpmloopProtocol {
         }
         put("ts", location.time / 1000)
     }.toString()
+
+    // ---- nav_state (spec: messages.nav_state_update) -------------------------
+
+    /**
+     * Active navigation update — byte-for-byte the shape of
+     * fixtures/nav_update.json. [maneuver] must be one of the spec's
+     * maneuver_types (see OsrmClient.mapManeuver for the OSRM mapping).
+     * [nextStreet] is omitted when unknown rather than invented.
+     */
+    fun buildNavUpdate(
+        maneuver: String,
+        distanceM: Int,
+        street: String?,
+        nextStreet: String?,
+        etaMin: Int,
+        remainingKm: Double
+    ): String = JSONObject().apply {
+        put("type", "nav")
+        put("active", true)
+        put("maneuver", maneuver)
+        put("distance_m", distanceM)
+        if (!street.isNullOrEmpty()) put("street", street)
+        if (!nextStreet.isNullOrEmpty()) put("next_street", nextStreet)
+        put("eta_min", etaMin)
+        put("remaining_km", Math.round(remainingKm * 10.0) / 10.0)
+    }.toString()
+
+    /** Navigation ended — the device should leave navigation mode. */
+    fun buildNavInactive(): String =
+        JSONObject().put("type", "nav").put("active", false).toString()
+
+    /** New route id, shaped like the spec example ("r001"). */
+    fun newRouteId(): String = "r" + (System.currentTimeMillis() % 100000L)
+
+    // ---- file transfer control messages (protocol v3.1) ----------------------
+
+    fun buildFileBegin(path: String, size: Long): String = JSONObject().apply {
+        put("type", "file_begin")
+        put("path", path)
+        put("size", size)
+    }.toString()
+
+    fun buildFileEnd(size: Long): String = JSONObject().apply {
+        put("type", "file_end")
+        put("size", size)
+    }.toString()
+
+    /** Parsed device reply on the FILE_CTRL characteristic. */
+    sealed class FileCtrlMessage {
+        data class Ready(val offset: Long) : FileCtrlMessage()
+        data class Ack(val seq: Int) : FileCtrlMessage()
+        object Done : FileCtrlMessage()
+        data class Error(val reason: String) : FileCtrlMessage()
+        object Unknown : FileCtrlMessage()
+    }
+
+    /** Parses any JSON arriving on FILE_CTRL; never throws. */
+    fun parseFileCtrl(json: String): FileCtrlMessage = try {
+        val o = JSONObject(json)
+        when (o.optString("type")) {
+            "file_ready" -> FileCtrlMessage.Ready(o.optLong("offset", 0L))
+            "file_ack" -> FileCtrlMessage.Ack(o.optInt("seq", -1))
+            "file_done" -> FileCtrlMessage.Done
+            "file_error" -> FileCtrlMessage.Error(
+                o.optString("reason").ifEmpty { o.optString("message") }
+                    .ifEmpty { "device reported file_error" }
+            )
+            else -> FileCtrlMessage.Unknown
+        }
+    } catch (e: Exception) {
+        FileCtrlMessage.Unknown
+    }
 }

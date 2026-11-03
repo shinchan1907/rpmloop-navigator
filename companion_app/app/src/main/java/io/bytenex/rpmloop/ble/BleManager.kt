@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import org.json.JSONObject
 import java.util.UUID
 
 enum class BleConnectionState { DISCONNECTED, SCANNING, CONNECTING, CONNECTED }
@@ -42,11 +43,13 @@ data class BleStatus(
 /**
  * Owns the whole BLE session with the RPMLOOP device:
  * scan (name / service-UUID filter) -> connect -> MTU 512 -> service discovery
- * -> enable notifications (handshake, device_cmd) -> hello / hello_ack handshake
- * -> position writes.
+ * -> enable notifications (handshake, device_cmd, file_ctrl) -> hello /
+ * hello_ack handshake -> position / nav / polyline writes, plus the raw
+ * plumbing for the v3.1 file transfer (see FileTransferClient).
  *
- * All GATT operations are serialised through a small queue: Android's stack
- * only tolerates one outstanding operation at a time.
+ * Session writes are serialised through a small queue: Android's stack
+ * only tolerates one outstanding operation at a time. (FILE_DATA chunks
+ * are the one deliberate exception — see writeFileDataRaw.)
  *
  * Assumes the caller (CompanionService) has already verified runtime
  * permissions; SecurityExceptions are caught and surfaced as status detail.
@@ -71,10 +74,39 @@ class BleManager(private val context: Context) {
     private var gatt: BluetoothGatt? = null
     private var handshakeChar: BluetoothGattCharacteristic? = null
     private var positionChar: BluetoothGattCharacteristic? = null
+    private var navChar: BluetoothGattCharacteristic? = null
+    private var polylineChar: BluetoothGattCharacteristic? = null
     private var deviceCmdChar: BluetoothGattCharacteristic? = null
+    private var fileDataChar: BluetoothGattCharacteristic? = null
+    private var fileCtrlChar: BluetoothGattCharacteristic? = null
 
     @Volatile
     private var handshakeDone = false
+
+    /** Negotiated ATT MTU (23 until onMtuChanged says otherwise). */
+    @Volatile
+    var negotiatedMtu: Int = 23
+        private set
+
+    /** Usable ATT payload per write: MTU minus the 3-byte ATT header. */
+    fun attPayloadSize(): Int = (negotiatedMtu - 3).coerceAtLeast(20)
+
+    fun isHandshakeDone(): Boolean = handshakeDone
+
+    /** v3.1: parsed JSON messages arriving on FILE_CTRL land here. Set by
+     *  FileTransferClient; invoked on a binder thread. */
+    @Volatile
+    var fileCtrlListener: ((JSONObject) -> Unit)? = null
+
+    /** v3.1: invoked when the BLE link drops, so a transfer can abort. */
+    @Volatile
+    var fileLinkDownListener: (() -> Unit)? = null
+
+    @Volatile
+    private var latestNavJson: String? = null
+
+    @Volatile
+    private var navOpQueued = false
 
     @Volatile
     private var latestLocation: Location? = null
@@ -122,6 +154,7 @@ class BleManager(private val context: Context) {
         opQueue.clear()
         opInFlight = false
         positionOpQueued = false
+        navOpQueued = false
     }
 
     // ---- public control ------------------------------------------------------
@@ -140,6 +173,7 @@ class BleManager(private val context: Context) {
         engineRunning = false
         stopScan()
         clearQueue()
+        fileLinkDownListener?.invoke()
         handshakeDone = false
         latestLocation = null
         try {
@@ -151,7 +185,13 @@ class BleManager(private val context: Context) {
         gatt = null
         handshakeChar = null
         positionChar = null
+        navChar = null
+        polylineChar = null
         deviceCmdChar = null
+        fileDataChar = null
+        fileCtrlChar = null
+        negotiatedMtu = 23
+        latestNavJson = null
         _status.value = BleStatus()
     }
 
@@ -178,6 +218,91 @@ class BleManager(private val context: Context) {
             }
         }
     }
+
+    /**
+     * Sends a spec-format "nav" payload. Same coalescing pattern as
+     * position: at most one nav write waits in the queue, and it carries the
+     * newest payload when it executes — a burst of engine updates can never
+     * flood the queue with stale maneuvers.
+     */
+    fun sendNav(json: String) {
+        latestNavJson = json
+        if (!handshakeDone || navChar == null) return
+        if (navOpQueued) return
+        navOpQueued = true
+        enqueue {
+            navOpQueued = false
+            val payload = latestNavJson
+            val ch = navChar
+            if (!handshakeDone || payload == null || ch == null) {
+                false
+            } else {
+                writeCharacteristic(ch, payload.toByteArray(Charsets.UTF_8))
+            }
+        }
+    }
+
+    /**
+     * Sends a whole route polyline: [chunks] are complete "poly" JSON
+     * messages (see RoutePolylineProvider) and are written strictly in
+     * order through the queue. Returns false when there is no live session
+     * to send on — the caller surfaces that honestly.
+     */
+    fun sendPolyline(chunks: List<String>): Boolean {
+        if (!handshakeDone || polylineChar == null || chunks.isEmpty()) return false
+        for (chunk in chunks) {
+            val bytes = chunk.toByteArray(Charsets.UTF_8)
+            enqueue {
+                val ch = polylineChar ?: return@enqueue false
+                writeCharacteristic(ch, bytes)
+            }
+        }
+        return true
+    }
+
+    // ---- protocol v3.1 file transfer plumbing ---------------------------------
+    // FILE_CTRL control JSON goes through the serialised queue (write with
+    // response, so ordering against other session traffic is guaranteed).
+    // FILE_DATA chunks deliberately BYPASS the queue: they are
+    // WRITE_NO_RSP and paced by FileTransferClient's own sliding window;
+    // routing them through the one-op-at-a-time queue would serialise the
+    // window away. The Android stack arbitrates the two write streams.
+
+    fun writeFileCtrl(json: String) {
+        val bytes = json.toByteArray(Charsets.UTF_8)
+        enqueue {
+            val ch = fileCtrlChar ?: return@enqueue false
+            writeCharacteristic(ch, bytes)
+        }
+    }
+
+    /** Raw unqueued FILE_DATA write. Returns false if the stack is busy or
+     *  the link is gone — the caller retries after a short pause. */
+    @SuppressLint("MissingPermission")
+    fun writeFileDataRaw(bytes: ByteArray): Boolean {
+        val g = gatt ?: return false
+        val ch = fileDataChar ?: return false
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                g.writeCharacteristic(
+                    ch,
+                    bytes,
+                    BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                ) == BluetoothStatusCodes.SUCCESS
+            } else {
+                ch.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                @Suppress("DEPRECATION")
+                ch.value = bytes
+                @Suppress("DEPRECATION")
+                g.writeCharacteristic(ch)
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun fileTransferReady(): Boolean =
+        handshakeDone && fileDataChar != null && fileCtrlChar != null
 
     // ---- scanning ------------------------------------------------------------
 
@@ -315,6 +440,7 @@ class BleManager(private val context: Context) {
         @SuppressLint("MissingPermission")
         override fun onMtuChanged(g: BluetoothGatt, mtu: Int, status: Int) {
             if (g !== gatt) return
+            negotiatedMtu = mtu
             Log.d(TAG, "MTU negotiated: $mtu (status $status)")
             g.discoverServices()
         }
@@ -334,7 +460,14 @@ class BleManager(private val context: Context) {
             }
             handshakeChar = service.getCharacteristic(RpmloopProtocol.HANDSHAKE_UUID)
             positionChar = service.getCharacteristic(RpmloopProtocol.POSITION_UUID)
+            navChar = service.getCharacteristic(RpmloopProtocol.NAV_STATE_UUID)
+            polylineChar = service.getCharacteristic(RpmloopProtocol.POLYLINE_UUID)
             deviceCmdChar = service.getCharacteristic(RpmloopProtocol.DEVICE_CMD_UUID)
+            // Protocol v3.1 file transfer (older firmware without these
+            // characteristics simply leaves them null; transfers then report
+            // "not supported by this device" — position/nav are unaffected).
+            fileDataChar = service.getCharacteristic(RpmloopProtocol.FILE_DATA_UUID)
+            fileCtrlChar = service.getCharacteristic(RpmloopProtocol.FILE_CTRL_UUID)
             if (handshakeChar == null) {
                 _status.update { it.copy(detail = "Handshake characteristic missing") }
                 return
@@ -347,6 +480,7 @@ class BleManager(private val context: Context) {
             // notification on the handshake characteristic.
             handshakeChar?.let { enqueueEnableNotify(it) }
             deviceCmdChar?.let { enqueueEnableNotify(it) }
+            fileCtrlChar?.let { enqueueEnableNotify(it) }
             enqueue {
                 val ch = handshakeChar ?: return@enqueue false
                 val bytes = RpmloopProtocol.buildHello().toByteArray(Charsets.UTF_8)
@@ -400,9 +534,16 @@ class BleManager(private val context: Context) {
         gatt = null
         handshakeChar = null
         positionChar = null
+        navChar = null
+        polylineChar = null
         deviceCmdChar = null
+        fileDataChar = null
+        fileCtrlChar = null
+        negotiatedMtu = 23
+        latestNavJson = null
         handshakeDone = false
         clearQueue()
+        fileLinkDownListener?.invoke()
         if (engineRunning) {
             _status.update {
                 it.copy(
@@ -448,6 +589,18 @@ class BleManager(private val context: Context) {
                 // logging them is Phase 1; acting on them is Phase 2
                 // (see phase2/MediaSessionController).
                 Log.d(TAG, "device_cmd received: $text")
+            }
+            RpmloopProtocol.FILE_CTRL_UUID -> {
+                val parsed = try {
+                    JSONObject(text)
+                } catch (e: Exception) {
+                    null
+                }
+                if (parsed != null) {
+                    fileCtrlListener?.invoke(parsed)
+                } else {
+                    Log.w(TAG, "FILE_CTRL: unparseable message ignored")
+                }
             }
         }
     }

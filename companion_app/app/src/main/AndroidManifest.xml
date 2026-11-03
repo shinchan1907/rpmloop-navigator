@@ -22,6 +22,8 @@
     <!-- Foreground service, location type (Android 14 requires the typed permission) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <!-- Network: Nominatim search, OSRM routing, Google Maps Tile API downloads -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
