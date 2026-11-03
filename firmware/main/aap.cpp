@@ -448,18 +448,18 @@ static void send_service_discovery_response(void) {
     pb_init(&z, c, sizeof c); pb_varint(&z, 1, CH_SENSOR); pb_msg(&z, 2, &x);
     pb_msg(&w, 1, &z);
 
-    // video sink: H.264 BP 800x480 @30, UI area in the middle
+    // video sink: H.264 BP 480x320 @30 (testing/lag-fix: the 800x480 class was
+    // too heavy for this board's software H.264 decoder - frames decoded slower
+    // than they arrived and big keyframes were dropped whole, so the picture ran
+    // far behind the road. 480x320 is ~2.7x fewer pixels; density stays 200 so
+    // Maps UI labels stay large. Margins 0: the whole frame is UI area.)
     pb_init(&y, b, sizeof b);
-    pb_varint(&y, 1, 1);    // _800x480
+    pb_varint(&y, 1, 0);    // _480x320
     pb_varint(&y, 2, 2);    // _30 (the enum has _60 = 1, _30 = 2)
-    // Always hide the non-functional rail strip so map fills the full 320x240 screen.
-    // Touch is dedicated to map interactions (zoom-in +, zoom-out -, pan, route select).
-    bool hide_rail = CONFIG_AAM_HIDE_RAIL && g_app.full_screen;
-    int margin = hide_rail ? 160 - RAIL_PX : CONFIG_AAM_VIDEO_MARGIN_W;
-    g_video_margin_w = margin;
-    g_video_crop_x = margin / 2 + (hide_rail && !CONFIG_AAM_RIGHT_HAND_DRIVE ? RAIL_PX : 0);
-    pb_varint(&y, 3, margin);
-    pb_varint(&y, 4, CONFIG_AAM_VIDEO_MARGIN_H);
+    g_video_margin_w = 0;
+    g_video_crop_x = 0;
+    pb_varint(&y, 3, 0);
+    pb_varint(&y, 4, 0);
     pb_varint(&y, 5, CONFIG_AAM_VIDEO_DENSITY);
     pb_varint(&y, 8, 10000);  // square pixels
     pb_varint(&y, 10, 3);     // MEDIA_CODEC_VIDEO_H264_BP
@@ -473,7 +473,7 @@ static void send_service_discovery_response(void) {
 
     // input: capacitive touchscreen (CST3530) + a few keys. Field layout from aasdk's newer
     // InputSourceService.proto: keycodes packed, TouchScreen{width, height, type}.
-    pb_init(&y, b, sizeof b); pb_varint(&y, 1, 800); pb_varint(&y, 2, 480); pb_varint(&y, 3, 1);  // CAPACITIVE
+    pb_init(&y, b, sizeof b); pb_varint(&y, 1, 480); pb_varint(&y, 2, 320); pb_varint(&y, 3, 1);  // CAPACITIVE (declared; panel is resistive)
     pb_init(&x, a, sizeof a);
     static const uint8_t keys[] = { 4, 19, 20, 21, 22, 23, 84, 85, 87, 88 };
     pb_bytes(&x, 1, keys, sizeof keys);  // packed varints (all < 128)

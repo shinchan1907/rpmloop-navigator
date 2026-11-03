@@ -1,7 +1,7 @@
 // MiniNav-Mini: video.cpp
 // Changes from original MiniNav:
-//   - AU_SLOTS reduced from 4 → 2  (saves 640 KB PSRAM: 2 × 192 KB vs 4 × 512 KB)
-//   - AU_CAP   reduced from 512 KB → 192 KB (a 640x480 H.264 I-frame rarely exceeds 150 KB)
+//   - (testing/lag-fix) AU_SLOTS 3, AU_CAP 192 KB, stream declared 480x320,
+//     non-blocking AU drop - see git history for the earlier 4->2 / 512 KB story
 //   - Dual-task decoder DISABLED (CONFIG_ESP_H264_DUAL_TASK not set); single video task on Core 1
 //   - demo mode fully removed (no demo.h264, no from_phone==false paths)
 //   - SD card dump code removed
@@ -22,9 +22,11 @@
 static const char *TAG = "video";
 
 // ---- Memory budget for 2 MB PSRAM -----------------------------------------------------------
-// 2 slots × 96 KB = 192 KB for incoming H.264 access units (saving 192 KB PSRAM for H264 decoder DPB).
-#define AU_SLOTS 2
-#define AU_CAP   (96 * 1024)
+// testing/lag-fix: 3 slots x 192 KB = 576 KB. (Was 2 x 96 KB: at 800x480 a detailed
+// map keyframe routinely exceeds 96 KB and was dropped whole, freezing the picture
+// until a small enough keyframe arrived - a major source of the on-road lag.)
+#define AU_SLOTS 3
+#define AU_CAP   (192 * 1024)
 
 typedef struct {
     uint8_t *data;
@@ -85,11 +87,13 @@ bool video_push_au(const uint8_t *data, int len, bool from_phone) {
     }
 
     int idx;
-    // With only 2 PSRAM slots we can't afford to wait too long; 800 ms max then resync.
-    if (xQueueReceive(s_free_q, &idx, pdMS_TO_TICKS(800)) != pdTRUE) {
+    // testing/lag-fix: never wait for a slot - this runs on the network task and
+    // waiting stalls ACKs/touch and lets stale video pile up in the socket. If the
+    // decoder is behind, shed this AU at once and resync on the next keyframe.
+    if (xQueueReceive(s_free_q, &idx, 0) != pdTRUE) {
         g_vid_dropped++;
         s_need_idr = true;
-        ESP_LOGW(TAG, "decoder queue full, dropped; requesting keyframe");
+        ESP_LOGW(TAG, "decoder busy, AU shed; requesting keyframe");
         aap_request_keyframe();
         return false;
     }
