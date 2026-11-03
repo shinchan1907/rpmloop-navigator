@@ -18,3 +18,8 @@ node_modules/
 DerivedData/
 .idea/
 .vscode/
+.gradle/
+local.properties
+*.apk
+*.aab
+

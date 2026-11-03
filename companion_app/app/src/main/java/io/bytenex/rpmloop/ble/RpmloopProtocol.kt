@@ -8,7 +8,7 @@ import java.util.UUID
 /**
  * RPMLOOP BLE Protocol v3.0.0 — constants and JSON codecs.
  *
- * Source of truth: protocol/protocol_spec.json and protocol/fixtures/*.json
+ * Source of truth: protocol/protocol_spec.json and protocol/fixtures
  * in the firmware repo. Do not rename fields or UUIDs here without updating
  * the spec; the ESP32 firmware parses these payloads exactly as written.
  */
