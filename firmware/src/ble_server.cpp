@@ -3,6 +3,7 @@
 
 #include "ble_server.h"
 #include "ble_data.h"
+#include "file_receiver.h"
 #include <Arduino.h>
 #include <BLEDevice.h>
 #include <BLEServer.h>
@@ -19,6 +20,8 @@
 #define CHAR_MEDIA_ART_UUID "beb5483e-36e1-4688-b7f5-ea07361b26ad"
 #define CHAR_TRACKING_UUID  "beb5483e-36e1-4688-b7f5-ea07361b26ae"
 #define CHAR_DEVICE_CMD_UUID "beb5483e-36e1-4688-b7f5-ea07361b26af"
+#define CHAR_FILE_DATA_UUID "beb5483e-36e1-4688-b7f5-ea07361b26b0"
+#define CHAR_FILE_CTRL_UUID "beb5483e-36e1-4688-b7f5-ea07361b26b1"
 
 // Global instance
 RpmloopBLE rpmBle;
@@ -33,6 +36,8 @@ static BLECharacteristic* pMedia = nullptr;
 static BLECharacteristic* pMediaArt = nullptr;
 static BLECharacteristic* pTracking = nullptr;
 static BLECharacteristic* pDeviceCmd = nullptr;
+static BLECharacteristic* pFileData = nullptr;
+static BLECharacteristic* pFileCtrl = nullptr;
 
 static bool _connected = false;
 static bool _handshakeOk = false;
@@ -55,6 +60,8 @@ class ServerCallbacks : public BLEServerCallbacks {
         _connected = false;
         _handshakeOk = false;
         deviceState.ble = BleConnState::DISCONNECTED;
+        // Close any in-progress file transfer (its .part is kept for resume)
+        fileReceiver.onDisconnect();
         Serial.println("BLE: Client disconnected");
         // Restart advertising
         delay(500);
@@ -281,10 +288,31 @@ class TrackingCallback : public BLECharacteristicCallbacks {
     }
 };
 
+// ---- File transfer (protocol v3.1) ----
+// FILE_CTRL replies leave through the characteristic's notify.
+static void fileCtrlNotify(const char* json) {
+    if (!pFileCtrl) return;
+    pFileCtrl->setValue(json);
+    pFileCtrl->notify();
+}
+
+class FileDataCallback : public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic* c) override {
+        fileReceiver.onDataChunk(c->getData(), c->getLength());
+    }
+};
+
+class FileCtrlCallback : public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic* c) override {
+        String val = c->getValue();
+        fileReceiver.onControlMessage(val.c_str(), val.length());
+    }
+};
+
 // ---- RpmloopBLE implementation ----
 
 void RpmloopBLE::setupService() {
-    BLEService* pService = pServer->createService(BLEUUID(SERVICE_UUID), 30); // 30 handles
+    BLEService* pService = pServer->createService(BLEUUID(SERVICE_UUID), 40); // 40 handles (10 characteristics)
 
     // Handshake (read/write/notify)
     pHandshake = pService->createCharacteristic(
@@ -325,6 +353,19 @@ void RpmloopBLE::setupService() {
         BLECharacteristic::PROPERTY_READ |
         BLECharacteristic::PROPERTY_NOTIFY
     );
+
+    // File data (write-no-response — binary tile chunks, protocol v3.1)
+    pFileData = pService->createCharacteristic(CHAR_FILE_DATA_UUID, BLECharacteristic::PROPERTY_WRITE_NR);
+    pFileData->setCallbacks(new FileDataCallback());
+
+    // File control (write + notify — JSON transfer control, protocol v3.1)
+    pFileCtrl = pService->createCharacteristic(
+        CHAR_FILE_CTRL_UUID,
+        BLECharacteristic::PROPERTY_WRITE |
+        BLECharacteristic::PROPERTY_NOTIFY
+    );
+    pFileCtrl->setCallbacks(new FileCtrlCallback());
+    fileReceiver.begin(fileCtrlNotify);
 
     pService->start();
 }
