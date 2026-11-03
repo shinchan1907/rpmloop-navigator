@@ -3,7 +3,6 @@
 
 #include "tile_reader.h"
 #include "lgfx_config.h"
-#include "docs_data.h"
 #include <Arduino.h>
 #include <SD.h>
 #include <SPI.h>
@@ -491,17 +490,8 @@ bool TileReader::loadDocJpeg(const char* docName, uint16_t* outPixels, int targe
         }
     }
 
-    // 2. Built-in Flash fallback for Sunny's Documents (RC & Aadhaar)
-    if (strcmp(docName, "rc") == 0) {
-        return decodeJpegBuffer(RC_FRONT_JPG, RC_FRONT_JPG_LEN, outPixels, targetW, targetH);
-    } else if (strcmp(docName, "rc_back") == 0) {
-        return decodeJpegBuffer(RC_BACK_JPG, RC_BACK_JPG_LEN, outPixels, targetW, targetH);
-    } else if (strcmp(docName, "aadhar") == 0) {
-        return decodeJpegBuffer(AADHAAR_FRONT_JPG, AADHAAR_FRONT_JPG_LEN, outPixels, targetW, targetH);
-    } else if (strcmp(docName, "aadhar_back") == 0) {
-        return decodeJpegBuffer(AADHAAR_BACK_JPG, AADHAAR_BACK_JPG_LEN, outPixels, targetW, targetH);
-    }
-
+    // SD-only by design: documents are never embedded in the
+    // firmware. They live on the microSD card under /docs/.
     return false;
 }
 
