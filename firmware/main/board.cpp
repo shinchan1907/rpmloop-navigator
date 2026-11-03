@@ -91,7 +91,7 @@ public:
             p.offset_y     = 0;
             p.offset_rotation = 0;
             p.readable     = false;
-            p.invert       = true;    // most ST7789 panels need inverted colours
+            p.invert       = false;   // Normal un-inverted colours for daylight & Google Maps
             p.rgb_order    = false;   // BGR
             p.dlen_16bit   = false;
             p.bus_shared   = false;
@@ -198,64 +198,72 @@ static void draw_tick(lgfx::LGFX_Sprite &sp, int cx, int cy, uint32_t col) {
 }
 
 // ---- Splash / status screen ---------------------------------------------------------------
-// Modern automotive splash screen with RPL LOOP branding & visual step progress
+// High-End Automotive UI: Crisp, modern, sophisticated dashboard for motorcycle handlebars
 static void draw_status_screen(lgfx::LGFX_Sprite &sp) {
-    // 1. Clean daylight slate background
-    sp.fillSprite(c888(0xF1F5F9));
+    // 1. Sleek pearl-slate background with subtle dual-tone header band
+    sp.fillSprite(c888(0xF6F8FA));
 
-    // 2. Header Bar
-    sp.fillRoundRect(10, 8, 300, 34, 6, c888(0xFFFFFF));
-    sp.drawRoundRect(10, 8, 300, 34, 6, c888(0xE2E8F0));
+    // Top subtle brand accent bar
+    sp.fillRect(0, 0, LCD_W, 3, c888(0x2563EB)); // Royal blue brand stripe
 
-    // GPS Navigation Icon (Blue pill with white arrow)
-    sp.fillRoundRect(15, 13, 24, 24, 5, c888(0x2563EB));
-    sp.fillTriangle(27, 16, 20, 30, 34, 30, c888(0xFFFFFF));
+    // 2. Premium Header Card (Floating white card with rounded corners)
+    sp.fillRoundRect(8, 7, 304, 38, 7, c888(0xFFFFFF));
+    sp.drawRoundRect(8, 7, 304, 38, 7, c888(0xE2E8F0));
 
-    // Title: "RPMLOOP"
+    // Modern RPMLOOP Speed Compass Emblem
+    sp.fillRoundRect(14, 13, 26, 26, 6, c888(0x0F172A)); // Dark slate pill
+    sp.fillTriangle(27, 17, 19, 31, 27, 27, c888(0x38BDF8));
+    sp.fillTriangle(27, 17, 35, 31, 27, 27, c888(0x0284C7));
+
+    // Typography: "RPMLOOP" in bold + "COCKPIT NAV" in clean tracked caps
     sp.setTextColor(c888(0x0F172A));
     sp.setFont(&fonts::Font4);
     sp.setTextDatum(lgfx::top_left);
     sp.drawString("RPMLOOP", 46, 12);
 
-    // Subtitle
     sp.setTextColor(c888(0x64748B));
     sp.setFont(&fonts::Font0);
-    sp.drawString("NAVIGATOR", 168, 16);
+    sp.drawString("COCKPIT NAV", 172, 16);
 
-    // Status badge on the right
+    // Live Status Pill (Top Right)
     bool connected = g_app.stage >= STAGE_PHONE;
-    uint32_t badge_col = connected ? c888(0x10B981) : c888(0x3B82F6);
-    sp.fillRoundRect(242, 14, 62, 22, 11, badge_col);
-    sp.setTextColor(c888(0xFFFFFF));
+    bool is_video  = g_app.stage >= STAGE_VIDEO;
+    uint32_t status_bg = is_video ? c888(0xDCFCE7) : (connected ? c888(0xDBEAFE) : c888(0xF1F5F9));
+    uint32_t status_text = is_video ? c888(0x166534) : (connected ? c888(0x1E40AF) : c888(0x475569));
+    uint32_t dot_color   = is_video ? c888(0x16A34A) : (connected ? c888(0x2563EB) : c888(0x94A3B8));
+
+    sp.fillRoundRect(244, 14, 62, 24, 12, status_bg);
+    sp.fillCircle(252, 26, 3, dot_color);
+    sp.setTextColor(status_text);
     sp.setFont(&fonts::Font0);
     sp.setTextDatum(lgfx::middle_center);
-    sp.drawString(connected ? "ONLINE" : "STANDBY", 273, 25);
+    sp.drawString(is_video ? "LIVE" : (connected ? "LINKED" : "READY"), 278, 26);
     sp.setTextDatum(lgfx::top_left);
 
-    // 3. Wi-Fi / Hotspot Details Card
-    sp.fillRoundRect(10, 48, 300, 52, 8, c888(0xFFFFFF));
-    sp.drawRoundRect(10, 48, 300, 52, 8, c888(0xCBD5E1));
+    // 3. Elevated Hotspot Credentials Tile (Crisp, High-Contrast)
+    sp.fillRoundRect(8, 50, 304, 52, 7, c888(0xFFFFFF));
+    sp.drawRoundRect(8, 50, 304, 52, 7, c888(0xE2E8F0));
 
-    // Left column: Wi-Fi Name
-    sp.setTextColor(c888(0x64748B));
+    // Left Column: Hotspot Name
+    sp.setTextColor(c888(0x94A3B8));
     sp.setFont(&fonts::Font0);
-    sp.drawString("HOTSPOT SSID", 22, 54);
-    sp.setTextColor(c888(0x1E293B));
+    sp.drawString("HOTSPOT SSID", 20, 56);
+    sp.setTextColor(c888(0x0F172A));
     sp.setFont(&fonts::Font4);
-    sp.drawString(CONFIG_AAM_AP_SSID, 22, 68);
+    sp.drawString(CONFIG_AAM_AP_SSID, 20, 70);
 
-    // Divider
-    sp.drawLine(155, 54, 155, 94, c888(0xE2E8F0));
+    // Clean hairline vertical separator
+    sp.drawLine(152, 56, 152, 96, c888(0xE2E8F0));
 
-    // Right column: Password
-    sp.setTextColor(c888(0x64748B));
+    // Right Column: Passkey
+    sp.setTextColor(c888(0x94A3B8));
     sp.setFont(&fonts::Font0);
-    sp.drawString("KEY / PASSWORD", 168, 54);
+    sp.drawString("WPA2 PASSKEY", 166, 56);
     sp.setTextColor(c888(0x2563EB));
     sp.setFont(&fonts::Font4);
-    sp.drawString(CONFIG_AAM_AP_PASSWORD, 168, 68);
+    sp.drawString(CONFIG_AAM_AP_PASSWORD, 166, 70);
 
-    // 4. Progress Stepper (4 steps)
+    // 4. Milestone Pipeline Stepper (Segmented progress bar)
     int node_x[4] = { 46, 122, 198, 274 };
     int node_y = 126;
     sp.drawLine(node_x[0], node_y, node_x[3], node_y, c888(0xCBD5E1));
@@ -277,65 +285,65 @@ static void draw_status_screen(lgfx::LGFX_Sprite &sp) {
         bool current = active_step == i && active_step != 3;
 
         if (done) {
-            sp.fillCircle(nx, node_y, 13, c888(0x10B981));
+            sp.fillCircle(nx, node_y, 13, c888(0x10B981)); // Clean Emerald
             draw_tick(sp, nx, node_y - 1, c888(0xFFFFFF));
         } else if (current) {
-            sp.fillCircle(nx, node_y, 14, c888(0x2563EB));
-            sp.fillCircle(nx, node_y, 5, c888(0xFFFFFF));
+            sp.fillCircle(nx, node_y, 15, c888(0x2563EB)); // Royal Blue halo
+            sp.fillCircle(nx, node_y, 6, c888(0xFFFFFF));
         } else {
-            sp.fillCircle(nx, node_y, 13, c888(0xFFFFFF));
-            sp.drawCircle(nx, node_y, 13, c888(0x94A3B8));
+            sp.fillCircle(nx, node_y, 12, c888(0xFFFFFF));
+            sp.drawCircle(nx, node_y, 12, c888(0xCBD5E1));
         }
 
-        sp.setTextColor(c888(done ? 0x059669 : (current ? 0x2563EB : 0x64748B)));
+        sp.setTextColor(c888(done ? 0x059669 : (current ? 0x2563EB : 0x94A3B8)));
         sp.setFont(&fonts::Font0);
         sp.setTextDatum(lgfx::middle_center);
         sp.drawString(step_names[i], nx, node_y + 22);
         sp.setTextDatum(lgfx::top_left);
     }
 
-    // 5. Dynamic Guidance / Status Card at bottom
+    // 5. Intelligent Guidance Card (Elevated floating pill)
     bool has_err = g_app.error[0] != 0;
-    uint32_t card_bg = has_err ? c888(0xFEE2E2) : c888(0xFFFFFF);
-    uint32_t card_border = has_err ? c888(0xFCA5A5) : c888(0xBFDBFE);
-    sp.fillRoundRect(10, 168, 300, 64, 8, card_bg);
-    sp.drawRoundRect(10, 168, 300, 64, 8, card_border);
+    uint32_t card_bg = has_err ? c888(0xFEF2F2) : c888(0xFFFFFF);
+    uint32_t card_border = has_err ? c888(0xFECACA) : c888(0xE2E8F0);
+    sp.fillRoundRect(8, 168, 304, 64, 7, card_bg);
+    sp.drawRoundRect(8, 168, 304, 64, 7, card_border);
 
     if (has_err) {
         sp.setTextColor(c888(0xDC2626));
         sp.setFont(&fonts::Font2);
-        sp.drawString("Connection Issue:", 20, 174);
+        sp.drawString("Session Alert", 20, 174);
         sp.setFont(&fonts::Font0);
-        sp.setTextColor(c888(0x991B1B));
+        sp.setTextColor(c888(0xB91C1C));
         sp.drawString(g_app.error, 20, 194);
         sp.drawString("Tip: Restart 'Headunit server' on phone", 20, 210);
     } else {
         sp.setFont(&fonts::Font2);
         if (g_app.stage == STAGE_AP) {
             sp.setTextColor(c888(0x1E40AF));
-            sp.drawString("Waiting for connection...", 20, 174);
+            sp.drawString("Waiting for Connection...", 20, 174);
             sp.setFont(&fonts::Font0);
             sp.setTextColor(c888(0x475569));
-            sp.drawString("Connect phone to hotspot, then start AA server", 20, 196);
+            sp.drawString("Connect phone Wi-Fi to 'RPL Loop'", 20, 196);
             sp.drawString("Then tap 'Start headunit server' in Android Auto", 20, 210);
         } else if (g_app.stage == STAGE_PHONE || g_app.stage == STAGE_TCP) {
             sp.setTextColor(c888(0x0284C7));
-            sp.drawString("Phone Linked! Handshaking...", 20, 174);
+            sp.drawString("Phone Linked - Initializing...", 20, 174);
             sp.setFont(&fonts::Font0);
             sp.setTextColor(c888(0x475569));
-            sp.drawString("Starting Android Auto Headunit session", 20, 196);
+            sp.drawString("Securing TLS link with Android Auto", 20, 196);
             if (g_app.phone_ip[0]) sp.drawString(g_app.phone_ip, 20, 210);
         } else if (g_app.stage >= STAGE_VERSION && g_app.stage < STAGE_VIDEO) {
-            sp.setTextColor(c888(0x059669));
-            sp.drawString("Ready! Launching Maps...", 20, 174);
+            sp.setTextColor(c888(0x16A34A));
+            sp.drawString("Launching Google Maps...", 20, 174);
             sp.setFont(&fonts::Font0);
-            sp.setTextColor(c888(0x047857));
-            sp.drawString("Securing TLS session & initializing video feed", 20, 196);
+            sp.setTextColor(c888(0x15803D));
+            sp.drawString("Preparing video pipeline & touch digitizer", 20, 196);
         } else {
-            sp.setTextColor(c888(0x059669));
+            sp.setTextColor(c888(0x16A34A));
             sp.drawString("Navigation Active", 20, 174);
             sp.setFont(&fonts::Font0);
-            sp.setTextColor(c888(0x047857));
+            sp.setTextColor(c888(0x15803D));
             sp.drawString("Live Google Maps streaming on display", 20, 196);
         }
     }
