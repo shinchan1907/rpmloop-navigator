@@ -2,7 +2,7 @@ menu "MiniNav-Mini (Android Auto minimap)"
 
     config AAM_AP_SSID
         string "WiFi access point name (phone joins this)"
-        default "RPL Loop"
+        default "RPM Loop"
 
     config AAM_AP_PASSWORD
         string "WiFi access point password (8+ characters)"
@@ -15,7 +15,7 @@ menu "MiniNav-Mini (Android Auto minimap)"
 
     config AAM_HOTSPOT_SSID
         string "Phone hotspot name the board joins (alternative to the access point)"
-        default "RPL Loop"
+        default "RPM Loop"
 
     config AAM_HOTSPOT_PASSWORD
         string "Phone hotspot password"

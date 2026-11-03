@@ -100,9 +100,9 @@ idf.py -p PORT flash monitor
 
 ### 1. Wi-Fi Hotspot Setup
 * Power up the board. The setup screen will display:
-  * **Hotspot SSID:** `RPL Loop`
+  * **Hotspot SSID:** `RPM Loop`
   * **Password:** `88888888`
-* Connect your Android phone's Wi-Fi to **RPL Loop** (or turn on your phone's Personal Hotspot with SSID `RPL Loop` and password `88888888`).
+* Connect your Android phone's Wi-Fi to **RPM Loop** (or turn on your phone's Personal Hotspot with SSID `RPM Loop` and password `88888888`).
 
 ### 2. Enable Android Auto Developer Mode & Start Headunit Server
 1. On your Android phone, go to **Settings** → search for **Android Auto**.

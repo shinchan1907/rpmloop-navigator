@@ -324,7 +324,7 @@ static void draw_status_screen(lgfx::LGFX_Sprite &sp) {
             sp.drawString("Waiting for Connection...", 20, 174);
             sp.setFont(&fonts::Font0);
             sp.setTextColor(c888(0x475569));
-            sp.drawString("Connect phone Wi-Fi to 'RPL Loop'", 20, 196);
+            sp.drawString("Connect phone Wi-Fi to 'RPM Loop'", 20, 196);
             sp.drawString("Then tap 'Start headunit server' in Android Auto", 20, 210);
         } else if (g_app.stage == STAGE_PHONE || g_app.stage == STAGE_TCP) {
             sp.setTextColor(c888(0x0284C7));
