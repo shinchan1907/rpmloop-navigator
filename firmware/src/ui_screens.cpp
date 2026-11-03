@@ -1,12 +1,13 @@
 // RPMLOOP Navigator UI — All Screens Implementation (v3.0 Flagship Redesign)
 // Modern Light Slate & Vibrant Accents UI for 320x240 ST7789V Landscape Display
-// Features: Animated Instagram Splash (Bold Montserrat 34), Paged Home Dashboard (2 cards/page, button navigation),
+// Features: RE boot stage + Animated Instagram Splash (Bold Montserrat 34), Paged Home Dashboard (2 cards/page, swipe + button navigation),
 // Navigation, Maps, Music, Tracking, Settings, Bike Docs (Fullscreen 1:1 view)
 
 #include "ui_screens.h"
 #include "ble_data.h"
 #include "ble_server.h"
 #include "tile_reader.h"
+#include "re_logo.h"
 #include "map_renderer.h"
 #include "lvgl_port.h"
 #include <Arduino.h>
@@ -19,16 +20,17 @@ extern const lv_font_t font_montserrat_bold_34;
 // ================================================================
 // 1. VISUAL THEME — MODERN LIGHT DASHBOARD PALETTE
 // ================================================================
-#define COL_BG_TOP       lv_color_hex(0xF1F5F9)  // Slate 100 - Clean sleek off-white top
-#define COL_BG_BOT       lv_color_hex(0xE2E8F0)  // Slate 200 - Rich soft vertical gradient bottom
+#define COL_BG_TOP       lv_color_hex(0xF8FAFC)  // Slate 50 - Airy near-white gradient top
+#define COL_BG_BOT       lv_color_hex(0xE8EEF6)  // Soft blue-grey gradient bottom
 #define COL_CARD_BG      lv_color_hex(0xFFFFFF)  // Pure White Card Fill
-#define COL_CARD_BORDER  lv_color_hex(0xCBD5E1)  // Slate 300 - Crisp 1px Outline
+#define COL_CARD_BORDER  lv_color_hex(0xE2E8F0)  // Slate 200 - Hairline 1px Outline / Divider
 #define COL_CARD_PRESSED lv_color_hex(0xF8FAFC)  // Slate 50 - Pressed State Fill
 #define COL_CARD_INNER   lv_color_hex(0xF1F5F9)  // Sub-element Fill
+#define COL_SHADOW       lv_color_hex(0x94A3B8)  // Slate 400 - Soft card shadow tint
 
 // Typography Colors (High contrast, razor sharp readability in outdoor daylight)
 #define COL_TEXT_PRI     lv_color_hex(0x0F172A)  // Slate 900 - Deep Charcoal Black
-#define COL_TEXT_SEC     lv_color_hex(0x475569)  // Slate 600 - Medium Slate Gray
+#define COL_TEXT_SEC     lv_color_hex(0x64748B)  // Slate 500 - Secondary Gray
 #define COL_TEXT_MUTED   lv_color_hex(0x94A3B8)  // Slate 400 - Clean Muted Slate
 
 // ONE Accent Color per Feature (Used for icon badge + accent bar)
@@ -47,7 +49,18 @@ static void apply_screen_theme(lv_obj_t* scr) {
     lv_obj_set_style_pad_all(scr, 0, 0);
 }
 
+// Helper: Signature soft card shadow — gentle depth, never a grey blob.
+// Used by every white card surface so depth stays consistent app-wide.
+static void apply_card_shadow(lv_obj_t* obj) {
+    lv_obj_set_style_shadow_width(obj, 14, 0);
+    lv_obj_set_style_shadow_ofs_y(obj, 4, 0);
+    lv_obj_set_style_shadow_color(obj, COL_SHADOW, 0);
+    lv_obj_set_style_shadow_opa(obj, 45, 0);
+}
+
 // ---- Forward declarations ----
+static void create_re_boot_screen();
+static void re_boot_begin();
 static void create_splash_screen();
 static void create_connect_screen();
 static void create_home_screen();
@@ -69,6 +82,7 @@ static void update_tracking_screen();
 static void update_docs_screen();
 
 // ---- Screen objects ----
+static lv_obj_t* scr_re        = nullptr;
 static lv_obj_t* scr_splash    = nullptr;
 static lv_obj_t* scr_connect   = nullptr;
 static lv_obj_t* scr_home      = nullptr;
@@ -99,6 +113,14 @@ static lv_obj_t* home_next_btn = nullptr;
 static lv_obj_t* home_bt_status = nullptr;
 static lv_obj_t* home_speed_label = nullptr;
 static lv_obj_t* home_sd_label = nullptr;
+static lv_obj_t* home_bt_pill = nullptr;
+static lv_obj_t* home_sd_pill = nullptr;
+
+// Touch drag / swipe tracking (manual press/drag/release — LVGL gesture
+// events are unreliable on this slow-polled resistive panel)
+static int16_t drag_start_x = 0;
+static int16_t drag_start_y = 0;
+static bool is_page_dragging = false;
 
 // Dynamic labels for sub-screens
 static lv_obj_t* connect_status_label = nullptr;
@@ -296,8 +318,11 @@ static void create_splash_screen() {
         lv_obj_set_size(splash_canvas, 320, 240);
         lv_obj_set_pos(splash_canvas, 0, 0);
 
-        // Low-overhead 50ms timer for slow smooth pan
+        // Low-overhead 50ms timer for slow smooth pan. Created paused:
+        // the RE boot stage resumes it when the splash becomes visible,
+        // so the splash lifecycle runs from first visibility, not ui_init
         splash_anim_timer = lv_timer_create(splash_anim_timer_cb, 50, nullptr);
+        lv_timer_pause(splash_anim_timer);
     } else {
         // Fallback to static background gradient
         apply_screen_theme(scr_splash);
@@ -398,15 +423,103 @@ static void create_splash_screen() {
     lv_anim_set_path_cb(&a_shim, lv_anim_path_ease_out);
     lv_anim_start(&a_shim);
 
-    // Total splash ~2.4s, then transition into Home
-    splash_timer = lv_timer_create(splash_timer_cb, 2400, nullptr);
-    lv_timer_set_repeat_count(splash_timer, 1);
+    // NOTE: the one-shot advance timer (splash_timer) is NOT created here.
+    // The RE boot stage creates it in re_advance_cb() at the moment the
+    // splash becomes visible, so the splash always gets its full
+    // SPLASH_DURATION_MS on screen regardless of boot-stage timing.
 }
 
 // ================================================================
-// 3. HOME SCREEN (Paged 2 Large Cards/Page, Buttons + Dots Navigation)
+// 2b. ROYAL ENFIELD BOOT STAGE (owner's Hunter 350 artwork)
+// Runs BEFORE the RPMLOOP splash: logo fades in over ~0.7s, holds,
+// fades out from ~3.1s, and hands over to the splash at ~3.85s.
+// The splash advance timer starts only when the splash becomes
+// visible, so the splash always runs its full duration.
+// ================================================================
+#define RE_BG_COLOR        lv_color_hex(0x962FBF)  // Mid Instagram-gradient tone (boot logo artwork)
+#define RE_FADE_IN_MS      700
+#define RE_FADE_OUT_AT_MS  3100
+#define RE_FADE_OUT_MS     700
+#define RE_ADVANCE_AT_MS   3850
+#define SPLASH_DURATION_MS 4500
+
+static lv_obj_t* re_img_obj = nullptr;
+static uint16_t* re_img_buf = nullptr;
+static lv_img_dsc_t re_img_dsc;
+static lv_timer_t* re_fadeout_timer = nullptr;
+static lv_timer_t* re_advance_timer = nullptr;
+
+static void re_advance_cb(lv_timer_t* timer) {
+    lv_timer_del(timer);
+    re_advance_timer = nullptr;
+
+    // The RPMLOOP splash becomes visible now: start its full lifecycle
+    if (splash_anim_timer) lv_timer_resume(splash_anim_timer);
+    splash_timer = lv_timer_create(splash_timer_cb, SPLASH_DURATION_MS, nullptr);
+    lv_timer_set_repeat_count(splash_timer, 1);
+
+    lv_scr_load_anim(scr_splash, LV_SCR_LOAD_ANIM_FADE_IN, 300, 0, false);
+    current_screen = Screen::SPLASH;
+}
+
+static void re_fadeout_cb(lv_timer_t* timer) {
+    lv_timer_del(timer);
+    re_fadeout_timer = nullptr;
+    if (re_img_obj) lv_obj_fade_out(re_img_obj, RE_FADE_OUT_MS, 0);
+}
+
+static void create_re_boot_screen() {
+    scr_re = lv_obj_create(nullptr);
+    lv_obj_remove_style_all(scr_re);
+    lv_obj_set_size(scr_re, 320, 240);
+    // Mid-gradient purple from the very first frame: any JPEG decode
+    // delay shows a tone that blends with the artwork's gradient
+    lv_obj_set_style_bg_color(scr_re, RE_BG_COLOR, 0);
+    lv_obj_set_style_bg_opa(scr_re, LV_OPA_COVER, 0);
+
+    // Decode the embedded 320x240 logo JPEG into a PSRAM frame buffer
+    re_img_buf = (uint16_t*)ps_malloc(320 * 240 * sizeof(uint16_t));
+    if (!re_img_buf) {
+        re_img_buf = (uint16_t*)malloc(320 * 240 * sizeof(uint16_t));
+    }
+    if (!re_img_buf) {
+        Serial.println("[RE] Logo buffer alloc failed - gradient stage only");
+        return;
+    }
+
+    re_img_dsc.header.always_zero = 0;
+    re_img_dsc.header.w = 320;
+    re_img_dsc.header.h = 240;
+    re_img_dsc.data_size = 320 * 240 * sizeof(uint16_t);
+    re_img_dsc.header.cf = LV_IMG_CF_TRUE_COLOR;
+    re_img_dsc.data = (const uint8_t*)re_img_buf;
+
+    if (tileReader.decodeJpegBuffer(RE_LOGO_JPG, RE_LOGO_JPG_LEN, re_img_buf, 320, 240)) {
+        re_img_obj = lv_img_create(scr_re);
+        lv_img_set_src(re_img_obj, &re_img_dsc);
+        lv_obj_set_pos(re_img_obj, 0, 0);
+        lv_obj_set_style_opa(re_img_obj, LV_OPA_TRANSP, 0);  // re_boot_begin() fades it in
+    } else {
+        // Decode failed: plain gradient-tone stage; the stage timers
+        // started by re_boot_begin() still hand over on schedule
+        Serial.println("[RE] Logo JPEG decode failed - gradient stage only");
+    }
+}
+
+// Called once from ui_init() right after the RE screen is loaded
+static void re_boot_begin() {
+    if (re_img_obj) lv_obj_fade_in(re_img_obj, RE_FADE_IN_MS, 0);
+    re_fadeout_timer = lv_timer_create(re_fadeout_cb, RE_FADE_OUT_AT_MS, nullptr);
+    lv_timer_set_repeat_count(re_fadeout_timer, 1);
+    re_advance_timer = lv_timer_create(re_advance_cb, RE_ADVANCE_AT_MS, nullptr);
+    lv_timer_set_repeat_count(re_advance_timer, 1);
+}
+
+// ================================================================
+// 3. HOME SCREEN (Paged 2 Large Cards/Page, Swipe + Buttons + Dots)
 // ================================================================
 static void home_nav_cb(lv_event_t* e) {
+    if (is_page_dragging) return;
     if (rpmBle.isReady()) {
         ui_navigate(Screen::NAVIGATION);
     } else {
@@ -416,10 +529,12 @@ static void home_nav_cb(lv_event_t* e) {
 }
 
 static void home_maps_cb(lv_event_t* e) {
+    if (is_page_dragging) return;
     ui_navigate(Screen::MAPS);
 }
 
 static void home_music_cb(lv_event_t* e) {
+    if (is_page_dragging) return;
     if (rpmBle.isReady()) {
         ui_navigate(Screen::MUSIC);
     } else {
@@ -429,16 +544,19 @@ static void home_music_cb(lv_event_t* e) {
 }
 
 static void home_track_cb(lv_event_t* e) {
+    if (is_page_dragging) return;
     ui_navigate(Screen::TRACKING);
 }
 
 static void home_docs_cb(lv_event_t* e) {
+    if (is_page_dragging) return;
     docs_exit_fullscreen();
     show_doc(DocType::RC);
     ui_navigate(Screen::DOCS);
 }
 
 static void home_settings_cb(lv_event_t* e) {
+    if (is_page_dragging) return;
     ui_navigate(Screen::SETTINGS);
 }
 
@@ -460,17 +578,15 @@ static lv_obj_t* create_home_card(lv_obj_t* parent, int x, int y,
     lv_obj_set_style_border_width(card, 1, 0);
     lv_obj_set_style_border_color(card, COL_CARD_BORDER, 0);
     lv_obj_set_style_radius(card, 14, 0);
-    lv_obj_set_style_shadow_width(card, 6, 0);
-    lv_obj_set_style_shadow_color(card, lv_color_hex(0x94A3B8), 0);
-    lv_obj_set_style_shadow_opa(card, LV_OPA_30, 0);
-    lv_obj_set_style_shadow_ofs_y(card, 2, 0);
+    apply_card_shadow(card);
     lv_obj_set_style_pad_all(card, 0, 0);
+    lv_obj_add_flag(card, LV_OBJ_FLAG_EVENT_BUBBLE);  // let presses bubble up to the screen swipe tracker
     lv_obj_add_event_cb(card, cb, LV_EVENT_CLICKED, nullptr);
 
-    // 1. 4px Accent Bar on Left Edge
+    // 1. 3px Accent Bar on Left Edge
     lv_obj_t* bar = lv_obj_create(card);
     lv_obj_remove_style_all(bar);
-    lv_obj_set_size(bar, 4, 52);
+    lv_obj_set_size(bar, 3, 52);
     lv_obj_align(bar, LV_ALIGN_LEFT_MID, 0, 0);
     lv_obj_set_style_bg_color(bar, accent, 0);
     lv_obj_set_style_bg_opa(bar, LV_OPA_COVER, 0);
@@ -483,10 +599,7 @@ static lv_obj_t* create_home_card(lv_obj_t* parent, int x, int y,
     lv_obj_set_size(circle, 44, 44);
     lv_obj_align(circle, LV_ALIGN_LEFT_MID, 14, 0);
     lv_obj_set_style_bg_color(circle, accent, 0);
-    lv_obj_set_style_bg_opa(circle, LV_OPA_20, 0);
-    lv_obj_set_style_border_width(circle, 1, 0);
-    lv_obj_set_style_border_color(circle, accent, 0);
-    lv_obj_set_style_border_opa(circle, LV_OPA_40, 0);
+    lv_obj_set_style_bg_opa(circle, 31, 0);  // accent at ~12% — soft premium tint
     lv_obj_set_style_radius(circle, 22, 0);
     lv_obj_clear_flag(circle, LV_OBJ_FLAG_CLICKABLE);
 
@@ -502,6 +615,8 @@ static lv_obj_t* create_home_card(lv_obj_t* parent, int x, int y,
     lv_label_set_text(t, title);
     lv_obj_set_style_text_color(t, COL_TEXT_PRI, 0);
     lv_obj_set_style_text_font(t, &lv_font_montserrat_20, 0);
+    lv_obj_set_width(t, 196);
+    lv_label_set_long_mode(t, LV_LABEL_LONG_DOT);
     lv_obj_align(t, LV_ALIGN_TOP_LEFT, 68, 14);
     lv_obj_clear_flag(t, LV_OBJ_FLAG_CLICKABLE);
 
@@ -556,7 +671,7 @@ void ui_home_set_page(int page) {
                 lv_obj_set_style_bg_opa(home_dot_objs[i], LV_OPA_COVER, 0);
             } else {
                 lv_obj_set_size(home_dot_objs[i], 6, 6);
-                lv_obj_set_style_bg_color(home_dot_objs[i], COL_CARD_BORDER, 0);
+                lv_obj_set_style_bg_color(home_dot_objs[i], COL_TEXT_MUTED, 0);
                 lv_obj_set_style_bg_opa(home_dot_objs[i], LV_OPA_COVER, 0);
             }
         }
@@ -579,11 +694,57 @@ static void dot2_click_cb(lv_event_t* e) { ui_home_set_page(2); }
 static void prev_click_cb(lv_event_t* e) { if (home_cur_page > 0) ui_home_set_page(home_cur_page - 1); }
 static void next_click_cb(lv_event_t* e) { if (home_cur_page < 2) ui_home_set_page(home_cur_page + 1); }
 
+// Manual swipe tracker — registered on the Home screen; card/page/container
+// objects carry LV_OBJ_FLAG_EVENT_BUBBLE so presses anywhere in the paged
+// area reach it. LV_EVENT_GESTURE is deliberately NOT used: gesture events
+// never fire reliably on this slow-polled resistive touch panel.
+static void home_touch_event_cb(lv_event_t* e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_indev_t* indev = lv_indev_get_act();
+    if (!indev) return;
+
+    lv_point_t p;
+    lv_indev_get_point(indev, &p);
+
+    if (code == LV_EVENT_PRESSED) {
+        drag_start_x = p.x;
+        drag_start_y = p.y;
+        is_page_dragging = false;
+        lv_anim_del(home_pages_cont, nullptr);  // a fresh grab kills any in-flight page slide
+    } else if (code == LV_EVENT_PRESSING) {
+        int16_t dx = p.x - drag_start_x;
+        int16_t dy = p.y - drag_start_y;
+        if (abs(dx) > 15 && abs(dx) > abs(dy)) {
+            is_page_dragging = true;
+        }
+    } else if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
+        int16_t dx = p.x - drag_start_x;
+        int16_t dy = p.y - drag_start_y;
+        if (abs(dx) > 40 && abs(dx) > abs(dy)) {
+            is_page_dragging = true; // suppress the card click this release would otherwise fire
+            if (dx < 0 && home_cur_page < 2) {
+                ui_home_set_page(home_cur_page + 1);
+            } else if (dx > 0 && home_cur_page > 0) {
+                ui_home_set_page(home_cur_page - 1);
+            }
+        } else {
+            // Short tap: allow the card click through
+            is_page_dragging = false;
+        }
+    }
+}
+
 static void create_home_screen() {
     scr_home = lv_obj_create(nullptr);
     apply_screen_theme(scr_home);
     lv_obj_clear_flag(scr_home, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_scrollbar_mode(scr_home, LV_SCROLLBAR_MODE_OFF);
+
+    // Manual swipe tracking on the whole Home screen (see home_touch_event_cb)
+    lv_obj_add_event_cb(scr_home, home_touch_event_cb, LV_EVENT_PRESSED, nullptr);
+    lv_obj_add_event_cb(scr_home, home_touch_event_cb, LV_EVENT_PRESSING, nullptr);
+    lv_obj_add_event_cb(scr_home, home_touch_event_cb, LV_EVENT_RELEASED, nullptr);
+    lv_obj_add_event_cb(scr_home, home_touch_event_cb, LV_EVENT_PRESS_LOST, nullptr);
 
     // ================================================================
     // TOP STATUS BAR (Slim 32px height, touch targets >= 44px)
@@ -592,21 +753,24 @@ static void create_home_screen() {
     lv_obj_remove_style_all(status_bar);
     lv_obj_set_size(status_bar, 320, 32);
     lv_obj_set_pos(status_bar, 0, 0);
+    lv_obj_set_style_bg_color(status_bar, COL_CARD_BG, 0);
+    lv_obj_set_style_bg_opa(status_bar, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(status_bar, 1, 0);
+    lv_obj_set_style_border_color(status_bar, COL_CARD_BORDER, 0);
+    lv_obj_set_style_border_side(status_bar, LV_BORDER_SIDE_BOTTOM, 0);
 
     // 1. BLE Pill (x = 10, y = 3, size = 68x26, touch target >= 44px)
-    lv_obj_t* bt_pill = lv_obj_create(status_bar);
-    lv_obj_remove_style_all(bt_pill);
-    lv_obj_set_size(bt_pill, 68, 26);
-    lv_obj_set_pos(bt_pill, 10, 3);
-    lv_obj_set_style_bg_color(bt_pill, COL_CARD_BG, 0);
-    lv_obj_set_style_bg_opa(bt_pill, LV_OPA_COVER, 0);
-    lv_obj_set_style_radius(bt_pill, 12, 0);
-    lv_obj_set_style_border_width(bt_pill, 1, 0);
-    lv_obj_set_style_border_color(bt_pill, COL_CARD_BORDER, 0);
-    lv_obj_add_flag(bt_pill, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_add_event_cb(bt_pill, home_bt_click_cb, LV_EVENT_CLICKED, nullptr);
+    home_bt_pill = lv_obj_create(status_bar);
+    lv_obj_remove_style_all(home_bt_pill);
+    lv_obj_set_size(home_bt_pill, 68, 26);
+    lv_obj_set_pos(home_bt_pill, 10, 3);
+    lv_obj_set_style_bg_color(home_bt_pill, ACCENT_DOCS, 0);
+    lv_obj_set_style_bg_opa(home_bt_pill, 31, 0);  // status colour at ~12% tint; update_home_screen re-tints on state change
+    lv_obj_set_style_radius(home_bt_pill, 12, 0);
+    lv_obj_add_flag(home_bt_pill, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(home_bt_pill, home_bt_click_cb, LV_EVENT_CLICKED, nullptr);
 
-    home_bt_status = lv_label_create(bt_pill);
+    home_bt_status = lv_label_create(home_bt_pill);
     lv_label_set_text(home_bt_status, LV_SYMBOL_BLUETOOTH " Ready");
     lv_obj_set_style_text_color(home_bt_status, ACCENT_DOCS, 0);
     lv_obj_set_style_text_font(home_bt_status, &lv_font_montserrat_12, 0);
@@ -618,11 +782,9 @@ static void create_home_screen() {
     lv_obj_remove_style_all(speed_pill);
     lv_obj_set_size(speed_pill, 80, 26);
     lv_obj_set_pos(speed_pill, 84, 3);
-    lv_obj_set_style_bg_color(speed_pill, COL_CARD_BG, 0);
-    lv_obj_set_style_bg_opa(speed_pill, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(speed_pill, ACCENT_TRACK, 0);
+    lv_obj_set_style_bg_opa(speed_pill, 31, 0);  // accent at ~12% tint
     lv_obj_set_style_radius(speed_pill, 12, 0);
-    lv_obj_set_style_border_width(speed_pill, 1, 0);
-    lv_obj_set_style_border_color(speed_pill, ACCENT_TRACK, 0);
     lv_obj_add_flag(speed_pill, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(speed_pill, home_track_cb, LV_EVENT_CLICKED, nullptr);
 
@@ -634,19 +796,17 @@ static void create_home_screen() {
     lv_obj_clear_flag(home_speed_label, LV_OBJ_FLAG_CLICKABLE);
 
     // 3. SD Storage Pill (x = 170, y = 3, size = 86x26)
-    lv_obj_t* sd_pill = lv_obj_create(status_bar);
-    lv_obj_remove_style_all(sd_pill);
-    lv_obj_set_size(sd_pill, 86, 26);
-    lv_obj_set_pos(sd_pill, 170, 3);
-    lv_obj_set_style_bg_color(sd_pill, COL_CARD_BG, 0);
-    lv_obj_set_style_bg_opa(sd_pill, LV_OPA_COVER, 0);
-    lv_obj_set_style_radius(sd_pill, 12, 0);
-    lv_obj_set_style_border_width(sd_pill, 1, 0);
-    lv_obj_set_style_border_color(sd_pill, COL_CARD_BORDER, 0);
-    lv_obj_add_flag(sd_pill, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_add_event_cb(sd_pill, home_maps_cb, LV_EVENT_CLICKED, nullptr);
+    home_sd_pill = lv_obj_create(status_bar);
+    lv_obj_remove_style_all(home_sd_pill);
+    lv_obj_set_size(home_sd_pill, 86, 26);
+    lv_obj_set_pos(home_sd_pill, 170, 3);
+    lv_obj_set_style_bg_color(home_sd_pill, COL_TEXT_SEC, 0);
+    lv_obj_set_style_bg_opa(home_sd_pill, 31, 0);  // status colour at ~12% tint; update_home_screen re-tints on state change
+    lv_obj_set_style_radius(home_sd_pill, 12, 0);
+    lv_obj_add_flag(home_sd_pill, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(home_sd_pill, home_maps_cb, LV_EVENT_CLICKED, nullptr);
 
-    home_sd_label = lv_label_create(sd_pill);
+    home_sd_label = lv_label_create(home_sd_pill);
     lv_label_set_text(home_sd_label, LV_SYMBOL_SD_CARD " Standby");
     lv_obj_set_style_text_color(home_sd_label, COL_TEXT_SEC, 0);
     lv_obj_set_style_text_font(home_sd_label, &lv_font_montserrat_12, 0);
@@ -658,11 +818,9 @@ static void create_home_screen() {
     lv_obj_remove_style_all(set_pill);
     lv_obj_set_size(set_pill, 48, 26);
     lv_obj_set_pos(set_pill, 262, 3);
-    lv_obj_set_style_bg_color(set_pill, COL_CARD_BG, 0);
-    lv_obj_set_style_bg_opa(set_pill, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(set_pill, ACCENT_SETTINGS, 0);
+    lv_obj_set_style_bg_opa(set_pill, 31, 0);  // accent at ~12% tint
     lv_obj_set_style_radius(set_pill, 12, 0);
-    lv_obj_set_style_border_width(set_pill, 1, 0);
-    lv_obj_set_style_border_color(set_pill, COL_CARD_BORDER, 0);
     lv_obj_add_flag(set_pill, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(set_pill, home_settings_cb, LV_EVENT_CLICKED, nullptr);
 
@@ -682,12 +840,14 @@ static void create_home_screen() {
     lv_obj_set_pos(home_pages_cont, 0, 34);
     lv_obj_clear_flag(home_pages_cont, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_scrollbar_mode(home_pages_cont, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_add_flag(home_pages_cont, LV_OBJ_FLAG_EVENT_BUBBLE);
 
     // --- PAGE 1: Navigate, Offline Map (x = 0) ---
     lv_obj_t* page1 = lv_obj_create(home_pages_cont);
     lv_obj_remove_style_all(page1);
     lv_obj_set_size(page1, 320, 174);
     lv_obj_set_pos(page1, 0, 0);
+    lv_obj_add_flag(page1, LV_OBJ_FLAG_EVENT_BUBBLE);
 
     create_home_card(page1, 12, 2,  LV_SYMBOL_GPS,   "Navigate",    "Turn-by-turn routing",    ACCENT_NAV,  home_nav_cb);
     create_home_card(page1, 12, 88, LV_SYMBOL_IMAGE, "Offline Map", "Preloaded SD route pack", ACCENT_MAPS, home_maps_cb);
@@ -697,6 +857,7 @@ static void create_home_screen() {
     lv_obj_remove_style_all(page2);
     lv_obj_set_size(page2, 320, 174);
     lv_obj_set_pos(page2, 320, 0);
+    lv_obj_add_flag(page2, LV_OBJ_FLAG_EVENT_BUBBLE);
 
     create_home_card(page2, 12, 2,  LV_SYMBOL_AUDIO,  "Music",    "Now playing media",     ACCENT_MUSIC, home_music_cb);
     create_home_card(page2, 12, 88, LV_SYMBOL_CHARGE, "Tracking", "Trip & ride telemetry", ACCENT_TRACK, home_track_cb);
@@ -706,6 +867,7 @@ static void create_home_screen() {
     lv_obj_remove_style_all(page3);
     lv_obj_set_size(page3, 320, 174);
     lv_obj_set_pos(page3, 640, 0);
+    lv_obj_add_flag(page3, LV_OBJ_FLAG_EVENT_BUBBLE);
 
     create_home_card(page3, 12, 2,  LV_SYMBOL_FILE,     "Bike Docs", "RC, DL & Aadhaar", ACCENT_DOCS,     home_docs_cb);
     create_home_card(page3, 12, 88, LV_SYMBOL_SETTINGS, "Settings",  "Display & system", ACCENT_SETTINGS, home_settings_cb);
@@ -786,7 +948,7 @@ static void create_home_screen() {
     lv_obj_remove_style_all(home_dot_objs[1]);
     lv_obj_set_size(home_dot_objs[1], 6, 6);
     lv_obj_center(home_dot_objs[1]);
-    lv_obj_set_style_bg_color(home_dot_objs[1], COL_CARD_BORDER, 0);
+    lv_obj_set_style_bg_color(home_dot_objs[1], COL_TEXT_MUTED, 0);
     lv_obj_set_style_radius(home_dot_objs[1], 3, 0);
     lv_obj_clear_flag(home_dot_objs[1], LV_OBJ_FLAG_CLICKABLE);
 
@@ -799,7 +961,7 @@ static void create_home_screen() {
     lv_obj_remove_style_all(home_dot_objs[2]);
     lv_obj_set_size(home_dot_objs[2], 6, 6);
     lv_obj_center(home_dot_objs[2]);
-    lv_obj_set_style_bg_color(home_dot_objs[2], COL_CARD_BORDER, 0);
+    lv_obj_set_style_bg_color(home_dot_objs[2], COL_TEXT_MUTED, 0);
     lv_obj_set_style_radius(home_dot_objs[2], 3, 0);
     lv_obj_clear_flag(home_dot_objs[2], LV_OBJ_FLAG_CLICKABLE);
 }
@@ -810,17 +972,21 @@ static void update_home_screen() {
     if (rpmBle.isReady()) {
         lv_label_set_text(home_bt_status, LV_SYMBOL_BLUETOOTH " Paired");
         lv_obj_set_style_text_color(home_bt_status, ACCENT_MAPS, 0);
+        if (home_bt_pill) lv_obj_set_style_bg_color(home_bt_pill, ACCENT_MAPS, 0);
     } else {
         lv_label_set_text(home_bt_status, LV_SYMBOL_BLUETOOTH " Ready");
         lv_obj_set_style_text_color(home_bt_status, ACCENT_DOCS, 0);
+        if (home_bt_pill) lv_obj_set_style_bg_color(home_bt_pill, ACCENT_DOCS, 0);
     }
 
     if (tileReader.isReady()) {
         lv_label_set_text(home_sd_label, LV_SYMBOL_SD_CARD " SD OK");
         lv_obj_set_style_text_color(home_sd_label, ACCENT_MAPS, 0);
+        if (home_sd_pill) lv_obj_set_style_bg_color(home_sd_pill, ACCENT_MAPS, 0);
     } else {
         lv_label_set_text(home_sd_label, LV_SYMBOL_SD_CARD " Standby");
         lv_obj_set_style_text_color(home_sd_label, COL_TEXT_SEC, 0);
+        if (home_sd_pill) lv_obj_set_style_bg_color(home_sd_pill, COL_TEXT_SEC, 0);
     }
 
     char spd_str[24];
@@ -868,6 +1034,7 @@ static void create_connect_screen() {
     lv_obj_set_style_border_width(card, 1, 0);
     lv_obj_set_style_border_color(card, COL_CARD_BORDER, 0);
     lv_obj_set_style_radius(card, 14, 0);
+    apply_card_shadow(card);
 
     connect_spinner = lv_spinner_create(card, 1000, 60);
     lv_obj_set_size(connect_spinner, 44, 44);
@@ -959,6 +1126,7 @@ static void create_nav_screen() {
     lv_obj_set_style_border_width(banner, 1, 0);
     lv_obj_set_style_border_color(banner, COL_CARD_BORDER, 0);
     lv_obj_set_style_radius(banner, 14, 0);
+    apply_card_shadow(banner);
 
     lv_obj_t* back = lv_btn_create(banner);
     lv_obj_remove_style_all(back);
@@ -1001,6 +1169,7 @@ static void create_nav_screen() {
     lv_obj_set_style_border_width(bottom, 1, 0);
     lv_obj_set_style_border_color(bottom, COL_CARD_BORDER, 0);
     lv_obj_set_style_radius(bottom, 12, 0);
+    apply_card_shadow(bottom);
 
     lv_obj_t* speed_bg = lv_obj_create(bottom);
     lv_obj_remove_style_all(speed_bg);
@@ -1265,6 +1434,7 @@ static void create_music_screen() {
     lv_obj_set_style_border_width(card, 1, 0);
     lv_obj_set_style_border_color(card, COL_CARD_BORDER, 0);
     lv_obj_set_style_radius(card, 14, 0);
+    apply_card_shadow(card);
 
     // Album Art Square (72x72)
     lv_obj_t* art = lv_obj_create(card);
@@ -1424,11 +1594,13 @@ static lv_obj_t* create_tracking_stat_card(lv_obj_t* parent, int x, int y, const
     lv_obj_set_style_border_color(card, COL_CARD_BORDER, 0);
     lv_obj_set_style_radius(card, 12, 0);
     lv_obj_set_style_pad_all(card, 8, 0);
+    apply_card_shadow(card);
 
     lv_obj_t* t = lv_label_create(card);
     lv_label_set_text(t, title);
     lv_obj_set_style_text_color(t, COL_TEXT_SEC, 0);
     lv_obj_set_style_text_font(t, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_letter_space(t, 2, 0);  // letterspaced micro section label
     lv_obj_align(t, LV_ALIGN_TOP_LEFT, 2, 0);
 
     lv_obj_t* v = lv_label_create(card);
@@ -1482,10 +1654,10 @@ static void create_tracking_screen() {
     lv_obj_set_pos(grid, 12, 52);
     lv_obj_add_flag(grid, LV_OBJ_FLAG_HIDDEN);
 
-    create_tracking_stat_card(grid, 0,   0,  "Distance",  &track_distance_label);
-    create_tracking_stat_card(grid, 154, 0,  "Duration",  &track_time_label);
-    create_tracking_stat_card(grid, 0,   66, "Avg Speed", &track_avg_speed_label);
-    create_tracking_stat_card(grid, 154, 66, "Top Speed", &track_max_speed_label);
+    create_tracking_stat_card(grid, 0,   0,  "DISTANCE",  &track_distance_label);
+    create_tracking_stat_card(grid, 154, 0,  "DURATION",  &track_time_label);
+    create_tracking_stat_card(grid, 0,   66, "AVG SPEED", &track_avg_speed_label);
+    create_tracking_stat_card(grid, 154, 66, "TOP SPEED", &track_max_speed_label);
 
     // Current Speed Pill (x = 12, width = 296, height = 44, y = 186)
     lv_obj_t* cur_speed_card = lv_obj_create(scr_tracking);
@@ -1496,6 +1668,7 @@ static void create_tracking_screen() {
     lv_obj_set_style_border_width(cur_speed_card, 1, 0);
     lv_obj_set_style_border_color(cur_speed_card, ACCENT_TRACK, 0);
     lv_obj_set_style_radius(cur_speed_card, 12, 0);
+    apply_card_shadow(cur_speed_card);
     lv_obj_add_flag(cur_speed_card, LV_OBJ_FLAG_HIDDEN);
 
     track_cur_speed_label = lv_label_create(cur_speed_card);
@@ -1583,12 +1756,14 @@ static void create_settings_screen() {
     lv_obj_set_style_border_width(bcard, 1, 0);
     lv_obj_set_style_border_color(bcard, COL_CARD_BORDER, 0);
     lv_obj_set_style_radius(bcard, 14, 0);
+    apply_card_shadow(bcard);
 
     lv_obj_t* bright_label = lv_label_create(bcard);
-    lv_label_set_text(bright_label, "Display Brightness");
-    lv_obj_set_style_text_color(bright_label, COL_TEXT_PRI, 0);
-    lv_obj_set_style_text_font(bright_label, &lv_font_montserrat_14, 0);
-    lv_obj_set_pos(bright_label, 14, 10);
+    lv_label_set_text(bright_label, "DISPLAY BRIGHTNESS");
+    lv_obj_set_style_text_color(bright_label, COL_TEXT_SEC, 0);
+    lv_obj_set_style_text_font(bright_label, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_letter_space(bright_label, 2, 0);  // letterspaced micro section header
+    lv_obj_set_pos(bright_label, 14, 12);
 
     settings_brightness_slider = lv_slider_create(bcard);
     lv_obj_set_size(settings_brightness_slider, 268, 12);
@@ -1612,6 +1787,7 @@ static void create_settings_screen() {
     lv_obj_set_style_border_color(info_card, COL_CARD_BORDER, 0);
     lv_obj_set_style_radius(info_card, 14, 0);
     lv_obj_set_style_pad_all(info_card, 12, 0);
+    apply_card_shadow(info_card);
 
     lv_obj_t* fw_label = lv_label_create(info_card);
     lv_label_set_text(fw_label, "Firmware: RPMLOOP v3.0");
@@ -1647,6 +1823,17 @@ static void create_settings_screen() {
     }
     lv_obj_set_style_text_font(settings_sd_label, &lv_font_montserrat_14, 0);
     lv_obj_align(settings_sd_label, LV_ALIGN_TOP_LEFT, 0, 66);
+
+    // Hairline dividers between the info rows (same align reference as the labels)
+    for (int i = 0; i < 3; i++) {
+        lv_obj_t* div = lv_obj_create(info_card);
+        lv_obj_remove_style_all(div);
+        lv_obj_set_size(div, 272, 1);
+        lv_obj_align(div, LV_ALIGN_TOP_LEFT, 0, 19 + i * 22);
+        lv_obj_set_style_bg_color(div, COL_CARD_BORDER, 0);
+        lv_obj_set_style_bg_opa(div, LV_OPA_COVER, 0);
+        lv_obj_clear_flag(div, LV_OBJ_FLAG_CLICKABLE);
+    }
 }
 
 // ================================================================
@@ -1933,6 +2120,7 @@ static void create_docs_screen() {
     lv_obj_set_style_border_width(docs_card, 1, 0);
     lv_obj_set_style_border_color(docs_card, COL_CARD_BORDER, 0);
     lv_obj_set_style_radius(docs_card, 14, 0);
+    apply_card_shadow(docs_card);
     lv_obj_add_flag(docs_card, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(docs_card, docs_card_click_cb, LV_EVENT_CLICKED, nullptr);
 
@@ -2169,6 +2357,7 @@ static void create_brightness_overlay() {
 // 12. PUBLIC UI API
 // ================================================================
 void ui_init() {
+    create_re_boot_screen();
     create_splash_screen();
     create_connect_screen();
     create_home_screen();
@@ -2184,8 +2373,11 @@ void ui_init() {
 
     mapRenderer.init(nav_map_container);
 
-    lv_scr_load(scr_splash);
+    // Boot sequence: Royal Enfield stage first; it hands over to the
+    // RPMLOOP splash after ~3.85s (see re_advance_cb)
+    lv_scr_load(scr_re);
     current_screen = Screen::SPLASH;
+    re_boot_begin();
 }
 
 void ui_navigate(Screen screen) {
