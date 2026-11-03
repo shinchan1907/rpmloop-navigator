@@ -28,6 +28,8 @@
 #include "psa/crypto.h"
 #include "mbedtls/ssl.h"
 #include "mbedtls/x509_crt.h"
+#include "mbedtls/ctr_drbg.h"
+#include "mbedtls/entropy.h"
 #include "mbedtls/pk.h"
 #include "mbedtls/error.h"
 #include "app.h"
@@ -97,6 +99,8 @@ static assembly s_asm[NCH];
 
 static mbedtls_ssl_context s_ssl;
 static mbedtls_ssl_config s_conf;
+static mbedtls_entropy_context s_entropy;
+static mbedtls_ctr_drbg_context s_drbg;
 static mbedtls_x509_crt s_crt;
 static mbedtls_pk_context s_key;
 
@@ -134,6 +138,9 @@ static void tls_err(const char *what, int ret) {
 
 static bool tls_init(void) {
     psa_crypto_init();
+    mbedtls_entropy_init(&s_entropy);
+    mbedtls_ctr_drbg_init(&s_drbg);
+    if (mbedtls_ctr_drbg_seed(&s_drbg, mbedtls_entropy_func, &s_entropy, (const unsigned char *)"rpmloop", 7)) return false;
     int ret;
     mbedtls_ssl_config_init(&s_conf);
     mbedtls_x509_crt_init(&s_crt);
@@ -141,11 +148,13 @@ static bool tls_init(void) {
     if ((ret = mbedtls_x509_crt_parse(&s_crt, (const unsigned char *)AAP_CERT_PEM, sizeof AAP_CERT_PEM))) {
         tls_err("cert", ret); return false;
     }
-    if ((ret = mbedtls_pk_parse_key(&s_key, (const unsigned char *)AAP_KEY_PEM, sizeof AAP_KEY_PEM, NULL, 0))) {
+    if ((ret = mbedtls_pk_parse_key(&s_key, (const unsigned char *)AAP_KEY_PEM, sizeof AAP_KEY_PEM, NULL, 0,
+                                    mbedtls_ctr_drbg_random, &s_drbg))) {
         tls_err("key", ret); return false;
     }
     mbedtls_ssl_config_defaults(&s_conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
     mbedtls_ssl_conf_authmode(&s_conf, MBEDTLS_SSL_VERIFY_NONE);   // the phone's certificate is not checked
+    mbedtls_ssl_conf_rng(&s_conf, mbedtls_ctr_drbg_random, &s_drbg);
     mbedtls_ssl_conf_min_tls_version(&s_conf, MBEDTLS_SSL_VERSION_TLS1_2);
     mbedtls_ssl_conf_max_tls_version(&s_conf, MBEDTLS_SSL_VERSION_TLS1_2);
     if ((ret = mbedtls_ssl_conf_own_cert(&s_conf, &s_crt, &s_key))) { tls_err("own cert", ret); return false; }
