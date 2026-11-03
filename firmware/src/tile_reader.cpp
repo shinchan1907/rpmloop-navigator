@@ -18,7 +18,7 @@
 // SD card CS pin & SPI bus (SPI2_HOST / FSPI)
 // Hardware: SCK=GPIO6, MISO=GPIO8, MOSI=GPIO7, CS=GPIO13 (shared with ST7789 display)
 static const int SD_CS_PIN = 13;
-#define sd_spi SPI
+static SPIClass sd_spi(FSPI);
 
 // Global instance
 TileReader tileReader;
@@ -109,6 +109,17 @@ bool TileReader::init() {
     pinMode(8, INPUT_PULLUP);
     gpio_set_pull_mode(GPIO_NUM_8, GPIO_PULLUP_ONLY);
 
+    // Hardware Bus Recovery: Clock SCK with CS HIGH to release MISO (DO)
+    pinMode(7, OUTPUT);
+    digitalWrite(7, HIGH); // MOSI HIGH
+    pinMode(6, OUTPUT);
+    for (int i = 0; i < 200; i++) {
+        digitalWrite(6, LOW);
+        delayMicroseconds(2);
+        digitalWrite(6, HIGH);
+        delayMicroseconds(2);
+    }
+
     // Initialize dedicated SPIClass for SD card on SPI2_HOST
     sd_spi.end();
     sd_spi.begin(6, 8, 7, SD_CS_PIN);
@@ -123,11 +134,18 @@ bool TileReader::init() {
     gpio_set_pull_mode(GPIO_NUM_8, GPIO_PULLUP_ONLY);
     Serial.printf("[SD] Pre-mount MISO pin level: %d (expected 1)\n", digitalRead(8));
 
-    // Attempt mount at 400kHz (format_if_empty = false so boot is fast and never corrupts)
-    if (!SD.begin(SD_CS_PIN, sd_spi, 400000, "/sd", 5, false)) {
-        Serial.println("[SD] SD.begin mount failed (card may need formatting).");
-        _mounted = false;
-        return false;
+    // Attempt mount at 4MHz first (formatOnFail=false: firmware never formats)
+    if (!SD.begin(SD_CS_PIN, sd_spi, 4000000, "/sd", 5, false)) {
+        Serial.println("[SD] 4MHz mount failed, trying 400kHz fallback...");
+        SD.end();
+        delay(50);
+        digitalWrite(SD_CS_PIN, HIGH);
+        for (int i = 0; i < 20; i++) sd_spi.transfer(0xFF);
+        if (!SD.begin(SD_CS_PIN, sd_spi, 400000, "/sd", 5, false)) {
+            Serial.println("[SD] SD.begin failed at 400kHz as well.");
+            _mounted = false;
+            return false;
+        }
     }
 
     uint8_t ct = SD.cardType();
@@ -142,106 +160,6 @@ bool TileReader::init() {
         SD.cardSize() / (1024 * 1024), (SD.cardSize() / (1024 * 1024) + 512) / 1024);
 
     _mounted = true;
-    return true;
-}
-
-bool TileReader::formatCard() {
-    Serial.println("\n========================================");
-    Serial.println("   RPMLOOP SD Card FAT32 Format Tool   ");
-    Serial.println("========================================");
-
-    // If not already mounted or initialized, try to initialize
-    if (!_mounted) {
-        Serial.println("[SD Format] Card not mounted, attempting initialization...");
-        if (!init()) {
-            Serial.println("[SD Format] Card initialization failed. SD card may not be connected or has wiring issue.");
-            return false;
-        }
-    }
-
-    Serial.printf("[SD Format] Target Card Size: %llu MB (%llu sectors)\n",
-                  SD.cardSize() / (1024 * 1024), (uint64_t)SD.numSectors());
-
-    Serial.println("[SD Format] Formatting volume to FAT32 with f_mkfs...");
-
-    BYTE *work = (BYTE *)malloc(4096);
-    UINT work_size = work ? 4096 : 512;
-    if (!work) {
-        work = (BYTE *)malloc(512);
-        work_size = 512;
-    }
-
-    if (!work) {
-        Serial.println("[SD Format] Memory allocation failed for format buffer!");
-        return false;
-    }
-
-    // FatFs MKFS parameter for FAT32
-    MKFS_PARM opt;
-    memset(&opt, 0, sizeof(opt));
-    opt.fmt = FM_FAT32;  // Request FAT32
-    opt.n_fat = 1;       // 1 FAT table
-    opt.align = 0;       // Auto align
-    opt.n_root = 0;      // Auto
-    opt.au_size = 0;     // Auto cluster size
-
-    FRESULT res = f_mkfs("0:", &opt, work, work_size);
-    if (res != FR_OK) {
-        Serial.printf("[SD Format] FM_FAT32 returned %d, retrying with FM_ANY...\n", (int)res);
-        opt.fmt = FM_ANY;
-        opt.n_fat = 0;
-        res = f_mkfs("0:", &opt, work, work_size);
-    }
-
-    free(work);
-
-    if (res != FR_OK) {
-        Serial.printf("[SD Format] ERROR: f_mkfs failed with code %d\n", (int)res);
-        return false;
-    }
-
-    Serial.println("[SD Format] Format completed successfully! Remounting SD...");
-    SD.end();
-    delay(100);
-
-    if (!SD.begin(SD_CS_PIN, sd_spi, 4000000, "/sd", 5, false)) {
-        Serial.println("[SD Format] ERROR: Remount failed after format!");
-        _mounted = false;
-        return false;
-    }
-
-    _mounted = true;
-    Serial.printf("[SD Format] Mounted! Total space: %llu MB, Used: %llu KB\n",
-                  SD.totalBytes() / (1024 * 1024), SD.usedBytes() / 1024);
-
-    // Create /tiles directory
-    if (!SD.exists("/tiles")) {
-        if (SD.mkdir("/tiles")) {
-            Serial.println("[SD Format] Created '/tiles' directory successfully!");
-        } else {
-            Serial.println("[SD Format] Warning: Could not create '/tiles'");
-        }
-    } else {
-        Serial.println("[SD Format] '/tiles' directory exists.");
-    }
-
-    // Write verification test file
-    File f = SD.open("/tiles/format_test.txt", FILE_WRITE);
-    if (f) {
-        f.println("RPMLOOP FAT32 FORMAT SUCCESS");
-        f.close();
-        Serial.println("[SD Format] Created test file '/tiles/format_test.txt'");
-
-        // Read back to verify
-        File r = SD.open("/tiles/format_test.txt", FILE_READ);
-        if (r) {
-            String content = r.readStringUntil('\n');
-            r.close();
-            Serial.printf("[SD Format] Verification read back: '%s'\n", content.c_str());
-        }
-    }
-
-    Serial.println("[SD Format] *** FAT32 FORMAT COMPLETE & VERIFIED ***\n");
     return true;
 }
 
@@ -603,7 +521,7 @@ void TileReader::testRawSD() {
     gpio_set_pull_mode(GPIO_NUM_8, GPIO_PULLUP_ONLY);
 
     Serial.printf("[RAW_SD] SPI PINS: SCK=%d, MISO=%d, MOSI=%d, SS=%d\n",
-                  sd_spi.pinSck(), sd_spi.pinMiso(), sd_spi.pinMosi(), sd_spi.pinSS());
+                  6, 8, 7, SD_CS_PIN);
 
     Serial.printf("[RAW_SD] CS=HIGH MISO (GPIO 8) level: %d\n", digitalRead(8));
     digitalWrite(13, LOW);

@@ -108,8 +108,6 @@ void loop() {
             ui_docs_exit_fullscreen();
         } else if (cmd == "CMD:SD_RAW") {
             tileReader.testRawSD();
-        } else if (cmd == "CMD:SD_FORMAT") {
-            tileReader.formatCard();
         }
     }
 

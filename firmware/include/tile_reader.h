@@ -26,7 +26,6 @@ public:
     bool init();
 
     // Format the SD card as FAT32
-    bool formatCard();
 
     // Check if SD card is mounted and readable
     bool isReady() const;
