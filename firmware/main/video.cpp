@@ -1,6 +1,6 @@
 // MiniNav-Mini: video.cpp
 // Changes from original MiniNav:
-//   - (testing/lag-fix) AU_SLOTS 3, AU_CAP 192 KB, stream declared 480x320,
+//   - (testing/lag-fix v2) AU_SLOTS 2, AU_CAP 128 KB, stream declared 480x320,
 //     non-blocking AU drop - see git history for the earlier 4->2 / 512 KB story
 //   - Dual-task decoder DISABLED (CONFIG_ESP_H264_DUAL_TASK not set); single video task on Core 1
 //   - demo mode fully removed (no demo.h264, no from_phone==false paths)
@@ -22,11 +22,16 @@
 static const char *TAG = "video";
 
 // ---- Memory budget for 2 MB PSRAM -----------------------------------------------------------
-// testing/lag-fix: 3 slots x 192 KB = 576 KB. (Was 2 x 96 KB: at 800x480 a detailed
-// map keyframe routinely exceeds 96 KB and was dropped whole, freezing the picture
-// until a small enough keyframe arrived - a major source of the on-road lag.)
-#define AU_SLOTS 3
-#define AU_CAP   (192 * 1024)
+// testing/lag-fix v2 (bench-corrected): 2 slots x 128 KB = 256 KB. The first
+// attempt (3 x 192 KB = 576 KB) starved the H.264 decoder: after boot + TLS
+// only ~924 KB of the 2 MB PSRAM is free, and the decoder's DPB found no
+// contiguous room - "H264_DEC.SW: Memory lack" on the very first frame, zero
+// frames rendered (verified on hardware 2026-11-03). 256 KB leaves the
+// decoder ~660 KB to run at full speed. 128 KB is still ~1.4-3x a typical
+// 480x320 Maps keyframe (~40-90 KB); oversize AUs are shed by the cap check
+// and recovered on the next keyframe.
+#define AU_SLOTS 2
+#define AU_CAP   (128 * 1024)
 
 typedef struct {
     uint8_t *data;
