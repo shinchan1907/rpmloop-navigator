@@ -1,0 +1,12 @@
+# MiniNav-Mini partition table for 4 MB Flash
+# Total usable: 0x400000 (4 MB)
+# Layout:
+#   0x0000 - 0x8FFF  : Bootloader (auto, not listed)
+#   0x9000 - 0xEFFF  : NVS (24 KB)
+#   0xF000 - 0xFFFF  : PHY calibration data (4 KB)
+#   0x10000 - 0x30FFFF: App factory (3 MB)  ← 1.65 MB demo.h264 removed, so ~1.1 MB binary fits
+#
+# Name,   Type, SubType, Offset,  Size
+nvs,      data, nvs,     0x9000,  0x6000
+phy_init, data, phy,     0xf000,  0x1000
+factory,  app,  factory, 0x10000, 0x2F0000

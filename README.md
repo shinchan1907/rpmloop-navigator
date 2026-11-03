@@ -1,46 +1,23 @@
-# RPMLOOP Navigator v3.0
+# RPMLOOP Navigator
 
-An open-source, motorcycle handlebar cockpit navigator engineered for the **Royal Enfield Hunter 350**, powered by an **ESP32-S3**, **2.8" ST7789V display**, **LVGL 8.3.11**, and **LovyanGFX**.
+An open-source, motorcycle handlebar cockpit navigator engineered for the **Royal Enfield Hunter 350** (and universal motorcycle handlebars), powered by an **ESP32-S3**, **2.8" ST7789V SPI Display**, and **HR2046 Resistive Touchscreen**.
 
-![RPMLOOP Navigator Banner](docs/screenshots/01_splash.png)
-
----
-
-## 🌟 Overview
-
-**RPMLOOP Navigator** provides riders with real-time turn-by-turn guidance, telemetry tracking, media playback control, and a digital vehicle document vault (RC, Driving License & Aadhaar Card) directly on the handlebars.
-
-### Key Capabilities
-- **Paged Ergonomic Dashboard:** 2 large (296×84px), high-contrast cards per page across 3 pages. Seamless button `<` / `>` and dot pagination tailored for motorcycle gloves.
-- **Modern Light Slate Visual Theme:** Clean, crisp daylight visibility with vibrant per-feature accent rails.
-- **Dynamic Splash Screen:** 45-degree animated Instagram gradient with bold Montserrat typography and progress shimmer.
-- **Digital Bike Documents Hub:** Quick-access vehicle documents vault with instant **Tap-to-Fullscreen 1:1 view** and Front/Back flipping for smooth roadside inspections.
-- **Production BLE Protocol:** Autonomous NimBLE GATT server advertising as `RPMLOOP`. All telemetry, navigation, and media contracts strictly defined.
-- **Offline Map Architecture:** SD-card preloaded route tiles engine for offline rendering independent of cellular reception.
+Unlike basic turn-by-turn notification displays, **RPMLOOP Navigator** streams full, live **Wireless Android Auto (Google Maps Navigation)** in real time over Wi-Fi with zero lag, interactive touch zooming, and crisp daylight visibility.
 
 ---
 
-## 📸 UI Showcase
+## 🌟 Key Features
 
-| Animated Splash Screen | Home — Page 1 (Nav & Map) |
-| :---: | :---: |
-| ![Splash](docs/screenshots/01_splash.png) | ![Home Page 1](docs/screenshots/02_home_page1.png) |
-
-| Home — Page 2 (Music & Tracking) | Home — Page 3 (Docs & Settings) |
-| :---: | :---: |
-| ![Home Page 2](docs/screenshots/03_home_page2.png) | ![Home Page 3](docs/screenshots/04_home_page3.png) |
-
-| Bike Documents Hub | Fullscreen RC Book (Hunter 350) |
-| :---: | :---: |
-| ![Bike Documents](docs/screenshots/05_bike_docs_hub.png) | ![Fullscreen RC](docs/screenshots/06_rc_fullscreen.png) |
-
-| RC Book (Back Side) | Aadhaar Card Fullscreen |
-| :---: | :---: |
-| ![RC Back](docs/screenshots/07_rc_back_fullscreen.png) | ![Aadhaar](docs/screenshots/08_aadhaar_fullscreen.png) |
-
-| System Settings | Hunter 350 Custom Enclosure |
-| :---: | :---: |
-| ![Settings](docs/screenshots/09_settings.png) | *Available in [`printing_files/`](printing_files/)* |
+* **Live Wireless Android Auto:** Connects wirelessly to your Android smartphone over Wi-Fi and streams real-time Google Maps H.264 video feed directly to your handlebars.
+* **Full-Screen Navigation View:** Android Auto side rail is automatically cropped out so the full 320×240 display is 100% dedicated to map directions, turns, ETA, and lane guidance.
+* **Interactive Touchscreen (Map Zoom & Pan):** Dedicated HR2046 resistive digitizer on a separate SPI bus (`SPI3`) allows you to tap the map to zoom in (`+`), zoom out (`-`), pan across the route, and re-center.
+* **Daylight High-Contrast Theme:** Tuned for bright outdoor daylight riding with Google Maps' signature light green parks, clean roads, and high-visibility direction cards.
+* **Custom Automotive Setup Screen:** Clean setup dashboard showing connection stepper (`WI-FI` → `PHONE` → `LINK` → `MAPS`), active hotspot credentials, and real-time status.
+* **Ultra-Debloated Architecture:** Custom-engineered to fit and execute smoothly on cost-effective **ESP32-S3FH4R2** hardware (**4 MB Flash, 2 MB PSRAM**):
+  * Reused display framebuffer for UI sprites (saving 153 KB PSRAM).
+  * Lightweight 2-slot H.264 access unit pipeline with parallel dual-core YUV scaler.
+  * Internal RAM optimization for TLS record buffers and AES-GCM decryption.
+* **Weatherproof Handlebar Enclosure:** Precision-designed 3D printable housing with silicone sealing gaskets, cradle mount, and Hunter 350 handlebar clamp (available in [`printing_files/`](printing_files/)).
 
 ---
 
@@ -48,87 +25,114 @@ An open-source, motorcycle handlebar cockpit navigator engineered for the **Roya
 
 | Component | Specification |
 |---|---|
-| **Microcontroller** | ESP32-S3 Mini / DevKit (Dual-Core 240 MHz, 4 MB Flash, 2 MB PSRAM) |
-| **Display Panel** | 2.8" SPI TFT LCD (ST7789V driver, 320×240 landscape, 16 MHz SPI) |
-| **Touch Controller** | HR2046 / XPT2046 resistive touch on dedicated `SPI3_HOST` |
-| **Storage** | External MicroSD SPI module (FAT32 filesystem, offline tiles store) |
-| **Wireless** | Bluetooth Low Energy 5.0 (NimBLE stack) |
+| **Microcontroller** | ESP32-S3 (ESP32-S3FH4R2: Dual-Core Xtensa @ 240 MHz, 4 MB Flash, 2 MB Quad PSRAM) |
+| **Display Panel** | 2.8" SPI TFT LCD (ST7789V driver, 320×240 resolution, landscape mode) |
+| **Touch Controller** | HR2046 / XPT2046 Resistive Touch Digitizer on dedicated `SPI3_HOST` |
+| **Display Library** | LovyanGFX v1.2+ (Optimized DMA & sub-core parallel scaler) |
+| **Wireless Protocol** | Wi-Fi 802.11 b/g/n (SoftAP / Hotspot) + TLS AES-GCM + Android Auto AAP |
+| **Video Decoder** | Software H.264 Baseline Profile decoder (`esp_h264` / `tinyh264`) |
 
-### Pinout Mapping
+---
 
-```
-ESP32-S3 Mini Pinout
+## 🔌 Pinout Mapping
+
+```text
+ESP32-S3 Wiring
 ├── Display (SPI2_HOST)
-│   ├── SCK  ────── GPIO 6
-│   ├── MOSI ────── GPIO 7
-│   ├── MISO ────── GPIO 8
-│   ├── CS   ────── GPIO 9
-│   ├── DC   ────── GPIO 10
-│   └── RST  ────── GPIO 11
-├── MicroSD Card (Shared SPI2_HOST)
-│   ├── SCK  ────── GPIO 6
-│   ├── MOSI ────── GPIO 7
-│   ├── MISO ────── GPIO 8
-│   └── CS   ────── GPIO 13
-└── Touch Controller (SPI3_HOST)
-    ├── CLK  ────── GPIO 1
-    ├── DIN  ────── GPIO 2
-    ├── DO   ────── GPIO 3
-    ├── IRQ  ────── GPIO 4
-    └── CS   ────── GPIO 5
+│   ├── SCK   ────── GPIO 6
+│   ├── MOSI  ────── GPIO 7
+│   ├── MISO  ────── GPIO 8
+│   ├── CS    ────── GPIO 9
+│   ├── DC    ────── GPIO 10
+│   ├── RST   ────── GPIO 11
+│   └── BL    ────── 3.3V (Hardwired / On)
+└── Resistive Touch (SPI3_HOST)
+    ├── T_CLK ────── GPIO 1
+    ├── T_DIN ────── GPIO 2 (MOSI)
+    ├── T_DO  ────── GPIO 3 (MISO)
+    ├── T_IRQ ────── GPIO 4
+    └── T_CS  ────── GPIO 5
 ```
 
 ---
 
-## 📡 BLE Protocol Specification
+## 🚀 Quick Start (1-Click Flashing)
 
-The device operates an autonomous BLE GATT server advertising as **`RPMLOOP`**. The companion mobile app communicates using standardized JSON payloads defined in [`firmware/protocol/protocol_spec.json`](firmware/protocol/protocol_spec.json).
+If you just want to flash the pre-compiled firmware without installing ESP-IDF:
 
-### Primary Services & Characteristics
-
-| Characteristic | UUID | Direction | Purpose |
-|---|---|---|---|
-| **Nav Update** | `c2a10001-0001-1000-8000-00805f9b34fb` | App → Device | Maneuver icon, distance, road name, ETA |
-| **Position Update** | `c2a10002-0001-1000-8000-00805f9b34fb` | App → Device | Current latitude, longitude, heading, speed |
-| **Media State** | `c2a10003-0001-1000-8000-00805f9b34fb` | Both | Track title, artist, playback state, track skipping |
-| **Device Status** | `c2a10004-0001-1000-8000-00805f9b34fb` | Device → App | Battery level, satellite count, storage health |
+1. Connect your ESP32-S3 board to your PC via USB.
+2. Open terminal in [`firmware/bin/`](firmware/bin/).
+3. **On Windows:**
+   ```cmd
+   flash.bat
+   ```
+4. **On Linux / macOS:**
+   ```bash
+   chmod +x flash.sh
+   ./flash.sh
+   ```
+5. Enter your COM port (e.g., `COM3` on Windows or `/dev/ttyACM0` on Linux).
 
 ---
 
-## 🛠️ Building & Flashing
+## 🛠️ Building from Source (ESP-IDF)
 
-### Requirements
-- [PlatformIO Core](https://platformio.org/) or VS Code with PlatformIO IDE extension.
-- ESP32-S3 connected via native USB (`COM3` on Windows / `/dev/ttyACM0` on Linux).
+### Prerequisites
+* **ESP-IDF v5.3+** (or v6.x) installed and configured in your environment.
 
-### Build Firmware
+### Build and Flash
 ```bash
 cd firmware
-pio run
-```
 
-### Flash Firmware
-```bash
-cd firmware
-pio run -t upload
-```
+# Set target to ESP32-S3
+idf.py set-target esp32s3
 
-### Monitor Serial Logs
-```bash
-pio device monitor -b 115200
+# Build project
+idf.py build
+
+# Flash to device and start serial monitor
+idf.py -p PORT flash monitor
 ```
 
 ---
 
-## 🏍️ 3D Printable Enclosure
+## 📱 Phone Setup & Connection Guide
 
-The complete 3D printable handlebar mount and weather-resistant enclosure tailored specifically for the **Royal Enfield Hunter 350** triple-clamp and handlebar assembly is located in the [`printing_files/`](printing_files/) directory:
-- Front Bezel with screen protector recess
-- Main Body housing ESP32-S3, display, and SD module
-- Handlebar bracket with anti-vibration rubber damper slots
+### 1. Wi-Fi Hotspot Setup
+* Power up the board. The setup screen will display:
+  * **Hotspot SSID:** `RPL Loop`
+  * **Password:** `88888888`
+* Connect your Android phone's Wi-Fi to **RPL Loop** (or turn on your phone's Personal Hotspot with SSID `RPL Loop` and password `88888888`).
+
+### 2. Enable Android Auto Developer Mode & Start Headunit Server
+1. On your Android phone, go to **Settings** → search for **Android Auto**.
+2. Scroll to the bottom and tap **Version and permission info** 10 times consecutively until Developer Mode is unlocked.
+3. Tap the **3 dots** icon in the top right corner.
+4. Tap **Start headunit server**.
+5. Within 2–3 seconds, the RPMLOOP screen will progress (`WI-FI` → `PHONE` → `LINK` → `MAPS`) and launch Google Maps navigation!
+
+### 3. Setting Daylight (Green/Light) Map Colors
+By default, Android Auto on Samsung and other Android devices may follow your phone's system Dark Theme. To enforce bright daylight navigation:
+* **Android Auto:** Phone Settings → Android Auto → Display → **"Day/Night mode for maps"** → select **Day**.
+* **Google Maps:** Google Maps app → Settings → Navigation settings → Map display → **"Color scheme"** → select **Day**.
+
+### 4. Interactive Touch Control
+* Because the digitizer is **Resistive (HR2046)**, operate it with slight pressure using your **fingernail or a stylus** (unlike capacitive smartphone glass).
+* Tapping the screen reveals the **`+`** and **`-`** zoom controls to zoom in and out of the map without altering the direction text banner size.
+
+---
+
+## 🏍️ 3D Printing & Enclosure Files
+
+All 3D CAD models, manufacturing step files, and verification assets for the handlebar-mounted enclosure are located in [`printing_files/`](printing_files/):
+
+* `01_STL/`: Ready-to-slice 3D print models (`housing.stl`, `front_bezel.stl`, `rear_lid.stl`, `esp32_cradle.stl`).
+* `02_Rubber_Gaskets/`: Silicone gasket CAD models for IP-rated rain and dust sealing (`display_gasket.step`, `joint_gasket.step`).
+* `03_Images/`: Dimensional renders and mechanical cross-sections.
+* `04_CAD/`: Full parametric STEP assembly models.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

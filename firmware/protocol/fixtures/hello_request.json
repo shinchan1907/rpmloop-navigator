@@ -1,7 +1,0 @@
-{
-  "type": "hello",
-  "version": "3.0.0",
-  "app_name": "RPMLOOP Companion",
-  "platform": "android",
-  "capabilities": ["gps", "nav", "media", "tracking"]
-}
