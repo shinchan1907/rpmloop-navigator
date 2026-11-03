@@ -1,6 +1,7 @@
 // MiniNav-Mini: video.cpp
 // Changes from original MiniNav:
-//   - (testing/lag-fix v2) AU_SLOTS 2, AU_CAP 128 KB, stream declared 480x320,
+//   - (testing/lag-fix v3) AU_SLOTS 2, AU_CAP 128 KB, stream 800x480 (phone
+//     ignored the 480x320 declaration), non-blocking AU drop
 //     non-blocking AU drop - see git history for the earlier 4->2 / 512 KB story
 //   - Dual-task decoder DISABLED (CONFIG_ESP_H264_DUAL_TASK not set); single video task on Core 1
 //   - demo mode fully removed (no demo.h264, no from_phone==false paths)
@@ -27,9 +28,11 @@ static const char *TAG = "video";
 // only ~924 KB of the 2 MB PSRAM is free, and the decoder's DPB found no
 // contiguous room - "H264_DEC.SW: Memory lack" on the very first frame, zero
 // frames rendered (verified on hardware 2026-11-03). 256 KB leaves the
-// decoder ~660 KB to run at full speed. 128 KB is still ~1.4-3x a typical
-// 480x320 Maps keyframe (~40-90 KB); oversize AUs are shed by the cap check
-// and recovered on the next keyframe.
+// decoder ~660 KB to run at full speed. NOTE: the phone (Samsung AA) ignored
+// the declared 480x320 class and kept sending 800x480 (bench log 2026-11-03:
+// 'stream 800x480'), so v3 declares 800x480 again; at that size main's 96 KB
+// cap already carried the road test, and 128 KB gives it headroom. Oversize
+// AUs are shed by the cap check and recovered on the next keyframe.
 #define AU_SLOTS 2
 #define AU_CAP   (128 * 1024)
 

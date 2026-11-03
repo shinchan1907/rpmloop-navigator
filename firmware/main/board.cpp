@@ -466,11 +466,10 @@ static void touch_poll(void) {
     bool pressed = lcd.getTouch(&tx, &ty);
 
     if (pressed) {
-        // Scale 320x240 screen coordinates -> 480x320 Android Auto space.
-        // The scaler centre-crops a 426x320 (4:3) window starting at x=24 out
-        // of the 480x320 frame; invert exactly that mapping here.
-        int aa_x = 24 + (int)tx * 426 / 320;
-        int aa_y = (int)ty * 320 / 240;
+        // Scale 320×240 screen coordinates → 800×480 Android Auto UI space
+        // g_video_crop_x is the left offset of our 640-wide window in the 800-wide frame
+        int aa_x = (int)tx * 2 + (g_video_crop_x - g_video_margin_w / 2);
+        int aa_y = (int)ty * 2;
 
         if (!was_pressed) {
             was_pressed = true;
