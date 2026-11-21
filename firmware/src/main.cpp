@@ -56,8 +56,8 @@ void setup() {
 }
 
 void loop() {
-    // Service display rendering & touch input
-    lvgl_port_update();
+    // Service display rendering & touch input (returns ms until next scheduled timer)
+    uint32_t wait_ms = lvgl_port_update();
 
     // Service BLE protocol & notifications
     rpmBle.update();
@@ -113,5 +113,9 @@ void loop() {
         }
     }
 
-    delay(5);  // Yield to RTOS and maintain responsive tick rate
+    // Adaptive sleep: yields CPU according to LVGL timers (1-10ms) without stalling BLE or UI
+    uint32_t sleep_ms = wait_ms;
+    if (sleep_ms < 1) sleep_ms = 1;
+    else if (sleep_ms > 10) sleep_ms = 10;
+    delay(sleep_ms);
 }

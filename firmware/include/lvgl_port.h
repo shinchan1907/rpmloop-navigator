@@ -13,8 +13,8 @@ extern LGFX tft;
 // Initialize LVGL display driver, input driver, and buffers
 void lvgl_port_init(void);
 
-// Call in loop() — runs LVGL task handler
-void lvgl_port_update(void);
+// Call in loop() — runs LVGL task handler, returns ms until next required task
+uint32_t lvgl_port_update(void);
 
 // Get the LVGL display object
 lv_disp_t* lvgl_port_get_disp(void);

@@ -253,6 +253,9 @@ void TileReader::buildPath(char* buf, size_t len, int32_t x, int32_t y, uint8_t 
     snprintf(buf, len, "/tiles/%u/%ld/%ld.jpg", (unsigned)z, (long)x, (long)y);
 }
 
+// Global TJpgDec workspace pool (4096 bytes) — avoids heap thrashing/fragmentation
+static uint8_t s_tjpgd_pool[4096];
+
 bool TileReader::decodeJpeg(const uint8_t* data, size_t len, uint16_t* outPixels) {
     if (!data || len == 0 || !outPixels) return false;
 
@@ -264,18 +267,12 @@ bool TileReader::decodeJpeg(const uint8_t* data, size_t len, uint16_t* outPixels
     ctx.dst_width = TILE_SIZE;
     ctx.dst_height = TILE_SIZE;
 
-    static constexpr size_t TJPGD_POOL_SIZE = 4096;
-    uint8_t* pool = (uint8_t*)malloc(TJPGD_POOL_SIZE);
-    if (!pool) pool = (uint8_t*)ps_malloc(TJPGD_POOL_SIZE);
-    if (!pool) return false;
-
     lgfxJdec jd;
-    JRESULT res = lgfx_jd_prepare(&jd, tjpgd_input_cb, pool, TJPGD_POOL_SIZE, &ctx);
+    JRESULT res = lgfx_jd_prepare(&jd, tjpgd_input_cb, s_tjpgd_pool, sizeof(s_tjpgd_pool), &ctx);
     if (res == JDR_OK) {
         res = lgfx_jd_decomp(&jd, tjpgd_output_cb, 0);
     }
 
-    free(pool);
     return (res == JDR_OK);
 }
 
@@ -514,13 +511,8 @@ bool TileReader::decodeJpegBuffer(const uint8_t* jpegBuf, size_t fsize, uint16_t
     // Clear target buffer first (black)
     memset(outPixels, 0, targetW * targetH * sizeof(uint16_t));
 
-    static constexpr size_t TJPGD_POOL_SIZE = 4096;
-    uint8_t* pool = (uint8_t*)malloc(TJPGD_POOL_SIZE);
-    if (!pool) pool = (uint8_t*)ps_malloc(TJPGD_POOL_SIZE);
-    if (!pool) return false;
-
     lgfxJdec jd;
-    JRESULT res = lgfx_jd_prepare(&jd, tjpgd_input_cb, pool, TJPGD_POOL_SIZE, &ctx);
+    JRESULT res = lgfx_jd_prepare(&jd, tjpgd_input_cb, s_tjpgd_pool, sizeof(s_tjpgd_pool), &ctx);
     if (res == JDR_OK) {
         uint8_t scale = 0;
         if (jd.width > targetW * 4 || jd.height > targetH * 4) scale = 3;
@@ -530,7 +522,6 @@ bool TileReader::decodeJpegBuffer(const uint8_t* jpegBuf, size_t fsize, uint16_t
         res = lgfx_jd_decomp(&jd, tjpgd_output_cb, scale);
     }
 
-    free(pool);
     return (res == JDR_OK);
 }
 

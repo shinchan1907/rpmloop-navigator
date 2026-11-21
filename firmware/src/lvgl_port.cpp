@@ -11,9 +11,9 @@
 // The global LovyanGFX display object
 LGFX tft;
 
-// Display buffer size: 320 * 40 lines = 12800 pixels * 2 bytes = 25600 bytes
-// Two buffers for double-buffering, allocated in PSRAM
-static const uint32_t DISP_BUF_ROWS = 40;
+// Display buffer size: 320 * 60 lines = 19200 pixels * 2 bytes = 38400 bytes
+// Two buffers for double-buffering, allocated in PSRAM (fewer DMA splits & higher FPS)
+static const uint32_t DISP_BUF_ROWS = 60;
 static const uint32_t DISP_BUF_SIZE = 320 * DISP_BUF_ROWS;
 
 static lv_disp_draw_buf_t draw_buf;
@@ -37,10 +37,15 @@ static void disp_flush_cb(lv_disp_drv_t* drv, const lv_area_t* area, lv_color_t*
 
     // Mirror to PSRAM for lossless serial screenshot capture
     if (screen_mirror) {
-        for (uint32_t r = 0; r < h; r++) {
-            uint32_t dst_offset = (area->y1 + r) * 320 + area->x1;
-            uint32_t src_offset = r * w;
-            memcpy(&screen_mirror[dst_offset], &color_p[src_offset].full, w * sizeof(uint16_t));
+        if (w == 320) {
+            // Fast contiguous copy for full-width redraws
+            memcpy(&screen_mirror[area->y1 * 320], &color_p->full, 320 * h * sizeof(uint16_t));
+        } else {
+            for (uint32_t r = 0; r < h; r++) {
+                uint32_t dst_offset = (area->y1 + r) * 320 + area->x1;
+                uint32_t src_offset = r * w;
+                memcpy(&screen_mirror[dst_offset], &color_p[src_offset].full, w * sizeof(uint16_t));
+            }
         }
     }
 
@@ -114,8 +119,8 @@ void lvgl_port_init(void) {
     lv_indev_drv_register(&indev_drv);
 }
 
-void lvgl_port_update(void) {
-    lv_timer_handler();
+uint32_t lvgl_port_update(void) {
+    return lv_timer_handler();
 }
 
 lv_disp_t* lvgl_port_get_disp(void) {

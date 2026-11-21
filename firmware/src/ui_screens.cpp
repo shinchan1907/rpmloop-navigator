@@ -272,6 +272,16 @@ static void splash_timer_cb(lv_timer_t* timer) {
     lv_timer_del(timer);
     splash_timer = nullptr;
 
+    // Free splash canvas buffer (reclaim 153.6 KB PSRAM)
+    if (splash_canvas_buf) {
+        if (splash_canvas) {
+            lv_obj_del(splash_canvas);
+            splash_canvas = nullptr;
+        }
+        free(splash_canvas_buf);
+        splash_canvas_buf = nullptr;
+    }
+
     // Smooth crossfade directly to Home
     ui_navigate(Screen::HOME);
 }
@@ -807,29 +817,47 @@ static void create_home_screen() {
 static void update_home_screen() {
     if (current_screen != Screen::HOME) return;
 
-    if (rpmBle.isReady()) {
-        lv_label_set_text(home_bt_status, LV_SYMBOL_BLUETOOTH " Paired");
-        lv_obj_set_style_text_color(home_bt_status, ACCENT_MAPS, 0);
-    } else {
-        lv_label_set_text(home_bt_status, LV_SYMBOL_BLUETOOTH " Ready");
-        lv_obj_set_style_text_color(home_bt_status, ACCENT_DOCS, 0);
+    static bool last_ble = false;
+    static bool last_sd = false;
+    static uint16_t last_spd = 0xFFFF;
+    static bool initialized = false;
+
+    bool cur_ble = rpmBle.isReady();
+    if (!initialized || cur_ble != last_ble) {
+        last_ble = cur_ble;
+        if (cur_ble) {
+            lv_label_set_text(home_bt_status, LV_SYMBOL_BLUETOOTH " Paired");
+            lv_obj_set_style_text_color(home_bt_status, ACCENT_MAPS, 0);
+        } else {
+            lv_label_set_text(home_bt_status, LV_SYMBOL_BLUETOOTH " Ready");
+            lv_obj_set_style_text_color(home_bt_status, ACCENT_DOCS, 0);
+        }
     }
 
-    if (tileReader.isReady()) {
-        lv_label_set_text(home_sd_label, LV_SYMBOL_SD_CARD " SD OK");
-        lv_obj_set_style_text_color(home_sd_label, ACCENT_MAPS, 0);
-    } else {
-        lv_label_set_text(home_sd_label, LV_SYMBOL_SD_CARD " Standby");
-        lv_obj_set_style_text_color(home_sd_label, COL_TEXT_SEC, 0);
+    bool cur_sd = tileReader.isReady();
+    if (!initialized || cur_sd != last_sd) {
+        last_sd = cur_sd;
+        if (cur_sd) {
+            lv_label_set_text(home_sd_label, LV_SYMBOL_SD_CARD " SD OK");
+            lv_obj_set_style_text_color(home_sd_label, ACCENT_MAPS, 0);
+        } else {
+            lv_label_set_text(home_sd_label, LV_SYMBOL_SD_CARD " Standby");
+            lv_obj_set_style_text_color(home_sd_label, COL_TEXT_SEC, 0);
+        }
     }
 
-    char spd_str[24];
     uint16_t spd = 0;
     if (deviceState.gps.valid && deviceState.gps.speed_kmh > 0) {
         spd = (uint16_t)deviceState.gps.speed_kmh;
     }
-    snprintf(spd_str, sizeof(spd_str), LV_SYMBOL_CHARGE " %u KM/H", spd);
-    lv_label_set_text(home_speed_label, spd_str);
+    if (!initialized || spd != last_spd) {
+        last_spd = spd;
+        char spd_str[24];
+        snprintf(spd_str, sizeof(spd_str), LV_SYMBOL_CHARGE " %u KM/H", spd);
+        lv_label_set_text(home_speed_label, spd_str);
+    }
+
+    initialized = true;
 }
 
 // ================================================================
@@ -1033,51 +1061,113 @@ static void create_nav_screen() {
 static void update_nav_screen() {
     if (current_screen != Screen::NAVIGATION) return;
 
-    if (!tileReader.isReady()) {
-        lv_obj_clear_flag(nav_no_data_label, LV_OBJ_FLAG_HIDDEN);
-    } else {
-        lv_obj_add_flag(nav_no_data_label, LV_OBJ_FLAG_HIDDEN);
+    static bool last_sd = false;
+    static double last_lat = 0;
+    static double last_lon = 0;
+    static float last_heading = -999.0f;
+    static uint32_t last_map_render = 0;
+    static uint16_t last_route_count = 0;
+    static float last_speed = -1.0f;
+
+    static bool last_nav_active = false;
+    static Maneuver last_maneuver = (Maneuver)255;
+    static uint32_t last_distance = 0xFFFFFFFF;
+    static char last_street[64] = "";
+    static uint16_t last_eta = 0xFFFF;
+    static float last_remaining = -1.0f;
+    static bool initialized = false;
+
+    bool cur_sd = tileReader.isReady();
+    if (!initialized || cur_sd != last_sd) {
+        last_sd = cur_sd;
+        if (!cur_sd) {
+            lv_obj_clear_flag(nav_no_data_label, LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_add_flag(nav_no_data_label, LV_OBJ_FLAG_HIDDEN);
+        }
     }
 
     if (deviceState.gps.valid) {
-        if (tileReader.isReady()) {
-            mapRenderer.setCenter(deviceState.gps.lat, deviceState.gps.lon);
-            mapRenderer.setHeading(deviceState.gps.heading);
-            if (deviceState.route.count > 0) {
-                mapRenderer.setRoute(&deviceState.route);
+        if (cur_sd) {
+            bool pos_changed = (fabs(deviceState.gps.lat - last_lat) > 0.00002) ||
+                               (fabs(deviceState.gps.lon - last_lon) > 0.00002) ||
+                               (fabs(deviceState.gps.heading - last_heading) > 2.0f) ||
+                               (deviceState.route.count != last_route_count);
+
+            if (!initialized || pos_changed || (millis() - last_map_render > 1000)) {
+                last_lat = deviceState.gps.lat;
+                last_lon = deviceState.gps.lon;
+                last_heading = deviceState.gps.heading;
+                last_route_count = deviceState.route.count;
+                last_map_render = millis();
+
+                mapRenderer.setCenter(deviceState.gps.lat, deviceState.gps.lon);
+                mapRenderer.setHeading(deviceState.gps.heading);
+                if (deviceState.route.count > 0) {
+                    mapRenderer.setRoute(&deviceState.route);
+                }
+                mapRenderer.render();
             }
-            mapRenderer.render();
         }
 
-        char buf[16];
-        snprintf(buf, sizeof(buf), "%.0f km/h", deviceState.gps.speed_kmh);
-        lv_label_set_text(nav_speed_label, buf);
+        if (!initialized || fabsf(deviceState.gps.speed_kmh - last_speed) >= 0.5f) {
+            last_speed = deviceState.gps.speed_kmh;
+            char buf[16];
+            snprintf(buf, sizeof(buf), "%.0f km/h", deviceState.gps.speed_kmh);
+            lv_label_set_text(nav_speed_label, buf);
+        }
     }
 
     if (deviceState.nav.active) {
-        lv_label_set_text(nav_maneuver_icon, maneuverSymbol(deviceState.nav.maneuver));
+        if (!initialized || !last_nav_active) {
+            last_nav_active = true;
+            lv_obj_set_style_text_color(nav_street_label, COL_TEXT_PRI, 0);
+        }
 
-        char dist[16];
-        formatDistance(dist, sizeof(dist), deviceState.nav.distance_m);
-        lv_label_set_text(nav_distance_label, dist);
+        if (!initialized || deviceState.nav.maneuver != last_maneuver) {
+            last_maneuver = deviceState.nav.maneuver;
+            lv_label_set_text(nav_maneuver_icon, maneuverSymbol(deviceState.nav.maneuver));
+        }
 
-        lv_label_set_text(nav_street_label, deviceState.nav.street);
-        lv_obj_set_style_text_color(nav_street_label, COL_TEXT_PRI, 0);
+        if (!initialized || deviceState.nav.distance_m != last_distance) {
+            last_distance = deviceState.nav.distance_m;
+            char dist[16];
+            formatDistance(dist, sizeof(dist), deviceState.nav.distance_m);
+            lv_label_set_text(nav_distance_label, dist);
+        }
 
-        char eta[16];
-        snprintf(eta, sizeof(eta), "ETA %d min", deviceState.nav.eta_min);
-        lv_label_set_text(nav_eta_label, eta);
+        if (!initialized || strcmp(last_street, deviceState.nav.street) != 0) {
+            strncpy(last_street, deviceState.nav.street, sizeof(last_street) - 1);
+            last_street[sizeof(last_street) - 1] = '\0';
+            lv_label_set_text(nav_street_label, deviceState.nav.street);
+        }
 
-        char rem[16];
-        snprintf(rem, sizeof(rem), "%.1f km", deviceState.nav.remaining_km);
-        lv_label_set_text(nav_remaining_label, rem);
+        if (!initialized || deviceState.nav.eta_min != last_eta) {
+            last_eta = deviceState.nav.eta_min;
+            char eta[16];
+            snprintf(eta, sizeof(eta), "ETA %d min", deviceState.nav.eta_min);
+            lv_label_set_text(nav_eta_label, eta);
+        }
+
+        if (!initialized || fabsf(deviceState.nav.remaining_km - last_remaining) >= 0.1f) {
+            last_remaining = deviceState.nav.remaining_km;
+            char rem[16];
+            snprintf(rem, sizeof(rem), "%.1f km", deviceState.nav.remaining_km);
+            lv_label_set_text(nav_remaining_label, rem);
+        }
     } else {
-        lv_label_set_text(nav_street_label, "Start route in phone app");
-        lv_obj_set_style_text_color(nav_street_label, COL_TEXT_SEC, 0);
-        lv_label_set_text(nav_distance_label, "--");
-        lv_label_set_text(nav_eta_label, "ETA --");
-        lv_label_set_text(nav_remaining_label, "-- km");
+        if (!initialized || last_nav_active) {
+            last_nav_active = false;
+            last_street[0] = '\0';
+            lv_label_set_text(nav_street_label, "Start route in phone app");
+            lv_obj_set_style_text_color(nav_street_label, COL_TEXT_SEC, 0);
+            lv_label_set_text(nav_distance_label, "--");
+            lv_label_set_text(nav_eta_label, "ETA --");
+            lv_label_set_text(nav_remaining_label, "-- km");
+        }
     }
+
+    initialized = true;
 }
 
 // ================================================================
@@ -1379,33 +1469,69 @@ static void create_music_screen() {
 static void update_music_screen() {
     if (current_screen != Screen::MUSIC) return;
 
+    static char last_title[64] = "";
+    static char last_artist[64] = "";
+    static char last_album[64] = "";
+    static int last_pos = -1;
+    static int last_dur = -1;
+    static bool last_playing = false;
+    static bool initialized = false;
+
     if (deviceState.media.title[0] != '\0') {
-        lv_label_set_text(music_title_label, deviceState.media.title);
-        lv_label_set_text(music_artist_label, deviceState.media.artist);
-        lv_label_set_text(music_album_label, deviceState.media.album);
+        if (!initialized || strcmp(last_title, deviceState.media.title) != 0) {
+            strncpy(last_title, deviceState.media.title, sizeof(last_title) - 1);
+            last_title[sizeof(last_title) - 1] = '\0';
+            lv_label_set_text(music_title_label, deviceState.media.title);
+        }
+        if (!initialized || strcmp(last_artist, deviceState.media.artist) != 0) {
+            strncpy(last_artist, deviceState.media.artist, sizeof(last_artist) - 1);
+            last_artist[sizeof(last_artist) - 1] = '\0';
+            lv_label_set_text(music_artist_label, deviceState.media.artist);
+        }
+        if (!initialized || strcmp(last_album, deviceState.media.album) != 0) {
+            strncpy(last_album, deviceState.media.album, sizeof(last_album) - 1);
+            last_album[sizeof(last_album) - 1] = '\0';
+            lv_label_set_text(music_album_label, deviceState.media.album);
+        }
 
         if (deviceState.media.duration_s > 0) {
-            int pct = (int)((float)deviceState.media.position_s / deviceState.media.duration_s * 100);
-            lv_bar_set_value(music_progress_bar, pct, LV_ANIM_ON);
+            if (!initialized || deviceState.media.position_s != last_pos || deviceState.media.duration_s != last_dur) {
+                last_pos = deviceState.media.position_s;
+                last_dur = deviceState.media.duration_s;
+                int pct = (int)((float)deviceState.media.position_s / deviceState.media.duration_s * 100);
+                lv_bar_set_value(music_progress_bar, pct, LV_ANIM_ON);
 
-            char timeBuf[24];
-            int pm = deviceState.media.position_s / 60;
-            int ps = deviceState.media.position_s % 60;
-            int dm = deviceState.media.duration_s / 60;
-            int ds = deviceState.media.duration_s % 60;
-            snprintf(timeBuf, sizeof(timeBuf), "%d:%02d / %d:%02d", pm, ps, dm, ds);
-            lv_label_set_text(music_time_label, timeBuf);
+                char timeBuf[24];
+                int pm = deviceState.media.position_s / 60;
+                int ps = deviceState.media.position_s % 60;
+                int dm = deviceState.media.duration_s / 60;
+                int ds = deviceState.media.duration_s % 60;
+                snprintf(timeBuf, sizeof(timeBuf), "%d:%02d / %d:%02d", pm, ps, dm, ds);
+                lv_label_set_text(music_time_label, timeBuf);
+            }
         }
 
-        lv_obj_t* pp_label = lv_obj_get_child(music_play_btn, 0);
-        if (pp_label) {
-            lv_label_set_text(pp_label, deviceState.media.playing ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
+        if (!initialized || deviceState.media.playing != last_playing) {
+            last_playing = deviceState.media.playing;
+            lv_obj_t* pp_label = lv_obj_get_child(music_play_btn, 0);
+            if (pp_label) {
+                lv_label_set_text(pp_label, deviceState.media.playing ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
+            }
         }
     } else {
-        lv_label_set_text(music_title_label, "No Track Playing");
-        lv_label_set_text(music_artist_label, "Play music on your phone");
-        lv_label_set_text(music_album_label, "");
+        if (!initialized || last_title[0] != '\0') {
+            last_title[0] = '\0';
+            last_artist[0] = '\0';
+            last_album[0] = '\0';
+            last_pos = -1;
+            last_dur = -1;
+            lv_label_set_text(music_title_label, "No Track Playing");
+            lv_label_set_text(music_artist_label, "Play music on your phone");
+            lv_label_set_text(music_album_label, "");
+        }
     }
+
+    initialized = true;
 }
 
 // ================================================================
@@ -1508,32 +1634,63 @@ static void create_tracking_screen() {
 static void update_tracking_screen() {
     if (current_screen != Screen::TRACKING) return;
 
-    if (deviceState.tracking.active) {
-        lv_obj_add_flag(track_no_data_label, LV_OBJ_FLAG_HIDDEN);
+    static bool last_active = false;
+    static float last_dist = -1.0f;
+    static uint32_t last_elapsed = 0xFFFFFFFF;
+    static float last_avg = -1.0f;
+    static float last_max = -1.0f;
+    static float last_cur = -1.0f;
+    static bool initialized = false;
 
-        lv_obj_t* grid = lv_obj_get_parent(track_distance_label);
-        if (grid) lv_obj_clear_flag(grid, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_t* spd_card = lv_obj_get_parent(track_cur_speed_label);
-        if (spd_card) lv_obj_clear_flag(spd_card, LV_OBJ_FLAG_HIDDEN);
+    if (deviceState.tracking.active) {
+        if (!initialized || !last_active) {
+            last_active = true;
+            lv_obj_add_flag(track_no_data_label, LV_OBJ_FLAG_HIDDEN);
+
+            lv_obj_t* grid = lv_obj_get_parent(track_distance_label);
+            if (grid) lv_obj_clear_flag(grid, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_t* spd_card = lv_obj_get_parent(track_cur_speed_label);
+            if (spd_card) lv_obj_clear_flag(spd_card, LV_OBJ_FLAG_HIDDEN);
+        }
 
         char buf[16];
-        snprintf(buf, sizeof(buf), "%.1f km", deviceState.tracking.distance_km);
-        lv_label_set_text(track_distance_label, buf);
+        if (!initialized || fabsf(deviceState.tracking.distance_km - last_dist) >= 0.05f) {
+            last_dist = deviceState.tracking.distance_km;
+            snprintf(buf, sizeof(buf), "%.1f km", deviceState.tracking.distance_km);
+            lv_label_set_text(track_distance_label, buf);
+        }
 
-        formatDuration(buf, sizeof(buf), deviceState.tracking.elapsed_s);
-        lv_label_set_text(track_time_label, buf);
+        if (!initialized || deviceState.tracking.elapsed_s != last_elapsed) {
+            last_elapsed = deviceState.tracking.elapsed_s;
+            formatDuration(buf, sizeof(buf), deviceState.tracking.elapsed_s);
+            lv_label_set_text(track_time_label, buf);
+        }
 
-        snprintf(buf, sizeof(buf), "%.1f", deviceState.tracking.avg_speed_kmh);
-        lv_label_set_text(track_avg_speed_label, buf);
+        if (!initialized || fabsf(deviceState.tracking.avg_speed_kmh - last_avg) >= 0.1f) {
+            last_avg = deviceState.tracking.avg_speed_kmh;
+            snprintf(buf, sizeof(buf), "%.1f", deviceState.tracking.avg_speed_kmh);
+            lv_label_set_text(track_avg_speed_label, buf);
+        }
 
-        snprintf(buf, sizeof(buf), "%.1f", deviceState.tracking.max_speed_kmh);
-        lv_label_set_text(track_max_speed_label, buf);
+        if (!initialized || fabsf(deviceState.tracking.max_speed_kmh - last_max) >= 0.1f) {
+            last_max = deviceState.tracking.max_speed_kmh;
+            snprintf(buf, sizeof(buf), "%.1f", deviceState.tracking.max_speed_kmh);
+            lv_label_set_text(track_max_speed_label, buf);
+        }
 
-        snprintf(buf, sizeof(buf), "%.0f km/h", deviceState.tracking.current_speed_kmh);
-        lv_label_set_text(track_cur_speed_label, buf);
+        if (!initialized || fabsf(deviceState.tracking.current_speed_kmh - last_cur) >= 0.5f) {
+            last_cur = deviceState.tracking.current_speed_kmh;
+            snprintf(buf, sizeof(buf), "%.0f km/h", deviceState.tracking.current_speed_kmh);
+            lv_label_set_text(track_cur_speed_label, buf);
+        }
     } else {
-        lv_obj_clear_flag(track_no_data_label, LV_OBJ_FLAG_HIDDEN);
+        if (!initialized || last_active) {
+            last_active = false;
+            lv_obj_clear_flag(track_no_data_label, LV_OBJ_FLAG_HIDDEN);
+        }
     }
+
+    initialized = true;
 }
 
 // ================================================================

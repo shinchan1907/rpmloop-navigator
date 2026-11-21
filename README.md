@@ -80,6 +80,59 @@ ESP32-S3 Mini Pinout
 
 ---
 
+## ⚡ Performance & Firmware Optimizations
+
+The firmware features specialized optimizations designed for low-power, high-frame-rate, jitter-free execution on the ESP32-S3:
+
+1. **60-Line Double-Buffered PSRAM Pipeline**:
+   - `DISP_BUF_ROWS` increased to 60 rows, cutting DMA transactions and buffer splits by 33% during full screen repaints.
+   - Contiguous line-block `memcpy` for full-width flushes (`w == 320`) in `disp_flush_cb`.
+2. **Subsystem State Caching & Redraw Dirty-Checking**:
+   - Status bar pills (BLE state, SD status, speed), navigation metrics, music metadata, and trip tracking metrics employ cached dirty checking.
+   - Eliminates redundant `lv_label_set_text` calls at 50 Hz, reducing CPU draw and SPI invalidation load by >90% when idle.
+3. **PSRAM Deallocation & Dynamic Reclaim**:
+   - The 153.6 KB PSRAM canvas used during the 2.4s startup splash animation is automatically freed immediately upon transitioning to the Home screen, reclaiming memory for tile caches.
+4. **Static TJpgDec Workspace Pool**:
+   - Replaced per-tile dynamic `malloc`/`free` heap allocations with a static 4KB pool, eliminating heap thrashing and fragmentation during SD map browsing and document viewing.
+5. **Throttled Vector Map Rendering**:
+   - `MapRenderer::render()` recalculates viewport tiles only upon geographic displacement (>0.00002° or >2.0° heading delta) or periodic 1-second ticks rather than at 50 Hz.
+6. **Adaptive FreeRTOS Loop Timing**:
+   - Uses `lv_timer_handler()` sleep recommendations (1–10ms) dynamically instead of hardcoded blocking delays.
+7. **Flash Binary Pruning**:
+   - Unused oversized Montserrat font tables (`LV_FONT_MONTSERRAT_32`) disabled, preserving maximum flash storage for embedded documents.
+
+---
+
+## 🗺️ Offline Map Tiles & SD Card Preparation
+
+The device reads standard Web Mercator tiles stored on a FAT32 MicroSD card in the following path format:
+```
+/tiles/{z}/{x}/{y}.jpg
+```
+
+### Pre-Downloaded Tiles
+A complete offline tile package for **Jalandhar & Punjab surroundings** (Zoom 13, 14, and 15 — 234 tiles) is already downloaded into the [`tiles/`](tiles/) folder:
+- **Zoom 13**: Regional overview (16 tiles)
+- **Zoom 14**: Arterial highways & ring roads (49 tiles)
+- **Zoom 15**: High-detail street-level view (169 tiles)
+
+### Setting Up the MicroSD Card
+1. Format a MicroSD card as **FAT32** (allocation unit size 32KB).
+2. Copy the entire `tiles` folder directly to the root of the card:
+   ```
+   SD_ROOT/
+   └── tiles/
+       ├── 13/
+       ├── 14/
+       └── 15/
+   ```
+3. To download tiles for additional cities or higher zooms:
+   ```bash
+   python tools/download_tiles.py --min-lat 31.26 --max-lat 31.38 --min-lon 75.50 --max-lon 75.64 --zooms 13 14 15 16 --out tiles
+   ```
+
+---
+
 ## 📡 BLE Protocol Specification
 
 The device operates an autonomous BLE GATT server advertising as **`RPMLOOP`**. The companion mobile app communicates using standardized JSON payloads defined in [`firmware/protocol/protocol_spec.json`](firmware/protocol/protocol_spec.json).
