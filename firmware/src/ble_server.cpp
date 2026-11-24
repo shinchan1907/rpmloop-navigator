@@ -331,18 +331,36 @@ void RpmloopBLE::setupService() {
 
 void RpmloopBLE::startAdvertising() {
     BLEAdvertising* pAdv = BLEDevice::getAdvertising();
-    pAdv->addServiceUUID(SERVICE_UUID);
+
+    // Primary advertisement packet (Flags + Name + 128-bit Service UUID)
+    BLEAdvertisementData advData;
+    advData.setFlags(0x06); // BR_EDR_NOT_SUPPORTED | LE General Discoverable Mode
+    advData.setName("RPMLOOP");
+    advData.setCompleteServices(BLEUUID(SERVICE_UUID));
+    pAdv->setAdvertisementData(advData);
+
+    // Scan response packet with device name for full scanner compatibility
+    BLEAdvertisementData scanData;
+    scanData.setName("RPMLOOP");
+    pAdv->setScanResponseData(scanData);
+
     pAdv->setScanResponse(true);
     pAdv->setMinPreferred(0x06);
-    pAdv->setMinPreferred(0x12);
+    pAdv->setMaxPreferred(0x12);
+
     BLEDevice::startAdvertising();
     deviceState.ble = BleConnState::ADVERTISING;
-    Serial.println("BLE: Advertising as RPMLOOP");
+    Serial.println("BLE: Advertising as RPMLOOP (Active broadcast)");
 }
 
 void RpmloopBLE::init() {
     BLEDevice::init("RPMLOOP");
     BLEDevice::setMTU(512);
+
+    // Enable permissive pairing so standard phones don't reject connection
+    BLESecurity* pSecurity = new BLESecurity();
+    pSecurity->setAuthenticationMode(ESP_LE_AUTH_NO_BOND);
+    pSecurity->setCapability(ESP_IO_CAP_NONE);
 
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new ServerCallbacks());
